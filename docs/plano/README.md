@@ -42,7 +42,8 @@ saídas temporárias em `compare/out/`, não alterar `View`/`SvgDeviceContext`,
 a spec `docs/formato/especificacao-v1.md` é atualizada junto com o formato).
 O plano **daquele** repo usa os prefixos F/S/R/A/E/P (+ G, ver abaixo); os
 passos deste plano usam prefixos próprios (X, N, C, K, M, T, W, V, J, L,
-U, B, I, Q, O) para não colidir.
+U, B, I, Q, O e EX) para não colidir. As letras simples acabaram: a fase
+EX tem prefixo de duas letras.
 
 A fase **J** (trilha de estudo: a música em trechos, com etapas que se
 desbloqueiam como fases de um jogo) tem especificação própria em
@@ -104,12 +105,36 @@ partitura gerada pelo treino de leitura soa com uma diferença e o aluno
 diz onde) tem as decisões D-LEI, tomadas com o usuário em 2026-10-13, na
 seção "Segunda parte" do mesmo E00.
 
+A fase **EX** (exercícios do curso completo: tocar acordes pela cifra,
+acompanhar uma grade no andamento com base gerada, ouvir e repetir,
+harmonizar, nota-alvo, improviso com regras e medidores de legato,
+dinâmica, pedal e swing) tem especificação em
+[EX00-exercicios-do-curso-completo.md](EX00-exercicios-do-curso-completo.md).
+Ela vem da avaliação dos livros convertidos no repositório
+`music_books_grabber` (`curso/tipos-de-exercicio.md`). Quem executa um
+passo EX lê também o EX00. As decisões D-EXE-\* estão abertas (propostas
+em 2026-10-17).
+
+A fase **D** (papéis e distribuição: plataforma, tutor e aluno; conteúdo
+atribuído por aluno, com validade; relatórios e MIDI das sessões para o
+tutor) está em conversa em [D00-papeis-e-distribuicao.md](D00-papeis-e-distribuicao.md)
+— ainda sem passos, com decisões `D-NEG-*` abertas.
+
 A fase **R** (revisão de código: quebrar os ciclos entre as pastas de
 `lib/`, desmontar `main.dart` em controllers e dividir o app em pacotes de
 um workspace Dart) tem especificação em
 [../revisao/2026-10-06-qualidade-e-divisao.md](../revisao/2026-10-06-qualidade-e-divisao.md)
 — quem executa um passo R lê também esse arquivo. Não muda nada que a
 pessoa veja; os passos seguem a ordem R01 → R17.
+
+A **segunda rodada da fase R** (R18–R35: bugs de dados, consistência das
+telas, serviços do app fora da biblioteca, um motor de som só, divisão dos
+arquivos grandes, lints e dependências) tem especificação em
+[../revisao/2026-10-15-revisao-geral.md](../revisao/2026-10-15-revisao-geral.md)
+— quem executa um passo R18–R35 lê esse arquivo, não o da primeira rodada.
+Diferente da primeira, alguns passos **mudam o que a pessoa vê** (R20–R26)
+e pedem `just telas` antes e depois. As decisões D-REV-\* estão na tabela
+de decisões.
 
 ## Convenções
 
@@ -289,6 +314,11 @@ zywny
 | D-LIC | Lições de terceiros: sintaxe das marcas, idioma, confiança, vídeo, notação, autoria, curso inicial, nomes, sem teclado, entrada | fase I | — | **decidida** (2026-10-04): as 10 decisões D-LIC-\* no [I00](I00-licoes-e-curso-inicial.md) |
 | D-TRP | Transpor sem acidentes: alvo, direção, tom do som do app, escopo, progresso, conferência, nomes, lições | fase Q | — | **decidida** (2026-10-04): as 8 decisões D-TRP-\* no [Q00](Q00-transpor-sem-acidentes.md) |
 | D-BIB-CIFRA | Pacote `.zywny` cifrado e assinado; privada gera, pública sob controle do usuário, chaves fora do git | fase B | — | **decidida** (2026-10-04): ver o B00 "O envelope" |
+| D-REV-SIMPL | A nota da versão simplificada: mostrar as duas na linha da música, ou juntar numa só? | R20 | (a) mostrar as duas ("simplificada N%"); a ordenação usa a do original | **aberta** |
+| D-REV-CABEC | Cabeçalho das telas secundárias: `AppBar` com tema, ou um cabeçalho próprio no desenho da biblioteca? | R26 | (a) `AppBar` com `appBarTheme`; biblioteca e partitura ficam com o cromo delas | **aberta** |
+| D-REV-DI | Como os serviços do app chegam às telas: `provider` ou `InheritedWidget` à mão? | R27 | (a) `provider` | **aberta** |
+| D-REV-ROTAS | Adotar `go_router` (URL de `#` na Web) ou ficar com `Navigator.push`? | R35 | (b) ficar como está por enquanto; rever se a Web ganhar uso próprio | **aberta** |
+| D-EXE | Exercícios do curso completo: grafia da cifra, rigor do acorde, quando conferir, mãos sem partitura, base gerada, aprovação do improviso, swing, limiares dos medidores, ordem | fase EX | — | **aberta** (2026-10-17): as 9 decisões D-EXE-\* no [EX00](EX00-exercicios-do-curso-completo.md) |
 
 ## Riscos conhecidos
 
@@ -395,6 +425,29 @@ zywny
 | [E08](E08-ouvido-no-treino.md) | Ouvido na leitura: no treino de leitura (depois de cada leitura e "só ouvido") | E07 | D-LEI | feito, sem commit (aceite manual pendente: itens 2 e 3, com o usuário) |
 | [E09](E09-ditado-com-ritmo.md) | Ouvido na leitura: ditado com o ritmo dado | E07 | D-LEI-DITADO | pendente (confirmar com o usuário: agora ou depois da 1.0) |
 | [E10](E10-tocar-na-nota.md) | Ouvido na leitura: responder tocando na nota | E07 (E08 no item 5) | D-LEI-NOTA | pendente |
+| [EX00](EX00-exercicios-do-curso-completo.md) | Exercícios do curso completo: especificação, decisões e índice (passos EX01–EX22) | — | D-EXE | especificação (decisões abertas) |
+| [EX01](EX01-modelo-de-acordes.md) | Acordes: cifra, grau, voicing e ciclos (Dart puro) | — | D-EXE-CIFRA | pendente |
+| [EX02](EX02-play-chord-formato-e-sessao.md) | `play-chord`: formato, rodada e conferência do acorde | EX01 | D-EXE-ACORDE, D-EXE-QUANDO | pendente |
+| [EX03](EX03-play-chord-tela-e-curso.md) | `play-chord`: a tela, o modo com tempo e um curso de teste | EX02 | D-EXE-CIFRA | pendente |
+| [EX04](EX04-listen-chord.md) | `listen-chord`: qualidade do acorde; casa ou tensão | EX01 | — | pendente |
+| [EX05](EX05-keys-e-cycle-no-play-score.md) | `play-score` com `keys:` e `cycle:` | — | — | pendente |
+| [EX06](EX06-play-pattern.md) | `play-pattern`: escalas, arpejos e padrões gerados | EX01, EX05 | — | pendente |
+| [EX07](EX07-gravacao-e-medidores.md) | Medidores: gravação da execução e nove medidores (Dart puro) | — | D-EXE-LIMIARES | pendente |
+| [EX08](EX08-medidores-no-pass-e-na-tela.md) | Medidores no `pass`, no resumo e "ouvir o que toquei" | EX07 | D-EXE-LIMIARES | pendente |
+| [EX09](EX09-grade-zywny-chart.md) | Grade: modelo, marca `zywny-chart` e desenho | EX01 | — | pendente |
+| [EX10](EX10-timed-round-e-chart-session.md) | `TimedRound`, `TimedRoundRunner` e `ChartSession` | EX07, EX09 | D-EXE-MAOS, D-EXE-SWING | pendente |
+| [EX11](EX11-play-chart.md) | `play-chart`: acompanhar a grade no andamento | EX10 | D-EXE-ACORDE | pendente |
+| [EX12](EX12-base-gerada.md) | Base gerada: bateria e baixo | EX11 | D-EXE-BASE, D-EXE-SWING | pendente |
+| [EX13](EX13-rhythm-com-duas-maos.md) | `rhythm` com duas mãos e `listen-groove` | EX07, EX10, EX12 | D-EXE-MAOS | pendente |
+| [EX14](EX14-echo.md) | `echo`: ouça e repita | EX10, EX12 | D-EXE-MAOS | pendente |
+| [EX15](EX15-listen-progression.md) | `listen-progression`: ouvir os graus | EX04, EX09 | — | pendente |
+| [EX16](EX16-harmonize.md) | `harmonize`: harmonizar uma melodia | EX02, EX10, EX11 | — | pendente |
+| [EX17](EX17-play-lead-sheet.md) | `play-lead-sheet`: melodia e cifra | EX11, EX16 | — | pendente |
+| [EX18](EX18-target-notes.md) | `target-notes`: nota-alvo no tempo forte | EX11 | — | pendente |
+| [EX19](EX19-improvise.md) | `improvise`: improviso com regras e retorno | EX14, EX18 | D-EXE-IMPROVISO | pendente |
+| [EX20](EX20-follow-form.md) | `follow-form`: não se perder na forma | EX12 | — | pendente |
+| [EX21](EX21-theory-quiz.md) | `theory-quiz`: perguntas de teoria geradas | EX01, EX02, EX06 | — | pendente |
+| [EX22](EX22-leitura-e-repertorio.md) | Leitura e repertório: cortina, ensaio, `tempo-ladder`, mãos em sequência, prática acumulativa | EX07 | — | pendente |
 | [I00](I00-licoes-e-curso-inicial.md) | Lições de terceiros e curso inicial: formato, tipos, testes e índice (passos I01–I13) | — | D-LIC | especificação (decisões tomadas) |
 | [I01](I01-formato-e-validador.md) | Lições: especificação v1, leitor e validador (Dart puro), `zywny_course validate` | — | D-LIC | **concluído** |
 | [I02](I02-partituras-das-licoes.md) | Lições: ABC no Verovio, cabeçalho ABC, gerador de MusicXML das rodadas, tempo de render | I01 | D-LIC | **concluído** (falta medir no celular) |
@@ -435,6 +488,24 @@ zywny
 | [R15](R15-pacote-zywny-audio.md) | Revisão: pacote `zywny_audio` | R13 | `diag_log`: `packages/zywny_diag` | código e testes feitos (2026-10-07); **aceite manual pendente** |
 | [R16](R16-pacote-zywny-midi.md) | Revisão: pacote `zywny_midi` | R15 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
 | [R17](R17-pacote-zywny-library.md) | Revisão: pacote `zywny_library` | R13 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
+| [R18](R18-curso-sem-dois-pontos.md) | Revisão 2: arquivos de curso sem `:` no nome (achado 11) | — | — | pendente |
+| [R19](R19-ler-sem-apagar.md) | Revisão 2: erro de leitura não apaga o progresso (achado 12) | — | — | pendente |
+| [R20](R20-nota-da-simplificada.md) | Revisão 2: nota da versão simplificada na lista (achado 13) | — | D-REV-SIMPL | pendente |
+| [R21](R21-mensagens-de-problema.md) | Revisão 2: mensagens de problema (achado 14) | — | — | pendente |
+| [R22](R22-dialogos-de-confirmacao.md) | Revisão 2: diálogos de confirmação (achado 15) | — | — | pendente |
+| [R23](R23-niveis-da-leitura-acabamentos.md) | Revisão 2: tela de níveis da leitura, acabamentos (achado 16) | R22 | — | pendente |
+| [R24](R24-fontes-embutidas.md) | Revisão 2: fontes embutidas (achado 17) | — | — | pendente |
+| [R25](R25-escala-de-texto.md) | Revisão 2: escala de texto (achado 18) | R24 | — | pendente |
+| [R26](R26-cabecalhos-das-telas.md) | Revisão 2: cabeçalhos das telas (achado 19) | R25 | D-REV-CABEC | pendente |
+| [R27](R27-servicos-do-app.md) | Revisão 2: serviços do app (achado 20) | R19 | D-REV-DI | pendente |
+| [R28](R28-um-motor-de-som.md) | Revisão 2: um motor de som para o app (achado 21) | R27 | — | pendente |
+| [R29](R29-partitura-e-transposicao.md) | Revisão 2: partitura em `lib/score/`; fluxo de transposição (achado 22) | R28 | — | pendente |
+| [R30](R30-partitura-em-widgets.md) | Revisão 2: partitura em widgets (achado 22) | R29 | — | pendente |
+| [R31](R31-biblioteca-em-arquivos.md) | Revisão 2: biblioteca em arquivos menores (achado 22) | R28 | — | pendente |
+| [R32](R32-exercicio-pergunta-configuracoes.md) | Revisão 2: exercício, pergunta e configurações divididos (achado 22) | — | — | pendente |
+| [R33](R33-lints-estritos.md) | Revisão 2: regras estritas do analisador (achado 23) | — | — | pendente |
+| [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | R24 | — | pendente |
+| [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
 
 Ordem de implementação (decidida pelo usuário): **Linux → Android → Web →
 Windows**. Ordem sugerida dos passos: N01→N02→N03 e C01 (dá para fazer em

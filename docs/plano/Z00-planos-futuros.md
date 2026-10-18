@@ -35,6 +35,11 @@ O usuário ouve um acorde (maior, menor, diminuto, aumentado, dominante, etc.) e
 identifica qual é. Desenvolve a capacidade de reconhecer qualidades harmônicas
 apenas pelo som.
 
+→ Planejado na fase EX: `listen-chord` no [EX04](EX04-listen-chord.md). Os
+arpejos e as escalas em tons e andamentos variados estão no `play-pattern`
+([EX06](EX06-play-pattern.md)). O índice da fase está no
+[EX00](EX00-exercicios-do-curso-completo.md).
+
 ## Letra no telão, em sincronia com o pianista
 
 Projetar a letra dos hinos acompanhando o que o pianista toca ao vivo (ou o
