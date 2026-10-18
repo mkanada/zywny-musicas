@@ -13,9 +13,9 @@ dependencies:
   flutter:
     sdk: flutter
   # O tema, os widgets comuns e a mão (`ui/theme.dart`, `ui/widgets.dart`,
-  # `practice/hand.dart`) vêm do app.
-  zywny:
-    path: ../..
+  # `practice/hand.dart`) vêm do núcleo compartilhado (zywny-comum).
+  zywny_comum:
+    path: ../../../zywny-comum
 
 dev_dependencies:
   flutter_lints: ^6.0.0

@@ -23,12 +23,12 @@ import 'package:zywny_library/library_keys.dart' show progressIdFor;
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_music/transposition.dart';
-import 'package:zywny/practice/shift_detector.dart';
-import 'package:zywny/settings/app_settings.dart';
-import 'package:zywny/settings/piece_settings.dart';
-import 'package:zywny/trail/stage_result.dart';
-import 'package:zywny/trail/trail_progress.dart';
-import 'package:zywny/trail/trail_widgets.dart' show StageSummaryAction;
+import 'package:zywny_comum/practice/shift_detector.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/trail/stage_result.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_widgets.dart' show StageSummaryAction;
 
 import 'support/practice_fakes.dart';
 import 'support/score_page_fakes.dart';

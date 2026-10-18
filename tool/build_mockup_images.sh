@@ -10,7 +10,7 @@
 set -euo pipefail
 
 proj_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-source "$(dirname "${BASH_SOURCE[0]}")/verovio_bridge.sh"
+source "${ZYWNY_COMUM:-$(dirname "${BASH_SOURCE[0]}")/../../zywny-comum}/tool/verovio_bridge.sh"
 bridge_dir="$verovio_bridge"
 verovio_bin="$bridge_dir/verovio/tools/verovio"
 data_dir="$bridge_dir/verovio/data"

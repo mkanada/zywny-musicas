@@ -25,26 +25,27 @@ import 'package:zywny_midi/midi_input_service.dart';
 
 import 'package:zywny_audio/performance_track.dart';
 
-import '../practice/app_hand.dart';
-import '../practice/hand.dart';
-import '../practice/input_latency.dart';
-import '../practice/practice_colors.dart';
-import '../practice/practice_controller.dart';
-import '../practice/practice_report.dart';
-import '../practice/shift_detector.dart';
-import '../settings/app_settings.dart';
-import '../trail/stage_result.dart' show StagePass, StageResult;
-import '../trail/trail_controller.dart';
-import '../trail/trail_path.dart';
-import '../trail/trail_plan.dart';
-import '../trail/trail_progress.dart';
-import '../trail/trail_stage.dart' show TrailPhase, TrailStage;
-import '../trail/trail_widgets.dart'
+import 'package:zywny_comum/practice/app_hand.dart';
+import 'package:zywny_comum/practice/hand.dart';
+import 'package:zywny_comum/practice/input_latency.dart';
+import 'package:zywny_comum/practice/practice_colors.dart';
+import 'package:zywny_comum/practice/practice_controller.dart';
+import 'package:zywny_comum/practice/practice_report.dart';
+import 'package:zywny_comum/practice/shift_detector.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/trail/stage_result.dart'
+    show StagePass, StageResult;
+import 'package:zywny_comum/trail/trail_controller.dart';
+import 'package:zywny_comum/trail/trail_path.dart';
+import 'package:zywny_comum/trail/trail_plan.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_stage.dart' show TrailPhase, TrailStage;
+import 'package:zywny_comum/trail/trail_widgets.dart'
     show StageSummaryAction, TrailConclusionAction, trailStripTextFor;
-import '../ui/transpose_widgets.dart' show alsoStudiedText;
-import 'playback_controller.dart';
-import 'score_render_session.dart';
-import 'sound_output_controller.dart';
+import 'package:zywny_comum/ui/transpose_widgets.dart' show alsoStudiedText;
+import 'package:zywny/app/playback_controller.dart';
+import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/sound_output_controller.dart';
 
 /// O resumo de uma etapa (ou de um bloco de reforço) que a tela mostra:
 /// [blockCount] é o número de blocos de reforço que a reprovação abriu.

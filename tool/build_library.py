@@ -29,6 +29,7 @@ com caminhos relativos à pasta da especificação.
 
 import gzip
 import io
+import os
 import json
 import re
 import sys
@@ -36,7 +37,13 @@ import unicodedata
 import zipfile
 from pathlib import Path
 
-import library_crypto
+# library_crypto.py mora no zywny-comum (ZYWNY_COMUM, padrão ../zywny-comum).
+# As chaves são deste app (keys/, ao lado desta pasta tool/), não do comum.
+_COMUM = Path(os.environ.get("ZYWNY_COMUM", Path(__file__).resolve().parents[2] / "zywny-comum"))
+sys.path.insert(0, str(_COMUM / "tool"))
+import library_crypto  # noqa: E402
+
+KEYS = Path(__file__).resolve().parents[1] / "keys"
 
 FORMAT = 1
 LIBRARY_ID = re.compile(r"^[a-z0-9-]{1,40}$")
@@ -90,7 +97,7 @@ def build_package(
     manifest: dict,
     pieces: list[dict],
     out: Path,
-    private_key: Path = library_crypto.KEYS / library_crypto.PRIVATE,
+    private_key: Path = KEYS / library_crypto.PRIVATE,
 ) -> dict:
     """Grava [out] (zip cifrado e assinado com [private_key]) e devolve
     estatísticas (`pecas`, `bytes`)."""

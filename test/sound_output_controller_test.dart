@@ -12,7 +12,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_midi/midi_out_sound_engine.dart';
-import 'package:zywny/settings/app_settings.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
 
 import 'support/practice_fakes.dart';
 

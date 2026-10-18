@@ -4,48 +4,29 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:zywny_audio/engine_opener.dart';
-import 'package:zywny_audio/sound_engine.dart';
-
-import '../course/course_installer.dart';
-import '../course/course_progress.dart';
-import '../course/course_store.dart';
-import '../course/draft/course_draft.dart';
-import '../course/draft/course_draft_screen.dart';
-import '../course/draft/draft_folder.dart';
-
-import 'package:zywny_course_format/course_files.dart';
-
-import '../course/loaded_course.dart';
-import '../course/ui/course_flow.dart';
-import '../course/ui/courses_screen.dart';
-import '../sight_reading/sight_listen_source.dart';
-import '../sight_reading/sight_reading_source.dart';
-import '../course/ui/course_screen.dart' show openLessonScreen;
-import '../incoming/incoming_packages.dart';
+import 'package:zywny_comum/incoming/incoming_packages.dart';
 
 import 'package:zywny_midi/midi_device_manager.dart';
 
-import '../midi/midi_device_picker.dart';
-
-import 'package:zywny_midi/midi_input_service.dart';
-import 'package:zywny_midi/midi_out_sound_engine.dart';
+import 'package:zywny_comum/midi/midi_device_picker.dart';
 
 import 'package:zywny_music/tone_choices.dart';
 import 'package:zywny_music/transposition.dart';
 
-import '../settings/effective_transposition.dart';
-import '../settings/app_settings.dart';
-import 'general_settings_panel.dart';
-import '../settings/piece_settings.dart';
-import '../trail/trail_progress.dart';
-import '../trail/trail_widgets.dart' show TrailProgressBar, trailResumeText;
-import '../ui/device_kind.dart';
-import '../ui/orientation.dart';
-import '../tutorial/library_tour.dart';
-import '../tutorial/tour.dart';
-import '../tutorial/tour_store.dart';
-import '../ui/theme.dart';
+import 'package:zywny_comum/settings/effective_transposition.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_widgets.dart'
+    show TrailProgressBar, trailResumeText;
+import 'package:zywny_comum/ui/device_kind.dart';
+import 'package:zywny_comum/ui/orientation.dart';
+import 'package:zywny/app/package_install.dart';
+import 'package:zywny/tutorial/library_tour.dart';
+import 'package:zywny/tutorial/tour.dart';
+import 'package:zywny/tutorial/tour_store.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'package:zywny_library/library_keys.dart';
 import 'package:zywny_library/piece.dart';
@@ -130,7 +111,7 @@ const _kSideBySideMinWideWidth = 1000.0;
 /// Largura máxima do corpo em duas colunas (em retrato, 720).
 const _kSideBySideMaxWidth = 1000.0;
 
-/// Largura da coluna da esquerda (cursos, "Continuar", ordenação): 37% do
+/// Largura da coluna da esquerda ("Continuar", ordenação): 37% do
 /// corpo, entre estes limites. Com 300 as seis pastilhas fecham em duas
 /// linhas num celular de 844 dp.
 const _kShortcutsMinWidth = 264.0;
@@ -152,10 +133,6 @@ class LibraryScreen extends StatefulWidget {
     this.appSettings,
     this.pieceSettings,
     this.trailProgress,
-    this.loadCourses,
-    this.courseProgress,
-    this.courseStore,
-    this.initialDraftPath,
     this.tourStore,
     this.tourDelay = Duration.zero,
     this.incoming,
@@ -171,8 +148,7 @@ class LibraryScreen extends StatefulWidget {
   final Future<Uint8List> Function(Piece piece)? loadScore;
   final LibraryStore? libraryStore;
 
-  /// O seletor do arquivo `.zywny` (biblioteca ou curso, I04); os testes
-  /// trocam por um falso.
+  /// O seletor do arquivo `.zywny` (biblioteca); os testes trocam por um falso.
   final Future<Uint8List?> Function() pickLibraryFile;
   final PieceProgressStore? progress;
   final AppSettings? appSettings;
@@ -180,19 +156,6 @@ class LibraryScreen extends StatefulWidget {
 
   /// Resumos da trilha por hino (J09); os testes injetam com dados.
   final TrailProgressStore? trailProgress;
-
-  /// Cursos para a entrada de cursos (I09, D-LIC-ENTRADA); `null` (padrão)
-  /// esconde a entrada — o embutido chega no I10, os testes injetam fixture.
-  final Future<List<LoadedCourse>> Function()? loadCourses;
-
-  /// Progresso dos cursos; os testes injetam com dados.
-  final CourseProgressStore? courseProgress;
-
-  /// Cursos instalados de pacotes `.zywny` (I04); os testes injetam.
-  final CourseStore? courseStore;
-
-  /// I12 (`just curso <pasta>`): abre direto no rascunho da pasta.
-  final String? initialDraftPath;
 
   /// O registro do tutorial de primeiro uso (`lib/tutorial/`). `null` (os
   /// testes) é sem tutorial: o passeio nem começa sozinho.
@@ -211,9 +174,6 @@ class LibraryScreen extends StatefulWidget {
   /// Espera antes de instalar o primeiro arquivo recebido: como o passeio, não
   /// pode abrir diálogos por baixo da abertura (splash).
   final Duration incomingDelay;
-
-  /// O seletor de arquivos `.zywny` (biblioteca ou curso, I04); os testes
-  /// trocam por um falso.
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -237,17 +197,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   late final TrailProgressStore _trail =
       widget.trailProgress ?? TrailProgressStore();
 
-  /// Cursos (I09): o embutido mais os instalados (I04), carregados uma vez;
-  /// `[]` sem provedor e sem instalado (até o I10).
-  late Future<List<LoadedCourse>> _courses = _loadCourses();
-  late final CourseStore _coursesStore = widget.courseStore ?? CourseStore();
-  late final CourseProgressStore _courseProgress =
-      widget.courseProgress ?? CourseProgressStore();
-
-  /// I12: a pasta aberta como rascunho (some ao fechar o app). `null` sem
-  /// rascunho. O progresso é o do controlador (só memória).
-  CourseDraftController? _draft;
-
   /// Os botões que o tutorial aponta, e se ele já foi decidido nesta
   /// abertura (começa sozinho no máximo uma vez por abertura do app).
   final LibraryTourKeys _tourKeys = LibraryTourKeys();
@@ -262,166 +211,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final List<IncomingPackage> _incomingQueue = [];
   bool _drainingIncoming = false;
   bool _incomingReady = false;
-
-  /// Entrada MIDI do fluxo de cursos (só ele usa). O carimbo sai do relógio
-  /// do motor de som em uso, como na `ScoreHomePage`: o tempo real compara
-  /// a tecla com o relógio do motor, e com o cronômetro do app (outra
-  /// origem) toda nota caía fora da janela — o exercício de ritmo não
-  /// acertava nenhuma. Sem motor ainda, o cronômetro.
-  final Stopwatch _courseClock = Stopwatch()..start();
-  late final MidiInputService _courseMidi = FlutterMidiInputService(
-    nowSeconds: () =>
-        _courseCurrentEngine?.nowSeconds ??
-        _courseClock.elapsedMicroseconds / 1e6,
-  );
-
-  /// O último motor entregue por [_ensureCourseEngine] (o que a lição ou o
-  /// exercício aberto está usando).
-  SoundEngine? _courseCurrentEngine;
-
-  /// Motores de som do fluxo de cursos, um por saída (como a `ScoreHomePage`,
-  /// M03): o sintetizador do app (memoizado; `.sf2` carregado uma vez) e a
-  /// saída para o teclado MIDI (recriada se o teclado conectado mudar).
-  /// Descartados com a biblioteca.
-  SoundEngine? _courseEngine;
-  Future<SoundEngine?>? _courseEngineOpening;
-  MidiOutSoundEngine? _courseMidiOutEngine;
-  String? _courseMidiOutDeviceId;
-
-  /// O motor da saída escolhida nas configurações gerais: com "teclado MIDI"
-  /// e um teclado conectado, o som sai nele; senão, no sintetizador do app.
-  Future<SoundEngine?> _ensureCourseEngine() async {
-    final engine = await _openCourseEngine();
-    _courseCurrentEngine = engine;
-    return engine;
-  }
-
-  Future<SoundEngine?> _openCourseEngine() async {
-    await _settingsLoaded;
-    final device = _midi.connected.value;
-    if (_settings.output == SoundOutput.midiKeyboard && device != null) {
-      final existing = _courseMidiOutEngine;
-      if (existing != null && _courseMidiOutDeviceId == device.id) {
-        existing.useScoreInstruments = _settings.useScoreInstruments;
-        return existing;
-      }
-      unawaited(existing?.dispose());
-      _courseMidiOutDeviceId = device.id;
-      return _courseMidiOutEngine = MidiOutSoundEngine(
-        sender: FlutterMidiSender(),
-        deviceId: device.id,
-        useScoreInstruments: _settings.useScoreInstruments,
-      );
-    }
-    final existing = _courseEngine;
-    if (existing != null) return existing;
-    return _courseEngineOpening ??= openAppSoundEngine().then((engine) {
-      _courseEngineOpening = null;
-      if (engine != null) _courseEngine = engine;
-      return engine;
-    });
-  }
-
-  Future<List<LoadedCourse>> _loadCourses() async {
-    List<LoadedCourse> builtin = const [];
-    final load = widget.loadCourses;
-    if (load != null) {
-      try {
-        builtin = await load();
-      } on Object {
-        builtin = const [];
-      }
-    }
-    try {
-      await _coursesStore.load();
-      final all = [...builtin, ...await _coursesStore.openAll()];
-      // O progresso guardado vale ao abrir (a lista mostra "X de Y").
-      for (final course in all) {
-        await _courseProgress.ensureLoaded(course.id);
-      }
-      return all;
-    } on Object {
-      return builtin;
-    }
-  }
-
-  /// A lista de cursos mudou (instalou, removeu): recarrega sem mexer no
-  /// resto.
-  void _refreshCourses() {
-    final courses = _loadCourses();
-    setState(() {
-      _courses = courses;
-    });
-  }
-
-  CourseScreenDeps _courseDeps() => CourseScreenDeps(
-    settings: _settings,
-    deviceManager: _midi,
-    midiInput: _courseMidi,
-    progress: _courseProgress,
-    ensureEngine: _ensureCourseEngine,
-  );
-
-  void _openCourses(List<LoadedCourse> courses) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => _LiveCoursesScreen(
-          initial: courses,
-          libraries: _libraries,
-          courses: _coursesStore,
-          progress: _courseProgress,
-          deps: _courseDeps(),
-          pickPackage: widget.pickLibraryFile,
-          onLibraryInstalled: _reloadCatalog,
-          draftController: _draft,
-        ),
-      ),
-    );
-  }
-
-  /// I12: abre o rascunho (a tela com faixa + Recarregar). Com [path] (o
-  /// `just curso`), sem pedir a pasta; sem ele, pede ao usuário.
-  Future<void> _openDraft({String? path}) async {
-    if (path != null) {
-      final controller = CourseDraftController(
-        loadFiles: () => openDraftFolder(path),
-      );
-      _draft?.dispose();
-      _draft = controller;
-      await controller.reload();
-      if (!mounted) return;
-      _openDraftScreen(controller);
-      return;
-    }
-    final picked = await pickDraftCourseFiles();
-    if (picked == null || !mounted) return;
-    // `.zip` sem envelope (Web sem a API): Recarregar pede o arquivo de
-    // novo; pasta/handle: relê sem pedir (o próprio `CourseFiles` é vivo).
-    var current = picked;
-    final controller = CourseDraftController(
-      loadFiles: () async {
-        if (current is ZipCourseFiles) {
-          final again = await pickDraftCourseFiles();
-          if (again != null) current = again;
-        }
-        return current;
-      },
-    );
-    _draft?.dispose();
-    _draft = controller;
-    await controller.reload();
-    if (!mounted) return;
-    _openDraftScreen(controller);
-  }
-
-  void _openDraftScreen(CourseDraftController controller) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) =>
-            CourseDraftScreen(controller: controller, deps: _courseDeps()),
-      ),
-    );
-  }
 
   SortState _sort = const SortState();
   String _query = '';
@@ -445,12 +234,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     unawaited(_loadProgress());
     unawaited(_settingsLoaded);
     widget.incoming?.attach(_onIncoming);
-    final initial = widget.initialDraftPath;
-    if (initial != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_openDraft(path: initial));
-      });
-    }
   }
 
   @override
@@ -459,13 +242,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _listScroll.dispose();
     _searchController.dispose();
     _midi.dispose();
-    _courseMidi.dispose();
-    unawaited(_courseEngine?.dispose());
-    unawaited(_courseMidiOutEngine?.dispose());
-    _draft?.dispose();
     if (widget.progress == null) _progress.dispose();
     if (widget.trailProgress == null) _trail.dispose();
-    if (widget.courseProgress == null) _courseProgress.dispose();
     if (widget.appSettings == null) _settings.dispose();
     super.dispose();
   }
@@ -495,19 +273,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return const PieceCatalog.none();
   }
 
-  /// Escolhe um `.zywny` (biblioteca ou curso, I04), instala e, se deu
-  /// certo, recarrega o que mudou (a biblioteca nova vira a em uso; o curso
-  /// novo entra na lista de cursos).
+  /// Escolhe um `.zywny`, confere que é biblioteca, instala e, se deu certo,
+  /// vira a em uso. Curso não se instala aqui (ver `package_install.dart`).
   Future<void> _installLibrary() async {
     final installed = await installPackageFromFile(
       context,
       _libraries,
-      _coursesStore,
       pick: widget.pickLibraryFile,
     );
     if (installed == null || !mounted) return;
-    if (installed is InstalledLibrary) _reloadCatalog();
-    _refreshCourses();
+    _reloadCatalog();
   }
 
   void _onIncoming(IncomingPackage package) {
@@ -516,16 +291,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   /// B11: instala, um a um, os `.zywny` que o sistema entregou. Se deu certo,
-  /// volta à biblioteca (fecha a partitura, os cursos ou as configurações que
-  /// estiverem por cima): é lá que o resultado aparece.
+  /// volta à biblioteca (fecha a partitura ou as configurações que estiverem
+  /// por cima): é lá que o resultado aparece.
   Future<void> _drainIncoming() async {
     _drainingIncoming = true;
     try {
-      // Os stores precisam ter lido o que já está instalado, senão um pacote
+      // O store precisa ter lido o que já está instalado, senão um pacote
       // que já existe seria gravado sem perguntar se substitui.
       await WidgetsBinding.instance.endOfFrame;
-      await Future.wait<Object?>([_catalog, _courses])
-          .then<void>((_) {}, onError: (Object _) {});
+      await _catalog.then<void>((_) {}, onError: (Object _) {});
       if (!_incomingReady) {
         _incomingReady = true;
         if (widget.incomingDelay > Duration.zero) {
@@ -537,12 +311,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
         final installed = await installIncomingPackage(
           context,
           _libraries,
-          _coursesStore,
           _incomingQueue.removeAt(0),
         );
         if (installed == null || !mounted) continue;
-        if (installed is InstalledLibrary) _reloadCatalog();
-        _refreshCourses();
+        _reloadCatalog();
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } finally {
@@ -607,13 +379,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// Primeiro uso: com a lista e os cursos na tela, mostra o passeio, uma vez.
   Future<void> _maybeStartTour() async {
     final store = widget.tourStore;
-    if (store == null || _tourChecked || widget.initialDraftPath != null) {
-      return;
-    }
+    if (store == null || _tourChecked) return;
     if (_incomingBusy) return;
     _tourChecked = true;
     try {
-      await Future.wait([_catalog, _courses]);
+      await _catalog;
     } on Object {
       return; // Sem catálogo não há o que mostrar: a tela já diz o erro.
     }
@@ -769,19 +539,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
             midiDeviceManager: _midi,
             libraryStore: _libraries,
             pickLibraryFile: widget.pickLibraryFile,
-            courseStore: _coursesStore,
+            installLibrary: (context) => installPackageFromFile(
+              context,
+              _libraries,
+              pick: widget.pickLibraryFile,
+            ).then<void>((_) {}),
             onTutorial: widget.tourStore == null
                 ? null
                 : () {
                     replayTour = true;
                     Navigator.of(context).pop();
                   },
-            onOpenDraft: draftPickerAvailable
-                ? () {
-                    Navigator.of(context).pop();
-                    unawaited(_openDraft());
-                  }
-                : null,
           ),
         ),
       ),
@@ -875,142 +643,115 @@ class _LibraryScreenState extends State<LibraryScreen> {
         _header(catalog),
         const SizedBox(height: 14),
         Expanded(
-          child: FutureBuilder<List<LoadedCourse>>(
-            future: _courses,
-            builder: (context, coursesSnapshot) {
-              final courses = coursesSnapshot.data ?? const <LoadedCourse>[];
-              if (catalog != null && !catalog.hasLibrary) {
-                return _noLibraryCard(courses);
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (courses.isNotEmpty) ...[
-                    _coursesRow(courses),
-                    const SizedBox(height: 14),
-                  ],
-                  if (catalog == null)
-                    Expanded(child: _catalogWaiting(catalogError))
-                  else ...[
-                    _searchField(catalog.numbered),
-                    const SizedBox(height: 14),
-                    if (_continuing(catalog) case final piece?) ...[
-                      _continueCard(piece, catalog.term),
+          child: catalog != null && !catalog.hasLibrary
+              ? _noLibraryCard()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (catalog == null)
+                      Expanded(child: _catalogWaiting(catalogError))
+                    else ...[
+                      _searchField(catalog.numbered),
                       const SizedBox(height: 14),
-                    ] else if (_progressLoaded) ...[
-                      // Primeiro uso: o mesmo lugar do "Continuar" diz por onde começar.
-                      _startCard(catalog.term),
-                      const SizedBox(height: 14),
+                      if (_continuing(catalog) case final piece?) ...[
+                        _continueCard(piece, catalog.term),
+                        const SizedBox(height: 14),
+                      ] else if (_progressLoaded) ...[
+                        // Primeiro uso: o mesmo lugar do "Continuar" diz por onde começar.
+                        _startCard(catalog.term),
+                        const SizedBox(height: 14),
+                      ],
+                      _sortChips(catalog.numbered),
+                      const SizedBox(height: 4),
+                      Expanded(child: _list(catalog)),
                     ],
-                    _sortChips(catalog.numbered),
-                    const SizedBox(height: 4),
-                    Expanded(child: _list(catalog)),
                   ],
-                ],
-              );
-            },
-          ),
+                ),
         ),
       ],
     );
   }
 
   /// A biblioteca em duas colunas, para o celular deitado: à esquerda o
-  /// título e os atalhos (cursos, "Continuar" ou "Comece por aqui",
-  /// ordenação), que rolam se a fonte for grande; à direita a busca, com
-  /// engrenagem e teclado no canto, e a lista na altura inteira. A lista
-  /// nunca divide a altura com o topo, então não há como zerá-la.
+  /// título e os atalhos ("Continuar" ou "Comece por aqui", ordenação), que
+  /// rolam se a fonte for grande; à direita a busca, com engrenagem e teclado
+  /// no canto, e a lista na altura inteira. A lista nunca divide a altura com
+  /// o topo, então não há como zerá-la.
   Widget _contentSideBySide(AsyncSnapshot<PieceCatalog> snapshot) {
     final catalog = snapshot.data;
     final catalogError = snapshot.hasError;
-    return FutureBuilder<List<LoadedCourse>>(
-      future: _courses,
-      builder: (context, coursesSnapshot) {
-        final courses = coursesSnapshot.data ?? const <LoadedCourse>[];
-        final noLibrary = catalog != null && !catalog.hasLibrary;
-        final bottomInset = MediaQuery.paddingOf(context).bottom;
-        return LayoutBuilder(
-          builder: (context, box) => Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                width: (box.maxWidth * 0.37).clamp(
-                  _kShortcutsMinWidth,
-                  _kShortcutsMaxWidth,
-                ),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.only(bottom: bottomInset),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Da altura da barra da direita: os dois topos alinham.
-                      SizedBox(
-                        height: 48,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: _headerTitle(catalog),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (noLibrary) ...[
-                        // Sem biblioteca, o curso inicial é o caminho: fica
-                        // aqui, e o cartão de instalar, na direita.
-                        if (courses.isNotEmpty) _initialCourseCard(courses),
-                      ] else ...[
-                        if (courses.isNotEmpty) ...[
-                          _coursesRow(courses),
-                          const SizedBox(height: 12),
-                        ],
-                        if (catalog != null) ...[
-                          if (_continuing(catalog) case final piece?) ...[
-                            _continueCard(piece, catalog.term),
-                            const SizedBox(height: 12),
-                          ] else if (_progressLoaded) ...[
-                            _startCard(catalog.term),
-                            const SizedBox(height: 12),
-                          ],
-                          _sortChips(catalog.numbered, wrapped: true),
-                        ],
-                      ],
-                    ],
+    final noLibrary = catalog != null && !catalog.hasLibrary;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return LayoutBuilder(
+      builder: (context, box) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: (box.maxWidth * 0.37).clamp(
+              _kShortcutsMinWidth,
+              _kShortcutsMaxWidth,
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Da altura da barra da direita: os dois topos alinham.
+                  SizedBox(
+                    height: 48,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _headerTitle(catalog),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  if (!noLibrary && catalog != null) ...[
+                    if (_continuing(catalog) case final piece?) ...[
+                      _continueCard(piece, catalog.term),
+                      const SizedBox(height: 12),
+                    ] else if (_progressLoaded) ...[
+                      _startCard(catalog.term),
+                      const SizedBox(height: 12),
+                    ],
+                    _sortChips(catalog.numbered, wrapped: true),
+                  ],
+                ],
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        if (catalog != null && !noLibrary)
-                          Expanded(child: _searchField(catalog.numbered))
-                        else
-                          const Spacer(),
-                        const SizedBox(width: 4),
-                        ..._headerActions(),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Expanded(
-                      child: noLibrary
-                          // No alto, na linha do cartão do curso inicial: os 6
-                          // dp são a folga a mais sob o título, à esquerda.
-                          ? SingleChildScrollView(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: _installCard(),
-                            )
-                          : catalog == null
-                          ? _catalogWaiting(catalogError)
-                          : _list(catalog),
-                    ),
+                    if (catalog != null && !noLibrary)
+                      Expanded(child: _searchField(catalog.numbered))
+                    else
+                      const Spacer(),
+                    const SizedBox(width: 4),
+                    ..._headerActions(),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Expanded(
+                  child: noLibrary
+                      // No alto, na linha da busca: os 6 dp são a folga a mais
+                      // sob o título, à esquerda.
+                      ? SingleChildScrollView(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: _installCard(),
+                        )
+                      : catalog == null
+                      ? _catalogWaiting(catalogError)
+                      : _list(catalog),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -1028,61 +769,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  /// Linha compacta "Cursos" entre o cabeçalho e a busca (D-LIC-ENTRADA):
-  /// o curso em andamento (linha "Cursos · título · X de Y").
-  Widget _coursesRow(List<LoadedCourse> courses) {
-    final first = courses.first;
-    final counts = _courseProgress[first.id].lessonCounts(first.course);
-    return KeyedSubtree(
-      key: _tourKeys.courses,
-      child: _CoursesRowCard(
-        title: courses.length == 1
-            ? first.course.title
-            : '${courses.length} cursos',
-        subtitle:
-            'Cursos · ${counts.done} de ${counts.total} '
-            '${counts.total == 1 ? 'lição' : 'lições'}',
-        onTap: () => _openCourses(courses),
-      ),
-    );
-  }
-
-  /// Sem nenhuma biblioteca (primeiro uso, ou depois de remover a última):
-  /// o cartão do curso inicial (I09, D-LIC-ENTRADA) acima do de instalar.
-  /// Nenhuma palavra sobre onde baixar (D-BIB-DIST).
-  Widget _noLibraryCard(List<LoadedCourse> courses) {
+  /// Sem nenhuma biblioteca (primeiro uso, ou depois de remover a última): o
+  /// cartão de instalar. Nenhuma palavra sobre onde baixar (D-BIB-DIST).
+  Widget _noLibraryCard() {
     return Center(
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (courses.isNotEmpty) ...[
-              _initialCourseCard(courses),
-              const SizedBox(height: 12),
-            ],
-            _installCard(),
-          ],
+          children: [_installCard()],
         ),
-      ),
-    );
-  }
-
-  Widget _initialCourseCard(List<LoadedCourse> courses) {
-    return KeyedSubtree(
-      key: _tourKeys.courses,
-      child: _InitialCourseCard(
-        onStart: () {
-          final first = courses.first;
-          final progress = _courseProgress[first.id];
-          final next =
-              [
-                for (final lesson in first.course.lessons)
-                  if (!progress.lessonDone(lesson)) lesson,
-              ].firstOrNull ??
-              first.course.lessons.first;
-          openLessonScreen(context, first, next, deps: _courseDeps());
-        },
       ),
     );
   }
@@ -1530,253 +1226,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
         // A primeira linha é o alvo do tutorial.
         return i == 0 ? KeyedSubtree(key: _tourKeys.firstRow, child: row) : row;
       },
-    );
-  }
-}
-
-/// A lista de cursos viva (I04): abre o embutido e os instalados; instalar
-/// outro atualiza a lista sem sair da tela. O estado mora aqui para a
-/// `LibraryScreen` não recarregar o resto junto.
-///
-/// I12: o rascunho aparece primeiro, com o rótulo "rascunho", e some ao
-/// fechar o app (o controlador morre com a `LibraryScreen`).
-class _LiveCoursesScreen extends StatefulWidget {
-  const _LiveCoursesScreen({
-    required this.initial,
-    required this.libraries,
-    required this.courses,
-    required this.progress,
-    required this.deps,
-    required this.pickPackage,
-    required this.onLibraryInstalled,
-    this.draftController,
-  });
-
-  /// O embutido (não muda enquanto a rota está aberta).
-  final List<LoadedCourse> initial;
-  final LibraryStore libraries;
-  final CourseStore courses;
-  final CourseProgressStore progress;
-  final CourseScreenDeps deps;
-  final Future<Uint8List?> Function() pickPackage;
-  final VoidCallback onLibraryInstalled;
-  final CourseDraftController? draftController;
-
-  @override
-  State<_LiveCoursesScreen> createState() => _LiveCoursesScreenState();
-}
-
-class _LiveCoursesScreenState extends State<_LiveCoursesScreen> {
-  late Future<List<LoadedCourse>> _courses = _load();
-
-  Future<List<LoadedCourse>> _load() async {
-    try {
-      await widget.courses.load();
-      return [...widget.initial, ...await widget.courses.openAll()];
-    } on Object {
-      return widget.initial;
-    }
-  }
-
-  Future<void> _install() async {
-    final installed = await installPackageFromFile(
-      context,
-      widget.libraries,
-      widget.courses,
-      pick: widget.pickPackage,
-    );
-    if (installed == null || !mounted) return;
-    if (installed is InstalledLibrary) widget.onLibraryInstalled();
-    setState(() => _courses = _load());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final draft = widget.draftController;
-    if (draft == null) {
-      return FutureBuilder<List<LoadedCourse>>(
-        future: _courses,
-        builder: (context, snapshot) => CoursesScreen(
-          courses: snapshot.data ?? widget.initial,
-          progress: widget.progress,
-          onSightReading: (context) => openSightReading(context, widget.deps),
-          onSightListening: (context) =>
-              openSightListening(context, widget.deps),
-          onOpen: (context, course) => openCourseScreen(
-            context,
-            course,
-            progress: widget.progress,
-            deps: widget.deps,
-          ),
-          onInstall: () => unawaited(_install()),
-        ),
-      );
-    }
-    return ListenableBuilder(
-      listenable: draft,
-      builder: (context, _) {
-        final draftLoaded = draft.loaded;
-        return FutureBuilder<List<LoadedCourse>>(
-          future: _courses,
-          builder: (context, snapshot) {
-            final rest = snapshot.data ?? widget.initial;
-            final courses = draftLoaded == null ? rest : [draftLoaded, ...rest];
-            return CoursesScreen(
-              courses: courses,
-              // O progresso do rascunho é o da sessão; os demais, o disco.
-              progress: _DraftAwareProgress(
-                draftId: draftLoaded?.id,
-                draftProgress: draft.progress,
-                fallback: widget.progress,
-              ),
-              onOpen: (context, course) {
-                if (draftLoaded != null && course.id == draftLoaded.id) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (context) => CourseDraftScreen(
-                        controller: draft,
-                        deps: widget.deps,
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                openCourseScreen(
-                  context,
-                  course,
-                  progress: widget.progress,
-                  deps: widget.deps,
-                );
-              },
-              onInstall: () => unawaited(_install()),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-/// O progresso da lista com rascunho: o id do rascunho sai da sessão, o
-/// resto do disco (I12).
-class _DraftAwareProgress extends CourseProgressStore {
-  _DraftAwareProgress({
-    required this.draftId,
-    required this.draftProgress,
-    required this.fallback,
-  });
-
-  final String? draftId;
-  final MemoryCourseProgressStore draftProgress;
-  final CourseProgressStore fallback;
-
-  @override
-  CourseProgress operator [](String courseId) {
-    if (courseId == draftId) return draftProgress[courseId];
-    return fallback[courseId];
-  }
-}
-
-/// Linha "Cursos" da biblioteca: compacta, com o curso em andamento.
-class _CoursesRowCard extends StatelessWidget {
-  const _CoursesRowCard({
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: kSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: kBorderSoft),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              const Icon(Icons.school_outlined, color: kAccentDark),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: kInkCaption),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: kInkCaption),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Cartão do curso inicial na tela sem biblioteca: "Comece pelo curso
-/// inicial" com o botão "Começar", que abre direto na primeira lição aberta.
-class _InitialCourseCard extends StatelessWidget {
-  const _InitialCourseCard({required this.onStart});
-
-  final VoidCallback onStart;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorderSoft),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Comece pelo curso inicial',
-            textAlign: TextAlign.center,
-            style: serifDisplay(fontSize: 22),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Aprenda a ler partitura do zero, no seu teclado.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: kInkCaption, height: 1.4),
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: onStart,
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Começar'),
-          ),
-        ],
-      ),
     );
   }
 }

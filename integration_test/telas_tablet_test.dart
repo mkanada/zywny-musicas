@@ -21,8 +21,8 @@ import 'package:score_bridge/score_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:zywny/main.dart';
-import 'package:zywny/trail/trail_widgets.dart';
-import 'package:zywny/ui/phone_chrome.dart';
+import 'package:zywny_comum/trail/trail_widgets.dart';
+import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_library/library_store.dart';
 
 const _kHymnTitle = 'Jubilosos Te Adoramos';

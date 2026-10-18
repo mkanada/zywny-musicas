@@ -13,6 +13,11 @@
 
 linux_bundle := "build/linux/x64/release/bundle/zywny"
 
+# O núcleo compartilhado (pacotes, partitura, som, MIDI, Verovio e os scripts
+# de build que compilam as bibliotecas nativas) mora no zywny-comum. Padrão:
+# a pasta ao lado deste repositório; `ZYWNY_COMUM=<pasta> just ...` troca.
+comum := env_var_or_default("ZYWNY_COMUM", "../zywny-comum")
+
 # Chave pública das bibliotecas (D-BIB-CIFRA), lida de keys/ — fora do git —
 # e embutida no app. Sem o arquivo, o app compila mas não instala biblioteca.
 lib_key := "--dart-define=ZYWNY_LIBRARY_KEY=$(cat keys/biblioteca.public.b64 2>/dev/null)"
@@ -81,17 +86,17 @@ setup: native assets
 
 # Compila a libverovio.so do verovio_flutter_bridge (não versionada).
 native:
-    tool/build_verovio_linux.sh
+    {{comum}}/tool/build_verovio_linux.sh
 
 # Gera assets/verovio_data.zip a partir de verovio/data (não versionado).
 assets:
-    tool/build_verovio_assets.sh
+    {{comum}}/tool/build_verovio_assets.sh
 
 # Guarde cópia da privada fora do repositório: sem ela, nenhum app instalado
 # aceita pacote novo.
 # Gera o par de chaves das bibliotecas em keys/ (fora do git; não sobrescreve).
 chaves:
-    tool/library_crypto.py gen
+    python3 {{comum}}/tool/library_crypto.py gen {{justfile_directory()}}/keys
 
 # Uso privado, fora do git; rode de novo quando o extrator de lá mudar.
 # Gera dist/hinos.zywny do Hymn_Grabber, cifrado e assinado com keys/ (`just chaves`).
@@ -102,12 +107,6 @@ pacote-hinos *ARGS:
 # Gera dist/classicos.zywny (as 43 peças do B09), cifrado e assinado com keys/.
 pacote-classicos *ARGS:
     tool/build_classics.py {{ARGS}}
-
-# Uso privado: empacota uma pasta de curso num `.zywny` assinado (I04).
-# Valida antes; sem pacote de curso inválido.
-# Gera dist/<id>.zywny, ou o caminho de `-o`.
-pacote-curso *ARGS:
-    python3 tool/build_course.py {{ARGS}}
 
 # APK de release (arm64 só, para instalar direto no celular). Rode antes
 # `just native-android native-audio-android assets`, ao menos uma vez.
@@ -124,20 +123,20 @@ build-apk:
 instalar-apk:
     ~/Android/Sdk/platform-tools/adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 
-# Compila a libzywny_audio.so nativa (native/zywny_audio/, K02; não
-# versionada).
+# Compila a libzywny_audio.so nativa (zywny-comum/native/zywny_audio/, K02;
+# não versionada).
 native-audio:
-    tool/build_audio_linux.sh
+    {{comum}}/tool/build_audio_linux.sh
 
 # Compila a libverovio.so para Android (arm64-v8a + x86_64, X01) e instala
 # em android/app/src/main/jniLibs/<abi>/ (não versionado).
 native-android:
-    tool/build_verovio_android.sh
+    {{comum}}/tool/build_verovio_android.sh
 
 # Compila a libzywny_audio.so para Android (arm64-v8a + x86_64, K05) e
 # instala em android/app/src/main/jniLibs/<abi>/ (não versionado).
 native-audio-android:
-    tool/build_audio_android.sh
+    {{comum}}/tool/build_audio_android.sh
 
 # Roda o app de verdade (não o mockup) no Android — emulador ou aparelho
 # conectado. Rode `just native-android` antes, ao menos uma vez.
@@ -166,9 +165,9 @@ telas-tablet *ARGS:
 # Gera web/audio/ (SpessaSynth empacotado com esbuild, W04; não versionado).
 # Precisa de node/npm e rede na primeira vez.
 web-audio:
-    tool/build_audio_web.sh
+    {{comum}}/tool/build_audio_web.sh
 
-# Compila a versão Web (release). Antes: `tool/build_verovio_web.sh` e
+# Compila a versão Web (release). Antes: `{{comum}}/tool/build_verovio_web.sh` e
 # `just web-audio`, ao menos uma vez.
 build-web:
     flutter build web --release {{lib_key}}
@@ -185,35 +184,30 @@ publicar-web:
 # Refaz .so e assets depois que o verovio_flutter_bridge mudar.
 rebuild-deps: native assets
 
-# Teclado MIDI falso no ALSA sequencer (sem hardware; M01). Sem argumentos
-# toca uma escala em laço; `just fake-midi 60 64 67 --once`, `just fake-midi
-# --list`; `just fake-midi --relay` repassa um VMPK ligado por aconnect.
-# Monitorar: `aseqdump -p <cliente>:0` (o script imprime a porta).
+# Teclado MIDI falso no ALSA sequencer (sem hardware; M01), do zywny-comum.
+# Sem argumentos toca uma escala em laço; `just fake-midi 60 64 67 --once`,
+# `just fake-midi --list`; `just fake-midi --relay` repassa um VMPK ligado por
+# aconnect. Monitorar: `aseqdump -p <cliente>:0` (o script imprime a porta).
 fake-midi *ARGS:
-    tool/fake_midi_keyboard.py {{ARGS}}
+    {{comum}}/tool/fake_midi_keyboard.py {{ARGS}}
 
-# Testes Dart (headless — não passam pelo Impeller): o app e os pacotes de
-# packages/ (`dart test` nos de Dart puro, `flutter test` nos outros).
+# Testes Dart (headless — não passam pelo Impeller): o app. Os do núcleo
+# compartilhado rodam com `just test-comum`.
 test:
     flutter test
-    for p in packages/*/; do [ -d "$p/test" ] || continue; if grep -q "sdk: flutter" "$p/pubspec.yaml"; then (cd "$p" && flutter test) || exit 1; else (cd "$p" && dart test) || exit 1; fi; done
 
-# Análise estática.
+# Testes do zywny-comum: o pacote e os de packages/ (`dart test` nos de Dart
+# puro, `flutter test` nos outros).
+test-comum:
+    cd {{comum}} && flutter test
+    cd {{comum}} && for p in packages/*/; do [ -d "$p/test" ] || continue; if grep -q "sdk: flutter" "$p/pubspec.yaml"; then (cd "$p" && flutter test) || exit 1; else (cd "$p" && dart test) || exit 1; fi; done
+
+# Análise estática: o app, e depois o zywny-comum.
 analyze:
     flutter analyze
 
-# Valida uma pasta de curso (I01): `just curso-validar validate <pasta>`.
-# Sai com 1 se houver erro; imprime `arquivo:linha: erro|aviso: mensagem`.
-# Com `--render` (I12), confere também que toda partitura renderiza:
-# `just curso-validar validate <pasta> --render` (ou o atalho
-# `just curso-validar --render <pasta>`).
-curso-validar *ARGS:
-    dart run tool/zywny_course.dart {{ARGS}}
-
-# Abre uma pasta de curso como rascunho no Linux (I12): edite a lição no
-# editor, Recarregue no app (ou Ctrl+R) e veja a mudança no lugar.
-curso *ARGS:
-    flutter run -d linux --no-enable-impeller {{lib_key}} --dart-entrypoint-args="--curso {{ARGS}}"
+analyze-comum:
+    cd {{comum}} && flutter analyze
 
 # Atualiza o grafo de contexto do graft/ (ver AGENTS.md).
 graft:

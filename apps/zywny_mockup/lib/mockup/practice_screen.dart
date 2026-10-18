@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'options_panel.dart';
 import 'practice_state.dart';

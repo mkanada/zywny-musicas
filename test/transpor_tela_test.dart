@@ -17,12 +17,12 @@ import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_music/tone_choices.dart';
 import 'package:zywny_music/transposition.dart';
-import 'package:zywny/settings/app_settings.dart';
-import 'package:zywny/settings/piece_settings.dart';
-import 'package:zywny/trail/trail_progress.dart';
-import 'package:zywny/trail/trail_stage.dart';
-import 'package:zywny/ui/theme.dart';
-import 'package:zywny/ui/transpose_widgets.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_stage.dart';
+import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_comum/ui/transpose_widgets.dart';
 
 import 'support/score_page_fakes.dart';
 

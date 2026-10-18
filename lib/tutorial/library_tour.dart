@@ -1,13 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 
-import 'tour.dart';
+import 'package:zywny/tutorial/tour.dart';
 
 /// Os botões da biblioteca que o passeio aponta; a tela os põe nos widgets.
 class LibraryTourKeys {
-  /// A linha "Cursos" (com biblioteca) ou o cartão do curso inicial (sem).
-  final courses = GlobalKey(debugLabel: 'tour-courses');
-
   /// O cartão "Instale uma biblioteca de músicas" (só sem biblioteca).
   final install = GlobalKey(debugLabel: 'tour-install');
   final search = GlobalKey(debugLabel: 'tour-search');
@@ -42,14 +39,6 @@ List<TourStep> libraryTourSteps(
           'Aqui você treina música no seu teclado MIDI: o Zywny mostra a '
           'partitura, ouve o que você toca e diz o que acertou. Vou mostrar '
           'onde fica cada coisa. Dá para pular quando quiser.',
-    ),
-    TourStep(
-      targets: [keys.courses],
-      title: 'Cursos',
-      body:
-          'Nunca leu partitura? O curso inicial ensina do zero, com '
-          'exercícios para tocar no teclado ou responder na tela. É o melhor '
-          'lugar para começar.',
     ),
     TourStep(
       targets: [keys.install],
@@ -101,8 +90,8 @@ List<TourStep> libraryTourSteps(
       targets: [keys.settings],
       title: 'Configurações',
       body:
-          'Som, cores, nome das notas (Dó-Ré-Mi ou C-D-E), bibliotecas e '
-          'cursos. No fim da lista estão o “Sobre o Zywny” e este tutorial, '
+          'Som, cores, nome das notas (Dó-Ré-Mi ou C-D-E) e bibliotecas. No fim '
+          'da lista estão o “Sobre o Zywny” e este tutorial, '
           'para rever quando quiser.',
     ),
     TourStep(
@@ -110,8 +99,8 @@ List<TourStep> libraryTourSteps(
       body: hasLibrary
           ? 'Abra ${term.um} ${term.singular}: na primeira vez, mostro '
                 'também a tela da partitura.'
-          : 'Comece pelo curso inicial. Quando você instalar uma biblioteca, '
-                'as músicas aparecem aqui.',
+          : 'Instale uma biblioteca para começar. Quando ela chegar, as '
+                'músicas aparecem aqui.',
     ),
   ];
 }

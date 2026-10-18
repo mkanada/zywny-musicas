@@ -107,7 +107,7 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
 endforeach(bundled_library)
 
 # Verovio native library, built in verovio_flutter_bridge
-# (tool/build_verovio_linux.sh). RPATH is already $ORIGIN/lib
+# (zywny-comum/tool/build_verovio_linux.sh). RPATH is already $ORIGIN/lib
 # above, so DynamicLibrary.open('libverovio.so') resolves it at runtime.
 # The bridge is this repo's sibling (../verovio_flutter_bridge, like
 # pubspec.yaml); the VEROVIO_BRIDGE environment variable overrides it.
@@ -123,24 +123,26 @@ if(EXISTS "${VEROVIO_LIB}")
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 else()
-  message(WARNING "libverovio.so not found at ${VEROVIO_LIB}; run tool/build_verovio_linux.sh")
+  message(WARNING "libverovio.so not found at ${VEROVIO_LIB}; run zywny-comum/tool/build_verovio_linux.sh")
 endif()
 
-# zywny_audio native library, built from native/zywny_audio/ in this repo
-# (tool/build_audio_linux.sh, K02). Same RPATH ($ORIGIN/lib) as above.
-set(ZYWNY_AUDIO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../native/zywny_audio/target/release/libzywny_audio.so")
+# zywny_audio native library, built from native/zywny_audio/ in zywny-comum,
+# the sibling repository (tool/build_audio_linux.sh there, K02). Same RPATH
+# ($ORIGIN/lib) as above.
+set(ZYWNY_AUDIO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../../zywny-comum/native/zywny_audio/target/release/libzywny_audio.so")
 if(EXISTS "${ZYWNY_AUDIO_LIB}")
   install(FILES "${ZYWNY_AUDIO_LIB}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 else()
-  message(WARNING "libzywny_audio.so not found at ${ZYWNY_AUDIO_LIB}; run tool/build_audio_linux.sh")
+  message(WARNING "libzywny_audio.so not found at ${ZYWNY_AUDIO_LIB}; run zywny-comum/tool/build_audio_linux.sh")
 endif()
 
 # Verovio engraving resources (Bravura, Liberation text fonts, ...) are not
 # installed here: they ship as the single zip asset assets/verovio_data.zip
-# (tool/build_verovio_assets.sh), unpacked at runtime by
-# `verovioResourcePath()` in lib/verovio_resources.dart. A zip sidesteps the
+# (zywny-comum/tool/build_verovio_assets.sh, run in this app), unpacked at
+# runtime by `verovioResourcePath()` (zywny-comum, render/verovio_resources.dart).
+# A zip sidesteps the
 # non-recursive Flutter asset bundler.
 
 # Copy the native assets provided by the build.dart from all packages.

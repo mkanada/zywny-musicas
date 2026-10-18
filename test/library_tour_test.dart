@@ -10,17 +10,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny/app/general_settings_panel.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny/app/library_screen.dart';
-import 'package:zywny/course/loaded_course.dart';
-import 'package:zywny/midi/midi_device_picker.dart' show MidiStatusPill;
+import 'package:zywny_comum/midi/midi_device_picker.dart' show MidiStatusPill;
 import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
-import 'package:zywny/ui/theme.dart';
-import 'package:zywny_course_format/course_reader.dart';
+import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_library/piece.dart';
-
-import 'support/course_helpers.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -55,19 +51,6 @@ Finder _panelScrollable() => find
     .first;
 
 void main() {
-  late LoadedCourse course;
-
-  setUpAll(() async {
-    final files = oneLessonCourse('Leia isto.');
-    final result = await readCourse(files);
-    expect(result.course, isNotNull, reason: result.issues.join('\n'));
-    course = LoadedCourse(
-      course: result.course!,
-      files: files,
-      origin: CourseOrigin.installed,
-    );
-  });
-
   setUp(() {
     MidiCommandPlatform.instance = _NoDevicesMidiCommandPlatform();
     SharedPreferencesAsyncPlatform.instance =
@@ -85,7 +68,6 @@ void main() {
     TourStore? store,
     Size size = const Size(390, 844),
     bool library = true,
-    bool courses = false,
     Duration delay = Duration.zero,
   }) async {
     useSize(tester, size);
@@ -96,7 +78,6 @@ void main() {
           loadCatalog: () async =>
               library ? PieceCatalog(_pieces) : PieceCatalog.none(),
           loadScore: (piece) async => Uint8List(0),
-          loadCourses: () async => courses ? [course] : const [],
           tourStore: store,
           tourDelay: delay,
           scoreBuilder: (context, o) => const Scaffold(body: Text('partitura')),
@@ -152,12 +133,6 @@ void main() {
     ]);
   });
 
-  testWidgets('com o curso inicial, ele é o primeiro destaque', (tester) async {
-    await pumpLibrary(tester, store: TourStore(), courses: true);
-    final titles = await walk(tester);
-    expect(titles.take(3), ['Bem-vindo ao Zywny', 'Cursos', 'Busca']);
-  });
-
   testWidgets('sem biblioteca: o destaque é instalar uma, e não há lista', (
     tester,
   ) async {
@@ -170,18 +145,6 @@ void main() {
       'Configurações',
       'Pronto para começar',
     ]);
-  });
-
-  testWidgets('sem biblioteca e com o curso inicial, "Cursos" vem antes de '
-      '"Músicas"', (tester) async {
-    await pumpLibrary(
-      tester,
-      store: TourStore(),
-      library: false,
-      courses: true,
-    );
-    final titles = await walk(tester);
-    expect(titles.take(3), ['Bem-vindo ao Zywny', 'Cursos', 'Músicas']);
   });
 
   testWidgets('o texto concorda com o vocabulário da biblioteca (hino)', (
@@ -284,16 +247,10 @@ void main() {
 
   testWidgets('celular deitado (duas colunas): todos os passos têm alvo e '
       'o cartão cabe', (tester) async {
-    await pumpLibrary(
-      tester,
-      store: TourStore(),
-      size: const Size(844, 390),
-      courses: true,
-    );
+    await pumpLibrary(tester, store: TourStore(), size: const Size(844, 390));
     final titles = await walk(tester);
     expect(titles, [
       'Bem-vindo ao Zywny',
-      'Cursos',
       'Busca',
       'Por onde começar',
       'Ordem',
@@ -305,17 +262,12 @@ void main() {
   });
 
   testWidgets('celular pequeno em pé (360 dp) não estoura', (tester) async {
-    await pumpLibrary(
-      tester,
-      store: TourStore(),
-      size: const Size(360, 640),
-      courses: true,
-    );
-    expect((await walk(tester)).length, 9);
+    await pumpLibrary(tester, store: TourStore(), size: const Size(360, 640));
+    expect((await walk(tester)).length, 8);
   });
 
   testWidgets('o recorte cerca o botão certo em cada passo', (tester) async {
-    await pumpLibrary(tester, store: TourStore(), courses: true);
+    await pumpLibrary(tester, store: TourStore());
 
     Rect? hole() =>
         (tester.widget<CustomPaint>(find.byKey(kTourScrimKey)).painter!

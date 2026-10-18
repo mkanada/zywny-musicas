@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 
-import '../ui/phone_chrome.dart' show PhoneRailKeys;
-import 'tour.dart';
+import 'package:zywny_comum/ui/phone_chrome.dart' show PhoneRailKeys;
+import 'package:zywny/tutorial/tour.dart';
 
 /// Os botões da tela da partitura (no celular) que o passeio aponta; a tela
 /// os põe nos widgets.

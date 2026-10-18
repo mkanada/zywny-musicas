@@ -10,13 +10,13 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:score_bridge/score_bridge.dart' show ScorePageView;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny/app/general_settings_panel.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny/main.dart';
-import 'package:zywny/trail/trail_widgets.dart' show TrailTitleChip;
+import 'package:zywny_comum/trail/trail_widgets.dart' show TrailTitleChip;
 import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
-import 'package:zywny/ui/phone_chrome.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/phone_chrome.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/score_page_fakes.dart';
 

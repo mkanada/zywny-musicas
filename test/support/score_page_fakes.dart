@@ -10,10 +10,10 @@ import 'package:score_bridge/score_bridge.dart' show VsbDocument;
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
-import 'package:zywny/render/score_renderer.dart';
-import 'package:zywny/settings/app_settings.dart';
-import 'package:zywny/settings/piece_settings.dart';
-import 'package:zywny/trail/trail_progress.dart';
+import 'package:zywny_comum/render/score_renderer.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
 
 /// Guarda as opções de cada gravação pedida e devolve sempre a mesma
 /// partitura pronta (`test/fixtures/erik-satie.vsb`), sem o Verovio: o que

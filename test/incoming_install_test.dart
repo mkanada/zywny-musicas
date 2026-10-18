@@ -12,10 +12,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:zywny/app/library_screen.dart';
-import 'package:zywny/incoming/incoming_packages.dart';
+import 'package:zywny_comum/incoming/incoming_packages.dart';
 import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny_library/library_store.dart';
 

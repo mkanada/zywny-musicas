@@ -17,12 +17,12 @@ import 'package:zywny_audio/performance_track.dart';
 
 import 'package:zywny_music/transposition.dart';
 
-import '../render/layout_options.dart';
-import '../ui/device_kind.dart';
-import '../render/score_renderer.dart';
-import '../settings/app_settings.dart';
-import '../settings/effective_transposition.dart';
-import '../settings/piece_settings.dart';
+import 'package:zywny_comum/render/layout_options.dart';
+import 'package:zywny_comum/ui/device_kind.dart';
+import 'package:zywny_comum/render/score_renderer.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/effective_transposition.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
 
 /// Uma gravura nova chegou: [document] e a [track] tocável dela. A sessão
 /// já trocou o seu estado (documento, transposição, página) quando chama.

@@ -17,8 +17,8 @@ import 'package:zywny_audio/score_audio_scheduler.dart';
 import 'package:zywny_audio/sound_engine.dart';
 import 'package:zywny_audio/performance_track.dart';
 
-import '../settings/app_settings.dart';
-import 'sound_output_controller.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny/app/sound_output_controller.dart';
 
 void _setWakelock(bool on) =>
     unawaited(on ? WakelockPlus.enable() : WakelockPlus.disable());

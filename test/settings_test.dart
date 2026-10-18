@@ -18,14 +18,14 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny_library/piece.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny/main.dart';
-import 'package:zywny/practice/hand.dart';
-import 'package:zywny/practice/practice_controller.dart';
-import 'package:zywny/settings/app_settings.dart';
-import 'package:zywny/app/general_settings_panel.dart';
-import 'package:zywny/settings/piece_settings.dart';
-import 'package:zywny/trail/trail_stage.dart';
-import 'package:zywny/ui/phone_chrome.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/practice/hand.dart';
+import 'package:zywny_comum/practice/practice_controller.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/trail/trail_stage.dart';
+import 'package:zywny_comum/ui/phone_chrome.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/score_page_fakes.dart';
 

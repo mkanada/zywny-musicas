@@ -18,9 +18,9 @@ import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/library_sort.dart';
 import 'package:zywny/main.dart';
-import 'package:zywny/trail/stage_result.dart';
-import 'package:zywny/trail/trail_progress.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/trail/stage_result.dart';
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {

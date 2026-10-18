@@ -11,7 +11,7 @@ import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/library_store.dart';
 import 'package:zywny_library/piece.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/library_fixtures.dart';
 

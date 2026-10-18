@@ -31,8 +31,6 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-# O `flutter test` dos pacotes do workspace (R13–R17) também gera build/.
-/packages/*/build/
 /coverage/
 
 # Symbolication related
@@ -71,7 +69,6 @@ app.*.map.json
 # Web sound engine (W04): esbuild output and npm deps, regenerable
 # (run tool/build_audio_web.sh).
 /web/audio/
-/web_src/node_modules/
 /dist/
 
 # Chaves das bibliotecas (D-BIB-CIFRA): nunca vao para o remoto.

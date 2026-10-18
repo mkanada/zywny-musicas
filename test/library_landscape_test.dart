@@ -11,13 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny_course_format/course_files.dart';
-import 'package:zywny_course_format/course_reader.dart';
-import 'package:zywny/course/loaded_course.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -60,24 +57,6 @@ final _horizontalChips = find.byWidgetPredicate(
 );
 
 void main() {
-  late LoadedCourse course;
-
-  setUpAll(() async {
-    final files = MemoryCourseFiles({
-      'course.md':
-          '---\nformat: 1\nid: t\ntitle: Curso Teste\nauthor: zywny\n'
-          'version: "1"\nlessons: [a]\n---\n\nApresentação.\n',
-      'lessons/01-a.md': '---\nid: a\ntitle: Primeira\n---\n\nLeia isto.\n',
-    });
-    final result = await readCourse(files);
-    expect(result.course, isNotNull, reason: result.issues.join('\n'));
-    course = LoadedCourse(
-      course: result.course!,
-      files: files,
-      origin: CourseOrigin.installed,
-    );
-  });
-
   setUp(() {
     MidiCommandPlatform.instance = _NoDevicesMidiCommandPlatform();
     SharedPreferencesAsyncPlatform.instance =
@@ -89,7 +68,6 @@ void main() {
     Size size = _phoneLandscape,
     PieceCatalog? catalog,
     bool opened = true,
-    bool withCourse = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -102,7 +80,6 @@ void main() {
         home: LibraryScreen(
           loadCatalog: () async => catalog ?? PieceCatalog(_pieces),
           loadScore: (piece) async => Uint8List(0),
-          loadCourses: () async => withCourse ? [course] : const [],
           progress: progress,
           scoreBuilder: (context, o) => const Scaffold(body: Text('partitura')),
         ),
@@ -127,7 +104,7 @@ void main() {
       }
 
       // Os atalhos ficam à esquerda da lista, não em cima dela.
-      for (final shortcut in ['CONTINUAR', 'Curso Teste', 'ORDENAR POR']) {
+      for (final shortcut in ['CONTINUAR', 'ORDENAR POR']) {
         expect(
           tester.getTopRight(find.text(shortcut)).dx,
           lessThan(list.left),
@@ -216,26 +193,18 @@ void main() {
       },
     );
 
-    testWidgets('sem biblioteca: o curso inicial na esquerda, instalar na '
-        'direita, sem busca', (tester) async {
+    testWidgets('sem biblioteca: o cartão de instalar, sem busca', (
+      tester,
+    ) async {
       await pumpLibrary(tester, catalog: PieceCatalog.none());
       expect(tester.takeException(), isNull);
       expect(find.byType(TextField), findsNothing);
-      final initial = tester.getCenter(find.text('Comece pelo curso inicial'));
       final install = tester.getCenter(
         find.text('Instale uma biblioteca de músicas'),
       );
-      expect(initial.dx, lessThan(install.dx));
-      // Os dois cartões começam na mesma linha.
-      expect(
-        tester.getTopLeft(find.text('Instale uma biblioteca de músicas')).dy,
-        closeTo(
-          tester.getTopLeft(find.text('Comece pelo curso inicial')).dy,
-          1,
-        ),
-      );
-      // Os dois cartões cabem sem rolar.
-      expect(find.text('Começar'), findsOneWidget);
+      // Na coluna da direita, não na da esquerda (que fica só com o título).
+      expect(install.dx, greaterThan(_phoneLandscape.width / 2));
+      // O cartão cabe sem rolar.
       expect(
         tester.getRect(find.text('Abrir arquivo…')).bottom,
         lessThan(_phoneLandscape.height),
@@ -261,7 +230,6 @@ void main() {
           home: LibraryScreen(
             loadCatalog: () async => PieceCatalog(_pieces),
             loadScore: (piece) async => Uint8List(0),
-            loadCourses: () async => [course],
             progress: progress,
             scoreBuilder: (context, o) =>
                 const Scaffold(body: Text('partitura')),

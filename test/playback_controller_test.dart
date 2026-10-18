@@ -16,7 +16,7 @@ import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_audio/metronome.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_audio/performance_track.dart';
-import 'package:zywny/settings/app_settings.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
 
 import 'support/practice_fakes.dart';
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'mockup/library_screen.dart';
 import 'mockup/practice_screen.dart';

@@ -3,14 +3,17 @@
 Splash"): Z itálico Cormorant Garamond creme sobre vinho, com barra dourada.
 
 Escreve: mipmaps legados, primeiro plano do ícone adaptativo (Android) e os
-ícones da web. Depende de Pillow e de assets/fonts/. Uso: tool/build_app_icon.py
+ícones da web. Depende de Pillow e das fontes do zywny-comum (assets/fonts/).
+Uso: tool/build_app_icon.py
 """
 import os
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BG, INK, ACCENT = (0x5A, 0x1E, 0x2B), (0xF4, 0xEE, 0xE1), (0xC8, 0xA4, 0x5A)
-FONT = os.path.join(ROOT, "assets/fonts/CormorantGaramond-SemiBoldItalic.ttf")
+# As fontes são do zywny-comum (ZYWNY_COMUM, padrão ../zywny-comum).
+COMUM = os.environ.get("ZYWNY_COMUM", os.path.join(os.path.dirname(ROOT), "zywny-comum"))
+FONT = os.path.join(COMUM, "assets/fonts/CormorantGaramond-SemiBoldItalic.ttf")
 S = 4  # supersampling
 
 

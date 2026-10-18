@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'render/score_size_log.dart';
+import 'package:zywny_comum/render/score_size_log.dart';
 
 import 'dart:convert';
 import 'dart:math' as math;
@@ -13,35 +13,34 @@ import 'package:score_bridge/score_bridge.dart';
 
 import 'package:zywny_audio/sound_engine.dart';
 
-import 'about/licenses.dart';
-import 'audio/sound_engine_debug_panel.dart';
-import 'course/built_in_course.dart';
-import 'incoming/incoming_packages.dart';
-import 'app/layout_panel.dart';
+import 'package:zywny_comum/about/licenses.dart';
+import 'package:zywny_comum/audio/sound_engine_debug_panel.dart';
+import 'package:zywny_comum/incoming/incoming_packages.dart';
+import 'package:zywny_comum/app/layout_panel.dart';
 
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 
-import 'app/library_screen.dart';
-import 'app/playback_controller.dart';
-import 'app/score_render_session.dart';
-import 'app/sound_output_controller.dart';
-import 'app/trail_runner.dart';
+import 'package:zywny/app/library_screen.dart';
+import 'package:zywny/app/playback_controller.dart';
+import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/sound_output_controller.dart';
+import 'package:zywny/app/trail_runner.dart';
 
 import 'package:zywny_library/library_term_scope.dart';
 
 import 'package:zywny_midi/midi_device_manager.dart';
 
-import 'midi/midi_device_picker.dart';
+import 'package:zywny_comum/midi/midi_device_picker.dart';
 
 import 'package:zywny_midi/midi_input_service.dart';
 import 'package:zywny_midi/midi_monitor.dart';
 
-import 'midi/midi_monitor_panel.dart';
+import 'package:zywny_comum/midi/midi_monitor_panel.dart';
 
 import 'package:zywny_midi/midi_out_sound_engine.dart';
 
-import 'practice/transpose_check.dart';
+import 'package:zywny_comum/practice/transpose_check.dart';
 
 import 'package:zywny_music/pitch_frame.dart';
 
@@ -49,39 +48,39 @@ import 'package:zywny_audio/performance_track.dart';
 
 import 'package:zywny_music/tone_choices.dart';
 
-import 'practice/count_in_overlay.dart';
-import 'practice/hand.dart';
-import 'practice/practice_colors.dart';
-import 'practice/practice_controller.dart';
-import 'practice/shift_banner.dart';
-import 'practice/shift_detector.dart';
-import 'practice/practice_report.dart';
-import 'practice/practice_tools.dart';
-import 'practice/study_mode.dart';
-import 'settings/app_settings.dart';
-import 'settings/effective_transposition.dart';
-import 'app/general_settings_panel.dart';
-import 'settings/piece_settings.dart';
-import 'app/splash_screen.dart';
-import 'trail/stage_result.dart' show kTrailPassAccuracy;
-import 'trail/trail_progress.dart';
-import 'trail/trail_stage.dart' show kTrailMinMeasures;
-import 'trail/trail_widgets.dart';
-import 'tutorial/score_tour.dart';
-import 'tutorial/tour.dart';
-import 'tutorial/tour_store.dart';
-import 'ui/device_kind.dart';
-import 'ui/orientation.dart';
-import 'ui/page_pager.dart';
-import 'ui/phone_chrome.dart';
-import 'ui/practice_legend.dart';
-import 'ui/side_panel.dart';
-import 'ui/theme.dart';
-import 'ui/transpose_widgets.dart';
+import 'package:zywny_comum/practice/count_in_overlay.dart';
+import 'package:zywny_comum/practice/hand.dart';
+import 'package:zywny_comum/practice/practice_colors.dart';
+import 'package:zywny_comum/practice/practice_controller.dart';
+import 'package:zywny_comum/practice/shift_banner.dart';
+import 'package:zywny_comum/practice/shift_detector.dart';
+import 'package:zywny_comum/practice/practice_report.dart';
+import 'package:zywny_comum/practice/practice_tools.dart';
+import 'package:zywny_comum/practice/study_mode.dart';
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/effective_transposition.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart';
+import 'package:zywny_comum/settings/piece_settings.dart';
+import 'package:zywny_comum/app/splash_screen.dart';
+import 'package:zywny_comum/trail/stage_result.dart' show kTrailPassAccuracy;
+import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_stage.dart' show kTrailMinMeasures;
+import 'package:zywny_comum/trail/trail_widgets.dart';
+import 'package:zywny/tutorial/score_tour.dart';
+import 'package:zywny/tutorial/tour.dart';
+import 'package:zywny/tutorial/tour_store.dart';
+import 'package:zywny_comum/ui/device_kind.dart';
+import 'package:zywny_comum/ui/orientation.dart';
+import 'package:zywny_comum/ui/page_pager.dart';
+import 'package:zywny_comum/ui/phone_chrome.dart';
+import 'package:zywny_comum/ui/practice_legend.dart';
+import 'package:zywny_comum/ui/side_panel.dart';
+import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_comum/ui/transpose_widgets.dart';
 
 import 'package:zywny_diag/diag_log.dart';
 
-import 'render/score_renderer.dart';
+import 'package:zywny_comum/render/score_renderer.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,19 +98,10 @@ Future<void> main(List<String> args) async {
     MyApp(
       debugMode: args.contains('--debug'),
       splash: true,
-      initialDraftPath: _cursoArg(args),
       tourStore: TourStore(),
       incoming: incoming,
     ),
   );
-}
-
-/// `just curso <pasta>` (I12): abre o app direto no rascunho da pasta.
-String? _cursoArg(List<String> args) {
-  final i = args.indexOf('--curso');
-  if (i < 0 || i + 1 >= args.length) return null;
-  final path = args[i + 1].trim();
-  return path.isEmpty ? null : path;
 }
 
 class MyApp extends StatelessWidget {
@@ -120,7 +110,6 @@ class MyApp extends StatelessWidget {
     this.debugMode = false,
     this.splash = false,
     this.loadCatalog,
-    this.initialDraftPath,
     this.tourStore,
     this.incoming,
   });
@@ -133,9 +122,6 @@ class MyApp extends StatelessWidget {
   /// De onde vêm as músicas da biblioteca; sem isto, a biblioteca instalada
   /// e em uso. Os testes trocam por uma lista própria.
   final Future<PieceCatalog> Function()? loadCatalog;
-
-  /// I12: abre direto no rascunho da pasta (`just curso <pasta>`).
-  final String? initialDraftPath;
 
   /// O registro do tutorial de primeiro uso; os testes ficam sem ele (e, com
   /// isso, sem o passeio).
@@ -155,8 +141,6 @@ class MyApp extends StatelessWidget {
         enabled: splash,
         child: LibraryScreen(
           loadCatalog: loadCatalog,
-          loadCourses: loadBuiltInCourses,
-          initialDraftPath: initialDraftPath,
           tourStore: tourStore,
           // A abertura (1,8 s mais o esmaecer) cobre a biblioteca: o passeio
           // espera ela sair.

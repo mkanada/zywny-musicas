@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 /// Uma partitura da biblioteca (mockup — sem leitura de arquivo real).
 class Piece {

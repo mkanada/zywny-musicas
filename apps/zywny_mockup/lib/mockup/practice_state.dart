@@ -1,6 +1,7 @@
-import 'package:zywny/practice/hand.dart';
+import 'package:zywny_comum/practice/hand.dart';
 
-export 'package:zywny/practice/hand.dart' show Hand, HandLabel, HandStaves;
+export 'package:zywny_comum/practice/hand.dart'
+    show Hand, HandLabel, HandStaves;
 
 /// Modo de estudo — mesmo vocabulário do painel de opções do artboard
 /// (`Ouvir` / `Espera` / `Tempo real`) e do plano (`docs/plano/README.md`).

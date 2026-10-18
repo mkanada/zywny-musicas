@@ -17,7 +17,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../ui/theme.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 /// Um passo do passeio.
 @immutable

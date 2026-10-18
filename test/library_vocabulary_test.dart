@@ -14,8 +14,8 @@ import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/library_store.dart';
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/library_sort.dart';
-import 'package:zywny/app/layout_panel.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/app/layout_panel.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/library_fixtures.dart';
 

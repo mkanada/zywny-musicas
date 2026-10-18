@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:zywny/about/about_screen.dart';
-import 'package:zywny/about/licenses.dart';
-import 'package:zywny/ui/theme.dart';
+import 'package:zywny_comum/about/about_screen.dart';
+import 'package:zywny_comum/about/licenses.dart';
+import 'package:zywny_comum/ui/theme.dart';
 
 void main() {
   void useSize(WidgetTester tester, Size size) {

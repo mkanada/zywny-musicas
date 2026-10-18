@@ -17,8 +17,9 @@ import 'package:zywny_midi/midi_input_service.dart';
 import 'package:zywny_midi/midi_monitor.dart';
 import 'package:zywny_midi/midi_out_sound_engine.dart';
 
-import '../settings/app_settings.dart';
-import 'general_settings_panel.dart' show pickSoundFontBytes;
+import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/app/general_settings_panel.dart'
+    show pickSoundFontBytes;
 
 /// O que o controller pede a quem toca a partitura (a tela, até o R10): ele
 /// decide o motor; quem toca prende ou solta o agendador.

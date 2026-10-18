@@ -18,9 +18,9 @@ import 'support/hymn_package.dart';
 
 import 'package:score_bridge/score_bridge.dart';
 import 'package:zywny_audio/performance_track.dart';
-import 'package:zywny/trail/trail_path.dart';
-import 'package:zywny/trail/trail_plan.dart';
-import 'package:zywny/render/verovio_render.dart';
+import 'package:zywny_comum/trail/trail_path.dart';
+import 'package:zywny_comum/trail/trail_plan.dart';
+import 'package:zywny_comum/render/verovio_render.dart';
 
 import 'support/render_helper.dart';
 
