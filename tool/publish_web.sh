@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Publica a versão Web no GitHub Pages (https://mkanada.github.io/zywny/).
+# Publica a versão Web no GitHub Pages (https://mkanada.github.io/zywny-musicas/).
 #
 # Compila numa pasta limpa (build/web-pages, para não levar sobras do
-# build/web) com `--base-href /zywny/`, ajusta a saída e troca o branch
+# build/web) com `--base-href /zywny-musicas/` (o nome do repositório no
+# GitHub: sem isso os arquivos do site apontam para o caminho antigo), ajusta a saída e troca o branch
 # `gh-pages` do origin por um commit único com ela — force-push, para o
 # histórico do repo não crescer 67 MB a cada publicação.
 #
@@ -23,7 +24,7 @@ remote="$(git remote get-url origin)"
 rm -rf "$out"
 # --no-web-resources-cdn: o CanvasKit sai daqui, não do gstatic, para o
 # service worker poder guardá-lo (app instalado abre sem internet).
-flutter build web --release --base-href /zywny/ --no-web-resources-cdn \
+flutter build web --release --base-href /zywny-musicas/ --no-web-resources-cdn \
     --dart-define=ZYWNY_LIBRARY_KEY="$(cat keys/biblioteca.public.b64)" -o "$out"
 
 # O zip de fontes do Verovio só serve ao nativo (o wasm já embute; W02).
@@ -46,4 +47,4 @@ git -C "$out" init -q -b gh-pages
 git -C "$out" add -A
 git -C "$out" commit -q -m "Versão Web publicada (main $rev)"
 git -C "$out" push -q --force "$remote" gh-pages:gh-pages
-echo "publicado: main $rev → https://mkanada.github.io/zywny/ (o Pages leva ~1 min)"
+echo "publicado: main $rev → https://mkanada.github.io/zywny-musicas/ (o Pages leva ~1 min)"

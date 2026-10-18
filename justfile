@@ -176,8 +176,8 @@ build-web:
 web-smoke: build-web
     node tool/web_smoke/smoke.mjs
 
-# Publica a versão Web no GitHub Pages (https://mkanada.github.io/zywny/):
-# compila com `--base-href /zywny/` e troca o branch gh-pages do origin.
+# Publica a versão Web no GitHub Pages (https://mkanada.github.io/zywny-musicas/):
+# compila com `--base-href /zywny-musicas/` e troca o branch gh-pages do origin.
 publicar-web:
     tool/publish_web.sh
 
