@@ -21,17 +21,10 @@ version: 1.0.3+4
 environment:
   sdk: ^3.13.3
 
-# Pub workspace (R12): o app na raiz e os pacotes em apps/ e packages/, com
-# um `pubspec.lock` só, aqui. `score_bridge/` fica de fora (é um subtree do
-# verovio_flutter_bridge, e entrar exigiria `resolution: workspace` lá).
+# Pub workspace: o app na raiz e o mockup em apps/, com um `pubspec.lock` só,
+# aqui. Os pacotes do núcleo compartilhado moram no zywny-comum (../zywny-comum).
 workspace:
   - apps/zywny_mockup
-  - packages/zywny_music
-  - packages/zywny_course_format
-  - packages/zywny_diag
-  - packages/zywny_audio
-  - packages/zywny_midi
-  - packages/zywny_library
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -42,31 +35,33 @@ workspace:
 dependencies:
   flutter:
     sdk: flutter
-  # Pacotes do workspace (R13–R17).
+  # Núcleo compartilhado (zywny-comum, ao lado deste repositório): partitura,
+  # prática, MIDI, som, configurações e interface. Dart não herda dependência
+  # transitiva: cada pacote que este app importa direto aparece aqui.
+  zywny_comum:
+    path: ../zywny-comum
   zywny_music:
-    path: packages/zywny_music
-  zywny_course_format:
-    path: packages/zywny_course_format
+    path: ../zywny-comum/packages/zywny_music
   zywny_diag:
-    path: packages/zywny_diag
+    path: ../zywny-comum/packages/zywny_diag
   zywny_audio:
-    path: packages/zywny_audio
+    path: ../zywny-comum/packages/zywny_audio
   zywny_midi:
-    path: packages/zywny_midi
+    path: ../zywny-comum/packages/zywny_midi
   zywny_library:
-    path: packages/zywny_library
+    path: ../zywny-comum/packages/zywny_library
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   file_selector: ^1.0.3
   # Descompactação dos dados do Verovio (assets/verovio_data.zip) e
-  # diretório de destino da extração — ver lib/render/verovio_resources.dart.
+  # diretório de destino da extração — ver render/verovio_resources.dart
+  # (zywny-comum).
   archive: ^4.0.7
   path_provider: ^2.1.5
-  # Bindings de dart:ffi (Pointer<Utf8>, malloc) usados por
-  # lib/audio/native_sound_engine.dart (K03) — já vinha transitivo via o
-  # binding do Verovio; direto aqui porque é usado direto aqui também.
+  # Bindings de dart:ffi (Pointer<Utf8>, malloc) do motor de som (K03, no
+  # zywny-comum). Já vinha transitivo via o binding do Verovio.
   ffi: ^2.1.0
   # Web (W02): Worker e interop com o wasm do Verovio.
   web: ^1.1.0
@@ -76,13 +71,13 @@ dependencies:
   # ../verovio_flutter_bridge (pode ser um symlink) — ver o README.
   verovio:
     path: ../verovio_flutter_bridge/verovio/bindings/dart
-  # Pacote que lê o `.vsb` e o desenha com CustomPaint — vive neste repo
+  # Pacote que lê o `.vsb` e o desenha com CustomPaint — vive no zywny-comum
   # (score_bridge/, trazido do verovio_flutter_bridge via git subtree).
   score_bridge:
-    path: score_bridge
+    path: ../zywny-comum/score_bridge
   google_fonts: ^8.2.1
   # Entrada MIDI (M01, D-MIDI): lista/conecta dispositivos e entrega
-  # mensagens já tipadas (lib/midi/).
+  # mensagens já tipadas (zywny-comum, midi/).
   flutter_midi_command: ^1.3.0
   # Guarda o último dispositivo MIDI escolhido (M01) para reconectar sozinho.
   shared_preferences: ^2.5.5
@@ -90,9 +85,9 @@ dependencies:
   cryptography: ^2.9.0
   yaml: ^3.1.4
   meta: ^1.19.0
-  # I05 — Leitor de lição: AST do markdown (Dart puro; o app desenha os
-  # widgets aqui — `flutter_markdown` está descontinuado pelo time do
-  # Flutter desde 2025, ver pub.dev, então não é usado).
+  # I05 — Leitor de lição: AST do markdown (Dart puro; o zywny-aprendizado
+  # desenha os widgets). `flutter_markdown` está descontinuado pelo time do
+  # Flutter desde 2025, ver pub.dev, então não é usado.
   markdown: ^7.3.1
   # I05 — links do texto e cartão de vídeo abrem fora do app.
   url_launcher: ^6.3.3
@@ -100,8 +95,7 @@ dependencies:
   # transitiva, pelo wakelock_plus; direta porque agora é usada direto.
   package_info_plus: ^10.2.1
   # I05 — `zywny-audio`: toca `.ogg`/`.mp3` a partir de bytes nas quatro
-  # plataformas (na Web não há arquivo). Escolha medida em I05, ver
-  # `lib/course/ui/lesson_audio_choice.md`.
+  # plataformas (na Web não há arquivo). Usado pelo zywny-aprendizado.
   audioplayers: ^6.8.1
 
 dev_dependencies:
@@ -140,39 +134,19 @@ flutter:
     # Fontes de gravação do Verovio (Bravura, Leipzig, ... + os TTFs
     # Liberation de `data/text`), empacotadas num zip único porque o
     # bundler de assets do Flutter lista diretórios sem recursão. Gerado
-    # por tool/build_verovio_assets.sh a partir do verovio_flutter_bridge e extraído em
-    # runtime por lib/render/verovio_resources.dart. Não versionado.
+    # pelo script de build do zywny-comum (tool/build_verovio_assets.sh) a
+    # partir do verovio_flutter_bridge, e extraído em runtime por
+    # render/verovio_resources.dart (zywny-comum). Não versionado.
     - assets/verovio_data.zip
     # Soundfont padrão (TimGM6mb, GPL-2 — ver TimGM6mb.copyright ao lado):
     # o som do app funciona sem o usuário procurar um `.sf2`. Ele pode
-    # trocar por outro; ver lib/audio/soundfont_store.dart.
+    # trocar por outro; ver audio/soundfont_store.dart (zywny-comum).
     - assets/soundfonts/TimGM6mb.sf2
     # O aviso de copyright do soundfont, mostrado na página de licenças do
-    # "Sobre o Zywny" (lib/about/licenses.dart).
+    # "Sobre o Zywny" (about/licenses.dart, zywny-comum).
     - assets/soundfonts/TimGM6mb.copyright
-    # I10 — curso inicial embutido (D-LIC-INICIAL): lido pelo mesmo leitor
-    # de uma pasta de terceiros, via AssetCourseFiles. Cada subpasta entra
-    # porque o bundler de assets lista diretórios sem recursão.
-    - assets/cursos/iniciacao/
-    - assets/cursos/iniciacao/lessons/
-    - assets/cursos/iniciacao/media/
-  fonts:
-    # Tipos da splash e do ícone (artefato "Zywny — Ícone e Splash"); OFL.
-    - family: Cormorant Garamond
-      fonts:
-        - asset: assets/fonts/CormorantGaramond-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/CormorantGaramond-MediumItalic.ttf
-          weight: 500
-          style: italic
-        - asset: assets/fonts/CormorantGaramond-SemiBoldItalic.ttf
-          weight: 600
-          style: italic
-    - family: Instrument Sans
-      fonts:
-        - asset: assets/fonts/InstrumentSans-Medium.ttf
-          weight: 500
-  # A serifada do texto comum (Liberation Serif) vem do pacote
+  # As fontes (Cormorant Garamond, Instrument Sans) são declaradas no
+  # zywny-comum, e a serifada do texto comum (Liberation Serif) vem do pacote
   # score_bridge, registrada por loadScoreFonts().
 
   # An image asset can refer to one or more resolution-specific "variants", see
