@@ -119,4 +119,36 @@ void main() {
     expect(saved!.step.name, '1a');
     expect(saved.clean, 0);
   });
+
+  testWidgets('se não gravar, a volta é desfeita e a tela avisa', (
+    tester,
+  ) async {
+    final seeder = SightReadingStore(prefs: SharedPreferencesAsync());
+    await tester.runAsync(
+      () => seeder.save(const SightProgress(level: 3, sub: 2, clean: 2)),
+    );
+    final store = _NoSaveStore();
+    await _pumpLevels(tester, store);
+
+    await tester.ensureVisible(find.text(sightStep(2, 1).label));
+    await tester.pump();
+    await tester.tap(find.text(sightStep(2, 1).label));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Voltar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('agora · 2 de 3 limpas'), findsOneWidget);
+    expect(
+      find.text('Não consegui guardar o passo. Tente de novo.'),
+      findsOneWidget,
+    );
+  });
+}
+
+/// Um store que finge não conseguir gravar, mas lê o que já estava guardado.
+class _NoSaveStore extends SightReadingStore {
+  _NoSaveStore() : super(prefs: SharedPreferencesAsync());
+
+  @override
+  Future<bool> save(SightProgress progress) async => false;
 }

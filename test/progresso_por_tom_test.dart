@@ -198,6 +198,17 @@ void main() {
     });
 
     test(
+      'pontuar a versão simplificada não tira a música do "Continuar"',
+      () async {
+        final store = PieceProgressStore(prefs: prefs);
+        await store.load('hinos');
+        await store.markOpened('001');
+        await store.recordScore('001.s', 85);
+        expect(store.lastOpenedId, '001');
+      },
+    );
+
+    test(
       'pontuar um tom antes de abrir a música não a torna "aberta"',
       () async {
         final store = PieceProgressStore(prefs: prefs);

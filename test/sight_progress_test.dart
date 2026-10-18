@@ -1,9 +1,39 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:zywny/sight_reading/sight_progress.dart';
 import 'package:zywny/sight_reading/sight_steps.dart';
+
+/// Armazenamento cuja gravação só termina quando [gate] é completado.
+class _GatedPrefs implements SharedPreferencesAsync {
+  final values = <String, String>{};
+  final gate = Completer<void>();
+
+  @override
+  Future<void> setString(String key, String value) async {
+    await gate.future;
+    values[key] = value;
+  }
+
+  @override
+  Future<String?> getString(String key) async => values[key];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Armazenamento que recusa qualquer gravação (modo privado).
+class _BrokenPrefs implements SharedPreferencesAsync {
+  @override
+  Future<void> setString(String key, String value) =>
+      throw StateError('sem armazenamento');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   setUp(() {
@@ -145,4 +175,25 @@ void main() {
       expect(const SightProgress().isBehind(sightSteps.first), isFalse);
     },
   );
+
+  test('save diz se gravou; sem armazenamento volta false', () async {
+    final store = SightReadingStore(prefs: _BrokenPrefs());
+    expect(await store.save(const SightProgress(level: 2, sub: 1)), isFalse);
+  });
+
+  test('um store novo lê a gravação que ainda está a caminho', () async {
+    final prefs = _GatedPrefs();
+    final writer = SightReadingStore(prefs: prefs);
+    final saved = writer.save(const SightProgress(level: 4, sub: 0, clean: 1));
+
+    // Outro store (a tela que abre logo depois) já pede a leitura.
+    final reader = SightReadingStore(prefs: prefs);
+    final loading = reader.load();
+    prefs.gate.complete();
+
+    expect(await saved, isTrue);
+    final progress = await loading;
+    expect(progress.step.name, sightStep(4, 0).name);
+    expect(progress.clean, 1);
+  });
 }

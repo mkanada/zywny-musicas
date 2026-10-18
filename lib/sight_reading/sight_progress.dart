@@ -127,9 +127,17 @@ class SightReadingStore {
 
   final SharedPreferencesAsync _prefs;
 
+  /// O último progresso gravado (ou ainda em gravação), por chave. Um store
+  /// novo lê daqui antes de ir ao armazenamento: a tela de níveis fecha e a de
+  /// leitura abre outro store logo depois, e ele não pode ler o valor antigo.
+  /// É estático porque cada tela cria o seu store.
+  static final _latest = <String, SightProgress>{};
+
   Future<SightProgress> load() => _load(key);
 
-  Future<void> save(SightProgress progress) => _save(key, progress);
+  /// `true` se gravou. Sem armazenamento (modo privado, plataforma sem
+  /// suporte) volta `false`: o progresso vale só nesta sessão.
+  Future<bool> save(SightProgress progress) => _save(key, progress);
 
   /// O progresso do "só ouvido" (os campos de ouvido não são usados ali).
   Future<SightProgress> loadListen() => _load(listenKey);
@@ -154,6 +162,8 @@ class SightReadingStore {
   }
 
   Future<SightProgress> _load(String key) async {
+    final latest = _latest[key];
+    if (latest != null) return latest;
     try {
       final raw = await _prefs.getString(key);
       if (raw == null) return const SightProgress();
@@ -165,11 +175,21 @@ class SightReadingStore {
     }
   }
 
-  Future<void> _save(String key, SightProgress progress) async {
+  Future<bool> _save(String key, SightProgress progress) async {
+    _latest[key] = progress;
+    // Só larga o cache se nenhuma gravação mais nova entrou meio caminho.
+    void forget() {
+      if (identical(_latest[key], progress)) _latest.remove(key);
+    }
+
     try {
       await _prefs.setString(key, jsonEncode(progress.toJson()));
+      forget();
+      return true;
     } on Object {
-      // Sem gravar, o progresso vale só nesta sessão.
+      // Sem gravar, o progresso antigo volta a valer (a tela desfaz a volta).
+      forget();
+      return false;
     }
   }
 }

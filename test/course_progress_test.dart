@@ -152,4 +152,24 @@ void main() {
     await store.markLessonDone('t', 'aula');
     expect(store['t'].lessonDone(lesson), isTrue);
   });
+
+  test('escrever sem ter lido não apaga o progresso guardado', () async {
+    final course = await _course();
+    final spec = course.lessons.first.exercises.single;
+    await CourseProgressStore().recordAttempt(
+      't',
+      spec,
+      const RoundResult(hits: 12, total: 12),
+    );
+
+    // Store novo: nada na memória ainda. A escrita espera a leitura.
+    final store = CourseProgressStore();
+    await store.touchLesson('t', 'b');
+    expect(store['t'].records['ex-a']?.passed, isTrue);
+    expect(store['t'].lastLessonId, 'b');
+
+    final reloaded = CourseProgressStore();
+    await reloaded.ensureLoaded('t');
+    expect(reloaded['t'].records['ex-a']?.passed, isTrue);
+  });
 }

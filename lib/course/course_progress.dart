@@ -250,14 +250,28 @@ class CourseProgressStore extends ChangeNotifier {
 
   /// Garante o curso na memória (uma chave só). Avisa quem escuta para a
   /// lista e a tela do curso mostrarem o progresso guardado ao abrir.
-  Future<CourseProgress> ensureLoaded(String courseId) async {
-    if (_byId.containsKey(courseId)) return this[courseId];
-    final stored = await _read(courseId);
-    if (stored != null) {
-      _byId[courseId] = stored;
-      notifyListeners();
+  Future<CourseProgress> ensureLoaded(String courseId) {
+    if (_byId.containsKey(courseId)) return Future.value(this[courseId]);
+    // Duas chamadas seguidas (a tela da lição e uma escrita) esperam a mesma
+    // leitura, em vez de lerem duas vezes.
+    return _loading[courseId] ??= _load(courseId);
+  }
+
+  final Map<String, Future<CourseProgress>> _loading = {};
+
+  Future<CourseProgress> _load(String courseId) async {
+    try {
+      final stored = await _read(courseId);
+      // Uma escrita que chegou antes da leitura acabar já é a mais nova: não
+      // a trocar pelo que estava guardado.
+      if (stored != null && !_byId.containsKey(courseId)) {
+        _byId[courseId] = stored;
+        notifyListeners();
+      }
+      return this[courseId];
+    } finally {
+      _loading.remove(courseId);
     }
-    return this[courseId];
   }
 
   Future<CourseProgress?> _read(String courseId) async {
@@ -282,22 +296,40 @@ class CourseProgressStore extends ChangeNotifier {
     );
   }
 
+  /// Aplica [change] sobre o progresso **guardado** do curso. Sem o carregamento
+  /// antes, a mudança partiria de um progresso vazio e sobrescreveria o que
+  /// já estava gravado. Se já está na memória, grava na hora (sem esperar um
+  /// microtask, como antes). `null` de [change] quer dizer "nada a gravar".
+  Future<void> _update(
+    String courseId,
+    CourseProgress? Function(CourseProgress current) change,
+  ) {
+    Future<void> apply() {
+      final next = change(this[courseId]);
+      return next == null ? Future.value() : _write(next);
+    }
+
+    if (_byId.containsKey(courseId)) return apply();
+    return ensureLoaded(courseId).then((_) => apply());
+  }
+
   Future<void> recordAttempt(
     String courseId,
     ExerciseSpec spec,
     RoundResult result,
   ) {
-    return _write(this[courseId].recordAttempt(spec, result));
+    return _update(courseId, (c) => c.recordAttempt(spec, result));
   }
 
   Future<void> markLessonDone(String courseId, String lessonId) {
-    return _write(this[courseId].markLessonDone(lessonId));
+    return _update(courseId, (c) => c.markLessonDone(lessonId));
   }
 
   Future<void> touchLesson(String courseId, String lessonId) {
-    final current = this[courseId];
-    if (current.lastLessonId == lessonId) return Future.value();
-    return _write(current.touchLesson(lessonId));
+    return _update(
+      courseId,
+      (c) => c.lastLessonId == lessonId ? null : c.touchLesson(lessonId),
+    );
   }
 }
 

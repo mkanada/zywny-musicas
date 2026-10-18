@@ -57,9 +57,18 @@ class _SightLevelsScreenState extends State<SightLevelsScreen> {
       ),
     );
     if (ok != true || !mounted) return;
+    final previous = _progress;
     final next = SightProgress.startOf(step);
     setState(() => _progress = next);
-    await widget.store.save(next);
+    final saved = await widget.store.save(next);
+    if (saved || !mounted) return;
+    // Não gravou: a tela não pode mostrar um passo que o aluno perde ao sair.
+    setState(() => _progress = previous);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Não consegui guardar o passo. Tente de novo.'),
+      ),
+    );
   }
 
   @override
