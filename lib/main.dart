@@ -62,6 +62,8 @@ import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/app/splash_screen.dart';
+import 'package:zywny_comum/auth/auth_gate.dart';
+import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/trail/stage_result.dart' show kTrailPassAccuracy;
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_stage.dart' show kTrailMinMeasures;
@@ -112,6 +114,8 @@ class MyApp extends StatelessWidget {
     this.loadCatalog,
     this.tourStore,
     this.incoming,
+    this.authStore,
+    this.requireNickname = false,
   });
 
   final bool debugMode;
@@ -130,6 +134,13 @@ class MyApp extends StatelessWidget {
   /// Os `.zywny` que o sistema entrega ao app (B11); os testes ficam sem.
   final IncomingPackages? incoming;
 
+  /// A sessão conectada (D02): sem ela, o app abre direto (é o caso dos
+  /// testes); com ela, o [AuthGate] segura o app até haver conta.
+  final AuthStore? authStore;
+
+  /// Perguntar o apelido no primeiro acesso (D-NEG-PRIVACIDADE).
+  final bool requireNickname;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -139,25 +150,32 @@ class MyApp extends StatelessWidget {
       // (ScoreHomePage) abre por cima dela, um hino por vez.
       home: SplashOverlay(
         enabled: splash,
-        child: LibraryScreen(
-          loadCatalog: loadCatalog,
-          tourStore: tourStore,
-          // A abertura (1,8 s mais o esmaecer) cobre a biblioteca: o passeio
-          // espera ela sair.
-          tourDelay: splash
-              ? const Duration(milliseconds: 2400)
-              : Duration.zero,
-          incoming: incoming,
-          incomingDelay: splash
-              ? const Duration(milliseconds: 2400)
-              : Duration.zero,
-          scoreBuilder: (context, opened) => LibraryTermScope(
-            term: opened.term,
-            numbered: opened.numbered,
-            child: ScoreHomePage(
-              debugMode: debugMode,
-              opened: opened,
-              tourStore: tourStore,
+        // Sem conta, o app mostra só a tela de entrada (D-NEG-SEM-CONTA).
+        child: AuthGate(
+          store: authStore,
+          requireNickname: requireNickname,
+          child: LibraryScreen(
+            loadCatalog: loadCatalog,
+            tourStore: tourStore,
+            authStore: authStore,
+            // A abertura (1,8 s mais o esmaecer) cobre a biblioteca: o passeio
+            // espera ela sair.
+            tourDelay: splash
+                ? const Duration(milliseconds: 2400)
+                : Duration.zero,
+            incoming: incoming,
+            incomingDelay: splash
+                ? const Duration(milliseconds: 2400)
+                : Duration.zero,
+            scoreBuilder: (context, opened) => LibraryTermScope(
+              term: opened.term,
+              numbered: opened.numbered,
+              child: ScoreHomePage(
+                debugMode: debugMode,
+                opened: opened,
+                tourStore: tourStore,
+                authStore: authStore,
+              ),
             ),
           ),
         ),
@@ -173,11 +191,16 @@ class ScoreHomePage extends StatefulWidget {
     this.debugMode = false,
     this.renderer,
     this.tourStore,
+    this.authStore,
   });
 
   /// O registro do tutorial de primeiro uso (`lib/tutorial/`); `null` (os
   /// testes) é sem passeio.
   final TourStore? tourStore;
+
+  /// A sessão conectada (D02): o painel das configurações gerais mostra a
+  /// seção "Conta" quando há uma.
+  final AuthStore? authStore;
 
   /// Quem grava a partitura. Só os testes passam o seu; o app usa o da
   /// plataforma ([createScoreRenderer]).
@@ -1932,6 +1955,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                   settings: _settings,
                   midiDeviceManager: _midiDeviceManager,
                   customSoundFont: _sound.customSoundFont,
+                  authStore: widget.authStore,
                   onChooseSoundFont: () => unawaited(_sound.chooseSoundFont()),
                   onResetSoundFont: () => unawaited(_sound.resetSoundFont()),
                   onClose: () => setState(() => _generalOpen = false),

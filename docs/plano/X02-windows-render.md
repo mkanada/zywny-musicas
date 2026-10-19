@@ -35,6 +35,15 @@ partitura, como no Linux. Sem som. Pré-requisito de K06.
 - No Windows, `DynamicLibrary.open` aceita o caminho completo; a DLL
   instalada fica ao lado do `.exe` (`<bundle>/verovio.dll`), então
   `File(Platform.resolvedExecutable).parent.path + '\\verovio.dll'`.
+- **O build do Windows agora baixa o SDK do Firebase (D01, 2026-10-19).** O
+  `zywny_auth` depende de `firebase_core`, que tem plugin de Windows: o
+  CMake dele baixa o **Firebase C++ SDK 14.0.0** de `dl.google.com` na hora
+  de compilar (centenas de MB), a menos que a variável de ambiente
+  `FIREBASE_CPP_SDK_DIR` aponte para uma cópia da **mesma** versão. No
+  Windows o login é pelo navegador do sistema (REST, D-NEG-AUTH), então esse
+  SDK **não é usado** — mas o build paga o download. Se atrapalhar o
+  cross-compile, o caminho é tirar o SDK do Firebase do pacote comum (ou
+  aceitar o download na VM).
 - Os dados do Verovio vêm do mesmo zip de assets; `path_provider` funciona
   no Windows.
 - Crie `tool/build_verovio_windows.ps1` (ou `.bat`) documentado no README do

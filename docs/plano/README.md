@@ -509,8 +509,8 @@ zywny
 | [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | R24 | — | pendente |
 | [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
 | [D00](D00-papeis-e-distribuicao.md) | Papéis, distribuição de conteúdo, Firebase Auth e modelo de negócios | — | D-NEG | especificação (decisões tomadas) |
-| [D01](D01-pacote-zywny-auth.md) | Autenticação: pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, SDK + REST/Loopback, `FakeAuthStore`) | — | D-NEG | pendente |
-| [D02](D02-tela-de-login-e-auth-gate.md) | Autenticação: `SignInScreen`, `AuthGate`, apelido inicial e seção Conta nas configurações | D01 | D-NEG | pendente |
+| [D01](D01-pacote-zywny-auth.md) | Autenticação: pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, SDK + REST/Loopback, `FakeAuthStore`) | — | D-NEG | concluído (2026-10-19) |
+| [D02](D02-tela-de-login-e-auth-gate.md) | Autenticação: `SignInScreen`, `AuthGate`, apelido inicial e seção Conta nas configurações | D01 | D-NEG | concluído (2026-10-19) |
 | [D03](D03-configuracao-firebase-e-android-web.md) | Autenticação: projeto Firebase (plano Spark), `applicationId` e credenciais OAuth2 nas 4 plataformas | D01, D02 | D-NEG | pendente |
 | [D04](D04-licencas-de-pacotes-por-conta.md) | Licenciamento: abertura e catálogo de bibliotecas/pacotes vinculados ao `uid` e validade | D01, D02, D03 | D-NEG | pendente |
 

@@ -16,6 +16,7 @@ import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/settings/app_settings.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
+import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart'
@@ -137,6 +138,7 @@ class LibraryScreen extends StatefulWidget {
     this.tourDelay = Duration.zero,
     this.incoming,
     this.incomingDelay = Duration.zero,
+    this.authStore,
   });
 
   /// Constrói a tela de partitura do hino aberto (`ScoreHomePage`).
@@ -174,6 +176,10 @@ class LibraryScreen extends StatefulWidget {
   /// Espera antes de instalar o primeiro arquivo recebido: como o passeio, não
   /// pode abrir diálogos por baixo da abertura (splash).
   final Duration incomingDelay;
+
+  /// A sessão conectada (D02): com ela, as configurações mostram a seção
+  /// "Conta" (apelido, e-mail, sair e apagar a conta).
+  final AuthStore? authStore;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -537,6 +543,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           child: GeneralSettingsScreen(
             settings: _settings,
             midiDeviceManager: _midi,
+            authStore: widget.authStore,
             libraryStore: _libraries,
             pickLibraryFile: widget.pickLibraryFile,
             installLibrary: (context) => installPackageFromFile(

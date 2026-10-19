@@ -50,6 +50,10 @@ dependencies:
     path: ../zywny-comum/packages/zywny_midi
   zywny_library:
     path: ../zywny-comum/packages/zywny_library
+  # Autenticação (fase D, D01): o contrato, o Firebase (SDK no Android/Web,
+  # REST e loopback no desktop) e a regra dos 7 dias sem rede.
+  zywny_auth:
+    path: ../zywny-comum/packages/zywny_auth
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

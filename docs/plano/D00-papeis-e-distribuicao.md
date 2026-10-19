@@ -1,6 +1,6 @@
 # D00 — Papéis, distribuição de conteúdo e modelo de negócios
 
-**Repo:** zywny-comum + zywny-musicas + zywny-aprendizado · **Status:** decisões tomadas (2026-10-17 e 2026-10-19), primeiros passos planejados (D01–D04), **nada implementado** · **Quando:** depois
+**Repo:** zywny-comum + zywny-musicas + zywny-aprendizado · **Status:** decisões tomadas (2026-10-17 e 2026-10-19), primeiros passos em andamento (D01 e D02 feitos; D03 e D04 por fazer), **o serviço ainda não existe** · **Quando:** depois
 da 1.0 · **Decisões necessárias:** ver "Decisões" no fim.
 
 Este arquivo registra o modelo de negócios pedido pelo usuário e o detalha
@@ -218,7 +218,7 @@ para menores de 12 continua necessário.
 
 | Passo | Título | Repo | Depende de | Status |
 | --- | --- | --- | --- | --- |
-| [D01](D01-pacote-zywny-auth.md) | Pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, REST/Loopback no Linux/Windows, SDK no Android/Web, `FakeAuthStore`) | zywny-comum | — | pendente |
-| [D02](D02-tela-de-login-e-auth-gate.md) | Tela de entrada (`SignInScreen`), `AuthGate`, apelido inicial e seção Conta nas configurações | zywny-comum + apps | D01 | pendente |
+| [D01](D01-pacote-zywny-auth.md) | Pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, REST/Loopback no Linux/Windows, SDK no Android/Web, `FakeAuthStore`) | zywny-comum | — | concluído (2026-10-19) |
+| [D02](D02-tela-de-login-e-auth-gate.md) | Tela de entrada (`SignInScreen`), `AuthGate`, apelido inicial e seção Conta nas configurações | zywny-comum + apps | D01 | concluído (2026-10-19) |
 | [D03](D03-configuracao-firebase-e-android-web.md) | Projeto Firebase (plano Spark), `applicationId` definitivo e credenciais OAuth2 nas 4 plataformas | zywny-musicas + zywny-aprendizado | D01, D02 | pendente |
 | [D04](D04-licencas-de-pacotes-por-conta.md) | Liberação de bibliotecas e pacotes (`.zywny` e cursos) vinculada ao `uid` e validade (`D-NEG-VALIDADE`) | zywny-comum + apps | D01, D02, D03 | pendente |

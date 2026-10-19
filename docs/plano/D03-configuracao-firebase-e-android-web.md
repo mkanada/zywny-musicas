@@ -26,6 +26,34 @@ Configurar o projeto no **Google Firebase** dentro do **plano gratuito (Spark)**
   1. **Web:** criado automaticamente ao ativar o provedor Google no Firebase Console (*Authentication > Sign-in method > Google*).
   2. **Android:** criado automaticamente pelo Firebase quando se cadastra o app Android com o `applicationId` e os certificados **SHA-1** (de debug e de release).
   3. **Linux e Windows (Desktop):** em *Google Cloud Console > APIs & Services > Credentials* (do mesmo projeto Firebase), cria-se um **OAuth 2.0 Client ID** do tipo **Web application** (ou Desktop) com URI de redirecionamento autorizado `http://127.0.0.1` (loopback) e adiciona-se esse Client ID na lista de IDs permitidos do provedor Google no Firebase Auth.
+- **O que o [D01](D01-pacote-zywny-auth.md) mediu (2026-10-19), para não errar o console:**
+  - **O tipo do cliente OAuth do desktop decide como o loopback funciona.** O
+    `LoopbackOAuthFlow` do `zywny_auth` sobe o servidor local em `127.0.0.1`
+    numa **porta livre** (`port: 0`): o cliente do tipo **"Desktop"** do Google
+    aceita qualquer porta do loopback e não tem segredo; o do tipo **"Web
+    application"** exige o endereço **exato** registrado (com a porta) **e**
+    `client_secret` na troca do código. Para o "Web application", o app tem
+    de passar `port:` e `clientSecret:` ao `FirebaseRestAuthStore`; para o
+    "Desktop", só o `clientId`.
+  - **`firebase_auth` 7.0.0 na Web não tem `signInWithProvider`**: o
+    `FirebaseSdkAuthStore` usa `signInWithPopup(GoogleAuthProvider())` lá (o
+    popup do [D00](D00-papeis-e-distribuicao.md)) e o `google_sign_in` no
+    Android.
+  - **`google_sign_in` 7.x**: `GoogleSignIn.instance.initialize()` e depois
+    `authenticate()` (o `signIn()` não existe mais). No Android o `clientId`
+    **não** é aceito — o app é identificado pelo `applicationId` + SHA-1, e o
+    `server_client_id` sai do `google-services.json`.
+  - **O `FirebaseSdkAuthStore` espera o `Firebase.initializeApp` feito** (o
+    passo 4 deste arquivo): se o `main` não inicializou, o login falha com
+    "O Firebase não foi inicializado neste app".
+- **O que o [D02](D02-tela-de-login-e-auth-gate.md) entregou (2026-10-19):**
+  - O `MyApp` dos dois apps já aceita `authStore` (e `requireNickname`): o
+    passo 4 deste arquivo é criar o store e passá-lo, com
+    `requireNickname: true` (no primeiro acesso o app pergunta o apelido).
+  - Sem `authStore`, o app abre direto — é assim que os testes e o roteiro
+    `just telas` rodam (ninguém tem Firebase configurado).
+  - A seção "Conta" das configurações (apelido, e-mail, código do aluno,
+    sair e apagar a conta) já existe e acompanha o store.
 
 ## O que fazer
 
