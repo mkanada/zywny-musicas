@@ -115,10 +115,11 @@ Ela vem da avaliação dos livros convertidos no repositório
 passo EX lê também o EX00. As decisões D-EXE-\* estão abertas (propostas
 em 2026-10-17).
 
-A fase **D** (papéis e distribuição: plataforma, tutor e aluno; conteúdo
-atribuído por aluno, com validade; relatórios e MIDI das sessões para o
-tutor) está em conversa em [D00-papeis-e-distribuicao.md](D00-papeis-e-distribuicao.md)
-— ainda sem passos, com decisões `D-NEG-*` abertas.
+A fase **D** (papéis e distribuição: plataforma, tutor e aluno; login social
+no Firebase Auth compartilhado no `zywny-comum`; conteúdo atribuído por aluno,
+com validade; relatórios e MIDI das sessões para o tutor) tem especificação e
+decisões em [D00-papeis-e-distribuicao.md](D00-papeis-e-distribuicao.md) e
+primeiros passos em [D01](D01-pacote-zywny-auth.md)–[D04](D04-licencas-de-pacotes-por-conta.md).
 
 A fase **R** (revisão de código: quebrar os ciclos entre as pastas de
 `lib/`, desmontar `main.dart` em controllers e dividir o app em pacotes de
@@ -319,6 +320,7 @@ zywny
 | D-REV-DI | Como os serviços do app chegam às telas: `provider` ou `InheritedWidget` à mão? | R27 | (a) `provider` | **aberta** |
 | D-REV-ROTAS | Adotar `go_router` (URL de `#` na Web) ou ficar com `Navigator.push`? | R35 | (b) ficar como está por enquanto; rever se a Web ganhar uso próprio | **aberta** |
 | D-EXE | Exercícios do curso completo: grafia da cifra, rigor do acorde, quando conferir, mãos sem partitura, base gerada, aprovação do improviso, swing, limiares dos medidores, ordem | fase EX | — | **aberta** (2026-10-17): as 9 decisões D-EXE-\* no [EX00](EX00-exercicios-do-curso-completo.md) |
+| D-NEG | Papéis, distribuição, login obrigatório no Firebase Auth (Google e redes sociais, plano Spark até 50k MAU, compartilhado no `zywny-comum`) e licenciamento de pacotes por conta | fase D | — | **decidida** (2026-10-17 e 2026-10-19): as 15 decisões D-NEG-\* no [D00](D00-papeis-e-distribuicao.md) |
 
 ## Riscos conhecidos
 
@@ -506,6 +508,11 @@ zywny
 | [R33](R33-lints-estritos.md) | Revisão 2: regras estritas do analisador (achado 23) | — | — | pendente |
 | [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | R24 | — | pendente |
 | [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
+| [D00](D00-papeis-e-distribuicao.md) | Papéis, distribuição de conteúdo, Firebase Auth e modelo de negócios | — | D-NEG | especificação (decisões tomadas) |
+| [D01](D01-pacote-zywny-auth.md) | Autenticação: pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, SDK + REST/Loopback, `FakeAuthStore`) | — | D-NEG | pendente |
+| [D02](D02-tela-de-login-e-auth-gate.md) | Autenticação: `SignInScreen`, `AuthGate`, apelido inicial e seção Conta nas configurações | D01 | D-NEG | pendente |
+| [D03](D03-configuracao-firebase-e-android-web.md) | Autenticação: projeto Firebase (plano Spark), `applicationId` e credenciais OAuth2 nas 4 plataformas | D01, D02 | D-NEG | pendente |
+| [D04](D04-licencas-de-pacotes-por-conta.md) | Licenciamento: abertura e catálogo de bibliotecas/pacotes vinculados ao `uid` e validade | D01, D02, D03 | D-NEG | pendente |
 
 Ordem de implementação (decidida pelo usuário): **Linux → Android → Web →
 Windows**. Ordem sugerida dos passos: N01→N02→N03 e C01 (dá para fazer em

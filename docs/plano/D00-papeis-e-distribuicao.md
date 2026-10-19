@@ -1,12 +1,12 @@
 # D00 — Papéis, distribuição de conteúdo e modelo de negócios
 
-**Repo:** zywny (+ um serviço novo, a definir) · **Status:** conversa em
-decisões tomadas (2026-10-17), **nada implementado** · **Quando:** depois
-da 1.0 · **Decisões necessárias:** sim, ver "Decisões" no fim.
+**Repo:** zywny-comum + zywny-musicas + zywny-aprendizado · **Status:** decisões tomadas (2026-10-17 e 2026-10-19), primeiros passos planejados (D01–D04), **nada implementado** · **Quando:** depois
+da 1.0 · **Decisões necessárias:** ver "Decisões" no fim.
 
 Este arquivo registra o modelo de negócios pedido pelo usuário e o detalha
-aos poucos. Todas as decisões `D-NEG-*` foram respondidas em 2026-10-17; falta
-quebrar o trabalho em passos D01….
+aos poucos. As decisões `D-NEG-*` foram respondidas em 2026-10-17 e
+2026-10-19; os passos iniciais de autenticação e licenciamento por conta estão
+em [D01](D01-pacote-zywny-auth.md)–[D04](D04-licencas-de-pacotes-por-conta.md).
 
 Prefixo **D**: não colide com X/N/C/K/M/T/W/V/J/L/U/B/I/Q/R/H/Y/Z/O/E (zywny)
 nem com F/S/R/A/E/P/G (bridge). As decisões desta fase usam `D-NEG-*`, para
@@ -108,6 +108,7 @@ Respondidas pelo usuário em sete rodadas de perguntas (2026-10-17).
 | D-NEG-SERVICO | Onde roda o serviço: backend próprio (ex.: Rust, como o motor) em VPS, ou um BaaS (Supabase/Firebase)? Custo mensal aceitável no começo? | **Decidido (2026-10-17):** **Firebase**. Atenção: o FlutterFire não suporta **Linux** (e o Windows é parcial) — ver "Firebase no Linux" abaixo |
 | D-NEG-DESKTOP | Como cobrar no Linux, na Web e no Windows, que não têm cobrança de loja (ou a do Windows é opcional)? Pagamento por site só nessas plataformas, ou nelas o app só abre o que foi pago no celular? | **Decidido (2026-10-17):** a **assinatura vale na conta**. Assina-se no Android (Play Billing) ou no iPhone (App Store); Web, Linux e Windows só fazem login, sem compra. Sem site de pagamento por ora |
 | D-NEG-SEM-CONTA | O app continua abrindo **sem conta** (metrônomo, leitura à vista, conteúdo gratuito da plataforma), ou login passa a ser obrigatório? | **Decidido (2026-10-17):** **login obrigatório**; sem conta, só a tela de entrada |
+| D-NEG-AUTH | Quais métodos de login habilitar no Firebase Authentication (plano gratuito Spark, até 50k MAU), qual o papel do login no `zywny-musicas` e onde fica o código? | **Decidido (2026-10-19):** **Login com Google e outras redes sociais** (Tier 1 do Firebase Auth, gratuito até 50.000 MAU no plano Spark, sem SMS); papel de **bloquear o acesso ao app sem conta** e **liberar bibliotecas/pacotes atribuídos ao usuário**; módulo compartilhado no **`zywny-comum`** (`packages/zywny_auth` + `lib/auth/`) para servir tanto ao `zywny-musicas` quanto ao `zywny-aprendizado` |
 
 ### Revogação de tutor inadimplente (D-NEG-VALIDADE)
 
@@ -123,14 +124,24 @@ MIDI guardado daquele vínculo é apagado (D-NEG-MIDI) e o conteúdo daquele
 tutor fica bloqueado com o progresso guardado. O responsável pode também
 pedir que os dados sejam apagados.
 
-### Firebase no Linux (D-NEG-SERVICO)
+### Firebase no Linux e Windows (D-NEG-SERVICO, D-NEG-AUTH)
 
-O FlutterFire (pacotes oficiais do Firebase para Flutter) cobre Android,
-iOS, macOS e Web; **Linux não é suportado** e Windows só em parte. Como o
-zywny roda em Linux (e Windows depois), essas plataformas precisariam falar
-com o Firebase pelas **APIs REST** (Auth, Firestore, Storage) ou por um
-pacote não oficial. Conferir antes do D01; se o custo for alto, reavaliar
-Supabase, que tem cliente Dart puro em todas as plataformas.
+O pacote oficial `firebase_auth` para Flutter cobre Android, iOS, macOS, Web e
+Windows, mas **Linux não é suportado** pelo SDK nativo e o seletor nativo do
+`google_sign_in` só existe em Android, iOS e Web. Solução definida em
+2026-10-19 ([D01](D01-pacote-zywny-auth.md)):
+
+- **Android e Web:** usam o `firebase_auth` oficial (+ `google_sign_in` no
+  Android e popup/redirect na Web).
+- **Linux e Windows (Desktop):** abrem o login social no navegador do sistema
+  via `url_launcher` com redirecionamento para um `HttpServer` local em
+  `http://127.0.0.1:<porta>` (loopback OAuth2) e trocam o token diretamente na
+  **API REST oficial do Firebase Identity Toolkit**
+  (`identitytoolkit.googleapis.com/v1/accounts:signInWithIdp` e
+  `securetoken.googleapis.com/v1/token`), em Dart puro.
+- As quatro plataformas convergem na mesma interface `AuthStore` dentro de
+  `zywny-comum` (`packages/zywny_auth`), compartilhando a regra dos 7 dias
+  offline (`D-NEG-OFFLINE`) e o `FakeAuthStore` para os testes.
 
 ### LGPD: por que vale (D-NEG-PRIVACIDADE)
 
@@ -201,3 +212,13 @@ para menores de 12 continua necessário.
 - **2026-10-17** — quinta rodada: D-NEG-PRIVACIDADE (plataforma controladora + apelido + aceite do responsável), D-NEG-DESKTOP (assinatura vale na conta), D-NEG-PLATAFORMA (básico incluso + avulsos) e D-NEG-SEM-CONTA (login obrigatório) decididas.
 - **2026-10-17** — sexta rodada: vínculo por código do aluno; relatório com minutos, acerto/andamento, onde erra e etapas; MIDI também de curso, ouvido e leitura à vista, sem o aluno ouvir; conta com dois papéis; escolas fora da primeira versão.
 - **2026-10-17** — sétima rodada: Firebase (com o risco do Linux registrado); aviso de aluno parado, sem e-mail; carência de 15 dias; tutor, aluno e responsável encerram o vínculo. Todas as D-NEG decididas; falta quebrar em passos D01….
+- **2026-10-19** — oitava rodada (autenticação Firebase e liberação de pacotes): confirmados o uso do plano gratuito Spark (até 50.000 MAU gratuitos para login social), `D-NEG-AUTH` (Login com Google e outras redes sociais, bloqueio do app sem login + liberação de bibliotecas/pacotes por conta, código compartilhado no `zywny-comum`), solução híbrida SDK (Android/Web) + REST/Loopback (Linux/Windows) e quebra dos primeiros passos [D01](D01-pacote-zywny-auth.md)–[D04](D04-licencas-de-pacotes-por-conta.md).
+
+## Passos da fase D (autenticação e licenciamento inicial)
+
+| Passo | Título | Repo | Depende de | Status |
+| --- | --- | --- | --- | --- |
+| [D01](D01-pacote-zywny-auth.md) | Pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, REST/Loopback no Linux/Windows, SDK no Android/Web, `FakeAuthStore`) | zywny-comum | — | pendente |
+| [D02](D02-tela-de-login-e-auth-gate.md) | Tela de entrada (`SignInScreen`), `AuthGate`, apelido inicial e seção Conta nas configurações | zywny-comum + apps | D01 | pendente |
+| [D03](D03-configuracao-firebase-e-android-web.md) | Projeto Firebase (plano Spark), `applicationId` definitivo e credenciais OAuth2 nas 4 plataformas | zywny-musicas + zywny-aprendizado | D01, D02 | pendente |
+| [D04](D04-licencas-de-pacotes-por-conta.md) | Liberação de bibliotecas e pacotes (`.zywny` e cursos) vinculada ao `uid` e validade (`D-NEG-VALIDADE`) | zywny-comum + apps | D01, D02, D03 | pendente |
