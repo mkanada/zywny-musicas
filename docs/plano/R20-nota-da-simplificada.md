@@ -1,6 +1,6 @@
 # R20 — Nota da versão simplificada na lista
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** sim
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** sim
 (D-REV-SIMPL)
 
 ## Objetivo

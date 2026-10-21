@@ -1,6 +1,6 @@
 # B11 — Abrir `.zywny` pelo sistema (associação de arquivos)
 
-**Repo:** zywny · **Depende de:** B05, I04 (o fluxo de instalar) ·
+**Repo:** zywny-musicas · **Depende de:** B05, I04 (o fluxo de instalar, no zywny-aprendizado) ·
 **Decisão necessária:** nenhuma
 
 ## Objetivo
@@ -14,7 +14,7 @@ pacote, como se ele tivesse saído do "Abrir arquivo…". Pedido em 2026-10-08.
 | Peça | Onde |
 | --- | --- |
 | A fila entre o sistema e a tela, os argumentos de `main` e o canal `zywny/incoming` | `lib/incoming/incoming_packages.dart` |
-| Instalar o que chegou (lê, depois o mesmo despacho de biblioteca/curso) | `installIncomingPackage` em `lib/course/course_installer.dart` |
+| Instalar o que chegou (lê, depois o mesmo despacho de biblioteca) | `installIncomingPackage` em `lib/app/package_install.dart` |
 | A tela da biblioteca instala um por vez e volta a ela | `_drainIncoming` em `lib/app/library_screen.dart` |
 | Android: filtros de intent, cópia para o cache, canal | `AndroidManifest.xml`, `MainActivity.kt` |
 | Linux: um só processo em release, encaminha o arquivo | `linux/runner/my_application.cc` |
@@ -25,7 +25,9 @@ pacote, como se ele tivesse saído do "Abrir arquivo…". Pedido em 2026-10-08.
   Dart apaga depois de ler — nunca o arquivo do usuário) ou `{name, error}`.
 - **Instalar.** Um arquivo por vez; o instalador é o mesmo do "Abrir arquivo…"
   (pergunta antes de substituir, explica erro). Se instalou, a tela volta à
-  biblioteca (fecha partitura, cursos ou configurações que estiverem por cima).
+  biblioteca (fecha a partitura ou as configurações que estiverem por cima).
+  Um `.zywny` que seja um **curso** não é instalado aqui: o app diz que ele
+  se abre no zywny-aprendizado.
 - **Passeio de primeiro uso.** Cede a vez ao arquivo recebido e começa quando a
   fila esvazia (o Android só avisa depois de copiar o arquivo, então o aviso
   pode chegar depois de o passeio já ter decidido começar).

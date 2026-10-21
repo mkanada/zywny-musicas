@@ -1,6 +1,6 @@
 # Q02 — Cálculo da transposição e as três alturas
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** não
 (D-TRP-ALVO, D-TRP-DIRECAO decididas)
 
 ## Objetivo

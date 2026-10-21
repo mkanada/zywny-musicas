@@ -1,6 +1,6 @@
 # J05 — Tela: executar uma etapa (faixa, resumo, avançar)
 
-**Repo:** zywny · **Depende de:** J03, J04 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J03, J04 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

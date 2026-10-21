@@ -1,6 +1,6 @@
 # R09 — `ScoreRenderSession`
 
-**Repo:** zywny · **Depende de:** R08 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R08 · **Decisão necessária:** não
 
 ## Objetivo
 

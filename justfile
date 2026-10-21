@@ -22,17 +22,28 @@ comum := env_var_or_default("ZYWNY_COMUM", "../zywny-comum")
 # e embutida no app. Sem o arquivo, o app compila mas não instala biblioteca.
 lib_key := "--dart-define=ZYWNY_LIBRARY_KEY=$(cat keys/biblioteca.public.b64 2>/dev/null)"
 
+# Configuração do projeto no Firebase (D03): lida de keys/firebase.json (fora
+# do git) e embutida no app por --dart-define. Sem o arquivo, o app compila e
+# abre **sem** o portão da conta (é assim que os testes e o roteiro de telas
+# rodam). O modelo do arquivo está em ../zywny-comum/tool/firebase.example.json.
+firebase_opts := "$(python3 {{comum}}/tool/firebase_defines.py keys/firebase.json 2>/dev/null)"
+
+# O portão da conta desligado: o roteiro de telas percorre o app de verdade e,
+# com a configuração do Firebase no build, o app mostraria a tela de entrada.
+# Nunca vai para release.
+firebase_off := "--dart-define=ZYWNY_AUTH_OFF=true"
+
 # Lista as receitas disponíveis.
 default:
     @just --list
 
 # Roda no Linux sem Impeller. Flags extras passam: `just run --release`.
 run *ARGS:
-    flutter run -d linux --no-enable-impeller {{lib_key}} {{ARGS}}
+    flutter run -d linux --no-enable-impeller {{lib_key}} {{firebase_opts}} {{ARGS}}
 
 # Roda com Impeller (padrão do Flutter) — para reconferir #191171.
 run-impeller *ARGS:
-    flutter run -d linux {{lib_key}} {{ARGS}}
+    flutter run -d linux {{lib_key}} {{firebase_opts}} {{ARGS}}
 
 # Roda no Linux com o modo de debug do app (ScoreHomePage.debugMode: guarda
 # o .vsb renderizado no diretório corrente, com data/hora no nome).
@@ -40,11 +51,11 @@ run-impeller *ARGS:
 # próprio `flutter run` (build mode, já é o padrão). Por isso precisa do
 # --dart-entrypoint-args para chegar no Dart.
 run-debug *ARGS:
-    flutter run -d linux --no-enable-impeller {{lib_key}} --dart-entrypoint-args=--debug {{ARGS}}
+    flutter run -d linux --no-enable-impeller {{lib_key}} {{firebase_opts}} --dart-entrypoint-args=--debug {{ARGS}}
 
 # Build de release do bundle Linux.
 build-release:
-    flutter build linux --release {{lib_key}}
+    flutter build linux --release {{lib_key}} {{firebase_opts}}
 
 # O `flutter run` passa a flag pelo ambiente (FLUTTER_ENGINE_SWITCHES +
 # FLUTTER_ENGINE_SWITCH_N), não por argv, então lançar o binário direto
@@ -98,6 +109,12 @@ assets:
 chaves:
     python3 {{comum}}/tool/library_crypto.py gen {{justfile_directory()}}/keys
 
+# Confere a configuração do Firebase (D03): o que falta em keys/firebase.json
+# para o login funcionar em cada plataforma. O modelo do arquivo está em
+# {{comum}}/tool/firebase.example.json.
+firebase-check:
+    python3 {{comum}}/tool/firebase_defines.py keys/firebase.json --check
+
 # Uso privado, fora do git; rode de novo quando o extrator de lá mudar.
 # Gera dist/hinos.zywny do Hymn_Grabber, cifrado e assinado com keys/ (`just chaves`).
 pacote-hinos *ARGS:
@@ -116,12 +133,35 @@ pacote-classicos *ARGS:
 # - `--split-per-abi`: o versionCode sai 2000 + o do pubspec; o celular já
 #   tem um assim e recusa (downgrade) o APK sem split.
 build-apk:
-    flutter build apk --release {{lib_key}} --target-platform android-arm64 --split-per-abi
+    flutter build apk --release {{lib_key}} {{firebase_opts}} --target-platform android-arm64 --split-per-abi
 
 # Instala o APK do `build-apk` no celular conectado pelo adb (Wi-Fi ou cabo),
 # mantendo os dados.
 instalar-apk:
     ~/Android/Sdk/platform-tools/adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+# AAB de release para o Google Play (Android App Bundle). É o que sobe na
+# loja: o Play gera os APKs por aparelho a partir dele (APK não é aceito em
+# app novo). Sai em build/app/outputs/bundle/release/app-release.aab.
+# Mesmas flags do `build-apk`: sem a chave da biblioteca o app não abre
+# nenhuma, e sem a do Firebase ele abre sem o portão da conta.
+# O `--target-platform` deixa de fora o android-arm (32 bits): o projeto não
+# compila a libverovio nem a libzywny_audio para armeabi-v7a, e um celular
+# de 32 bits instalaria um app que quebra ao abrir a partitura.
+build-appbundle:
+    flutter build appbundle --release --target-platform android-arm64,android-x64 {{lib_key}} {{firebase_opts}}
+
+# Sobe o AAB no Google Play pela Play Developer API. Requer a service account
+# em keys/ (convite no console: Usuários e permissões → Convidar novos
+# usuários, permissão "Liberar apps para as faixas de teste").
+# A faixa internal não passa por revisão; produção exige o teste fechado
+# (12 testadores, 14 dias) e a ficha da loja completa.
+play-upload *ARGS:
+    python3 tool/play_upload.py --aab build/app/outputs/bundle/release/app-release.aab {{ARGS}}
+
+# Só testa o acesso da service account à API do Play (não sobe nada).
+play-check:
+    python3 tool/play_upload.py --check
 
 # Compila a libzywny_audio.so nativa (zywny-comum/native/zywny_audio/, K02;
 # não versionada).
@@ -141,7 +181,7 @@ native-audio-android:
 # Roda o app de verdade (não o mockup) no Android — emulador ou aparelho
 # conectado. Rode `just native-android` antes, ao menos uma vez.
 run-android *ARGS:
-    flutter run -d android {{lib_key}} {{ARGS}}
+    flutter run -d android {{lib_key}} {{firebase_opts}} {{ARGS}}
 
 # Refotografa as telas do celular em docs/telas/celular/ — roda o app de
 # verdade num emulador ou aparelho Android já ligado (o mesmo preparo do
@@ -153,14 +193,14 @@ run-android *ARGS:
 # `--dart-define=ZYWNY_TEST_LIBRARY=<caminho no aparelho>` em ARGS.
 telas *ARGS:
     flutter drive --profile --driver=test_driver/telas_celular.dart \
-        --target=integration_test/telas_celular_test.dart -d android {{lib_key}} {{ARGS}}
+        --target=integration_test/telas_celular_test.dart -d android {{lib_key}} {{firebase_opts}} {{firebase_off}} {{ARGS}}
 
 # Fotografa a partitura num tablet Android, deitado e em pé (no tablet ela
 # segue o aparelho). Emulador: `emulator -avd Medium_Tablet_Edited -read-only
 # -no-window -no-audio`; o `.zywny` vai como no `telas`. PNGs em TELAS_DIR.
 telas-tablet *ARGS:
     flutter drive --profile --driver=test_driver/telas_celular.dart \
-        --target=integration_test/telas_tablet_test.dart -d android {{lib_key}} {{ARGS}}
+        --target=integration_test/telas_tablet_test.dart -d android {{lib_key}} {{firebase_opts}} {{firebase_off}} {{ARGS}}
 
 # Gera web/audio/ (SpessaSynth empacotado com esbuild, W04; não versionado).
 # Precisa de node/npm e rede na primeira vez.
@@ -170,7 +210,7 @@ web-audio:
 # Compila a versão Web (release). Antes: `{{comum}}/tool/build_verovio_web.sh` e
 # `just web-audio`, ao menos uma vez.
 build-web:
-    flutter build web --release {{lib_key}}
+    flutter build web --release {{lib_key}} {{firebase_opts}}
 
 # Teste de fumaça da Web no Chromium headless (W03/W04) — roda `build-web`.
 web-smoke: build-web

@@ -1,6 +1,6 @@
 # B08 — O app sem hinos embutidos
 
-**Repo:** zywny · **Depende de:** B05, B06, B07 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B05, B06, B07 · **Decisão necessária:** não
 
 ## Objetivo
 

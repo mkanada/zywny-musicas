@@ -1,6 +1,6 @@
 # U19 — Refazer as telas e conferir os achados
 
-**Repo:** zywny · **Depende de:** todos os U executados · **Decisão
+**Repo:** zywny-musicas · **Depende de:** todos os U executados · **Decisão
 necessária:** nenhuma
 
 ## Objetivo

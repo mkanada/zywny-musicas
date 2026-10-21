@@ -1,6 +1,6 @@
 # J09 — Progresso da trilha na biblioteca
 
-**Repo:** zywny · **Depende de:** J03 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J03 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

@@ -1,6 +1,6 @@
 # U07 — Barra lateral com os valores da etapa
 
-**Repo:** zywny · **Depende de:** U03 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** U03 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

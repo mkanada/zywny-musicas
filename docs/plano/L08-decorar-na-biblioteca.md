@@ -1,6 +1,6 @@
 # L08 — Decorar na biblioteca
 
-**Repo:** zywny · **Depende de:** J09, L04 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J09, L04 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

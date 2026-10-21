@@ -1,6 +1,6 @@
 # B02 — Gerador de pacotes e o `hinos.zywny`
 
-**Repo:** zywny · **Depende de:** B01 (o formato) · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B01 (o formato) · **Decisão necessária:** não
 
 ## Objetivo
 

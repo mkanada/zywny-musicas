@@ -1,6 +1,6 @@
 # B01 — Formato `.zywny` e leitor (Dart puro)
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** não (todas no B00)
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** não (todas no B00)
 
 ## Objetivo
 

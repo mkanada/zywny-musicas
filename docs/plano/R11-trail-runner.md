@@ -1,6 +1,6 @@
 # R11 — `TrailRunner`
 
-**Repo:** zywny · **Depende de:** R10 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R10 · **Decisão necessária:** não
 
 ## Objetivo
 

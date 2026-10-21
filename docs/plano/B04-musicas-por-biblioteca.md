@@ -1,6 +1,6 @@
 # B04 — Músicas por biblioteca: modelo, chaves e migração
 
-**Repo:** zywny · **Depende de:** B01, B03 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B01, B03 · **Decisão necessária:** não
 
 ## Objetivo
 

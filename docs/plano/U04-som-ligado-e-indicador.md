@@ -1,6 +1,6 @@
 # U04 — Som ligado por padrão e indicador
 
-**Repo:** zywny · **Depende de:** U01 · **Decisão necessária:** D-SOM
+**Repo:** zywny-musicas · **Depende de:** U01 · **Decisão necessária:** D-SOM
 
 ## Objetivo
 

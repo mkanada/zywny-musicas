@@ -1,6 +1,6 @@
 # B05 — Tela sem biblioteca e instalar por arquivo
 
-**Repo:** zywny · **Depende de:** B04 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B04 · **Decisão necessária:** não
 
 ## Objetivo
 

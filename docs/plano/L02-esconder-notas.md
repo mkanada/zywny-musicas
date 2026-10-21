@@ -1,6 +1,6 @@
 # L02 — `score_bridge`: esconder colunas (nota, barra, linha suplementar)
 
-**Repo:** zywny (`score_bridge/`) · **Depende de:** G09 do bridge (regra
+**Repo:** zywny-musicas (`score_bridge/`) · **Depende de:** G09 do bridge (regra
 normativa e vetores) · **Decisão necessária:** nenhuma
 
 ## Objetivo

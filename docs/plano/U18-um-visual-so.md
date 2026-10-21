@@ -1,6 +1,6 @@
 # U18 — Um visual só: tema e superfícies
 
-**Repo:** zywny · **Depende de:** U12 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** U12 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

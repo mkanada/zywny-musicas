@@ -1,6 +1,6 @@
 # U03 — Ouvir o trecho, e o que fazer sem teclado
 
-**Repo:** zywny · **Depende de:** U01 · **Decisão necessária:** D-OUVIR
+**Repo:** zywny-musicas · **Depende de:** U01 · **Decisão necessária:** D-OUVIR
 
 ## Objetivo
 

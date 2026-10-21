@@ -96,12 +96,20 @@ Future<void> main(List<String> args) async {
   // até a biblioteca estar na tela.
   final incoming = IncomingPackages();
   unawaited(listenForIncomingPackages(incoming, args: args));
+  // D03: o store de autenticação da plataforma — o SDK do Firebase no Android
+  // e na Web, o navegador do sistema no Linux e no Windows. Sem a
+  // configuração do Firebase no build, ele é nulo e o app abre direto, sem o
+  // portão da conta (é assim que os testes e o roteiro de telas rodam).
+  final authStore = await createPlatformAuthStore();
   runApp(
     MyApp(
       debugMode: args.contains('--debug'),
       splash: true,
       tourStore: TourStore(),
       incoming: incoming,
+      authStore: authStore,
+      // Com conta, o primeiro acesso pergunta o apelido (D-NEG-PRIVACIDADE).
+      requireNickname: authStore != null,
     ),
   );
 }

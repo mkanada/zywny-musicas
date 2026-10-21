@@ -1,6 +1,6 @@
 # J03 — Modelo da trilha, desbloqueio e progresso persistente
 
-**Repo:** zywny · **Depende de:** J01 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J01 · **Decisão necessária:** nenhuma
 (regras em [J00](J00-trilha-de-estudo.md))
 
 ## Objetivo

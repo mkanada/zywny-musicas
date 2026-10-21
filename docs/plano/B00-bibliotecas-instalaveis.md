@@ -1,6 +1,6 @@
 # B00 — Bibliotecas instaláveis (especificação da fase B)
 
-**Repo:** zywny · Especificação; quem executa um passo B lê este arquivo
+**Repo:** zywny-musicas · Especificação; quem executa um passo B lê este arquivo
 inteiro e o README.
 
 ## A ideia

@@ -1,6 +1,6 @@
 # R30 — Partitura em widgets
 
-**Repo:** zywny · **Depende de:** R29 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R29 · **Decisão necessária:** não
 
 ## Objetivo
 

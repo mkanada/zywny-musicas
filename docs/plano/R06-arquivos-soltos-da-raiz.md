@@ -1,6 +1,14 @@
 # R06 — Arquivos soltos da raiz de `lib/`
 
-**Repo:** zywny · **Depende de:** R03, R04, R05 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R03 e R04 (no zywny-comum), R05 · **Decisão necessária:** não
+
+> **Depois da divisão em três repositórios (19/10/2026).** Este passo foi
+> escrito quando o app ainda era um só. O fluxo de cursos — o outro lado do
+> ciclo que ele quebra — foi para o
+> [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado), e
+> `lib/library/`, `lib/settings/` e `lib/course/` foram para o
+> [zywny-comum](https://github.com/mkanada/zywny-comum). O texto abaixo é o
+> de 06/10 e serve para entender o porquê do passo.
 
 ## Objetivo
 
@@ -12,7 +20,7 @@ teste de camadas (R01) fica **vazia**.
 ## Ler antes (só isto)
 
 - [Revisão](../revisao/2026-10-06-qualidade-e-divisao.md): achado 8.
-- [R01](R01-teste-de-camadas.md): o que sobrou na lista de desvios.
+- R01 (teste de camadas, no zywny-comum): o que sobrou na lista de desvios.
 
 ## Contexto que você precisa
 

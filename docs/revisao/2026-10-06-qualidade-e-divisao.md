@@ -14,6 +14,16 @@ arquivo por passo em `docs/plano/`, no formato dos outros passos (ver
 `docs/plano/README.md`, "Como executar um passo"). Quem executa um passo R
 lê este documento e o arquivo do passo.
 
+> **Depois da divisão em três repositórios (19/10/2026).** Este texto é de
+> 06/10, quando o app ainda era um só. Dos passos R01–R17, ficaram neste
+> repositório os que mexem no app de músicas (R05–R12, tabela no fim). Os
+> outros — R01 (teste de camadas), R02 (`note_name` em `music/`), R03
+> (`AppSettings` sem ciclo), R04 (`practice/` sem `trail/`) e R13–R17 (os
+> pacotes `zywny_*`) — descrevem o núcleo compartilhado: os arquivos de
+> passo saíram daqui e o código que eles citam está no
+> [zywny-comum](https://github.com/mkanada/zywny-comum). Achados 7 e 9 são deles; o 8 ficou
+> dividido entre R05/R06 (aqui) e R04 (lá).
+
 Os achados 1–4 (três bugs e os caminhos absolutos) já foram corrigidos nos
 commits `685b26b` e `fac579c` e saíram daqui. A numeração dos que ficaram
 foi mantida, para bater com os commits e as notas.
@@ -35,9 +45,9 @@ foi mantida, para bater com os commits e as notas.
 |---|--------|--------|
 | 5 | `_ScoreHomePageState` com ~3650 linhas | R08–R11 |
 | 6 | Posse dupla de recursos só para teste | R07 |
-| 7 | Ciclo audio → settings → practice → audio | R03 |
-| 8 | Ciclos practice ↔ trail, course ↔ library e os outros entre pastas | R04–R06 |
-| 9 | `music/` depende de `course/` | R02 |
+| 7 | Ciclo audio → settings → practice → audio | R03 *(saiu — núcleo)* |
+| 8 | Ciclos practice ↔ trail, course ↔ library e os outros entre pastas | R04 *(saiu — núcleo)*, R05, R06 |
+| 9 | `music/` depende de `course/` | R02 *(saiu — núcleo)* |
 | 10 | Mockup dentro do pacote do app | R12 |
 
 ### 5. `main.dart` é uma classe-deus
@@ -138,6 +148,11 @@ Dart 3.6+ aceita pub workspaces (o app está no SDK `^3.13.3`): o
 `packages/`. Pré-requisitos: os ciclos quebrados (R02–R06) e o teste de
 camadas (R01) verde, para eles não voltarem. Os pacotes, nesta ordem:
 
+> Os cinco pacotes saíram deste repositório: hoje moram no
+> [zywny-comum](https://github.com/mkanada/zywny-comum/tree/main/packages), e o app os consome por caminho
+> (`path:`). O texto abaixo é o de 06/10 e serve para entender por que cada
+> pacote existe e como eles se dividem.
+
 1. **`zywny_music`** — `lib/music` com `note_name` e `note_names`, em Dart
    puro (R13). A `PerformanceTrack` **não** entra: importa `score_bridge`,
    que é um pacote Flutter, e arrastaria o Flutter para o formato de curso
@@ -155,6 +170,13 @@ camadas (R01) verde, para eles não voltarem. Os pacotes, nesta ordem:
 Practice e trail ficam no app, e talvez para sempre: cada pacote a mais
 custa manutenção. Também ficam no app as telas, `settings`, `main` e `ui`.
 
+(Na divisão de 19/10 isso mudou: `practice/`, `trail/`, `settings/`, `ui/` e
+`render/` foram para o [zywny-comum](https://github.com/mkanada/zywny-comum/tree/main/lib), compartilhados
+com o app de cursos. Aqui ficaram os controladores do app de músicas —
+`lib/app/library_screen.dart`, `package_install.dart`,
+`playback_controller.dart`, `score_render_session.dart`,
+`sound_output_controller.dart` e `trail_runner.dart`.)
+
 ## Observação de design
 
 A chave que cifra as bibliotecas sai da chave pública embutida no build. Na
@@ -163,12 +185,10 @@ documentado; fica registrado aqui para não ser esquecido.
 
 ## Passos, na ordem de implementação
 
+Os passos que ficaram neste repositório:
+
 | Passo | O que faz | Achado | Depende de |
 |-------|-----------|--------|------------|
-| [R01](../plano/R01-teste-de-camadas.md) | Teste de camadas, com os desvios de hoje listados | 7–9 | — |
-| [R02](../plano/R02-nomes-de-nota-em-music.md) | `note_name`/`note_names` para `music/` | 9 | R01 |
-| [R03](../plano/R03-configuracoes-sem-ciclo.md) | `AppSettings` só com folhas; `engine_opener` e `latency_calibration` fora de `audio/` | 7 | R02 |
-| [R04](../plano/R04-pratica-sem-trilha.md) | `StageResult`/`WaitTally` em `practice/`; a trilha fica com os 90% | 8 | R01 |
 | [R05](../plano/R05-telas-do-app-em-lib-app.md) | `library_screen` e painéis de configuração em `lib/app/` | 8 | R03 |
 | [R06](../plano/R06-arquivos-soltos-da-raiz.md) | Arquivos soltos da raiz de `lib/` nas suas pastas; lista de desvios vazia | 8 | R03, R04, R05 |
 | [R07](../plano/R07-opened-piece-obrigatorio.md) | `OpenedPiece` obrigatório; testes com fakes | 6 | R05 |
@@ -177,11 +197,9 @@ documentado; fica registrado aqui para não ser esquecido.
 | [R10](../plano/R10-playback-controller.md) | `PlaybackController` | 5 | R09 |
 | [R11](../plano/R11-trail-runner.md) | `TrailRunner` | 5 | R10 |
 | [R12](../plano/R12-workspace-e-mockup.md) | Workspace na raiz; mockup em `apps/zywny_mockup` | 10 | — |
-| [R13](../plano/R13-pacote-zywny-music.md) | Pacote `zywny_music` | — | R06, R12 |
-| [R14](../plano/R14-pacote-zywny-course-format.md) | Pacote `zywny_course_format` | — | R13 |
-| [R15](../plano/R15-pacote-zywny-audio.md) | Pacote `zywny_audio` | — | R13 |
-| [R16](../plano/R16-pacote-zywny-midi.md) | Pacote `zywny_midi` | — | R15 |
-| [R17](../plano/R17-pacote-zywny-library.md) | Pacote `zywny_library` | — | R13 |
+
+Os passos R01–R04 e R13–R17 saíram deste repositório com o núcleo; o que
+eles faziam já está feito no [zywny-comum](https://github.com/mkanada/zywny-comum).
 
 Por que esta ordem: o teste de camadas vem primeiro, para que cada ciclo
 quebrado fique quebrado. R02 vem antes do R03 porque `AppSettings` importa

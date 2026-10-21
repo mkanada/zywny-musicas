@@ -1,6 +1,6 @@
 # R35 — Rotas com `go_router`
 
-**Repo:** zywny · **Depende de:** R27, R31 · **Decisão necessária:** sim
+**Repo:** zywny-musicas · **Depende de:** R27, R31 · **Decisão necessária:** sim
 (D-REV-ROTAS)
 
 ## Objetivo
@@ -36,9 +36,8 @@ endereço, e o voltar do navegador volta de tela em tela (achado 25 da
 Pergunte ao usuário antes de escrever código:
 
 - **(a) `go_router` com URL de `#`.** Rotas para biblioteca, configurações,
-  cursos, curso, lição, exercício, níveis da leitura, Sobre e partitura
-  (`/musica/:biblioteca/:id`). O voltar do navegador funciona e cada tela
-  pode ser aberta por link.
+  Sobre e partitura (`/musica/:biblioteca/:id`). O voltar do navegador
+  funciona e cada tela pode ser aberta por link.
 - **(b) Ficar como está.** O app é usado sobretudo no celular, onde a URL
   não aparece; o custo de reorganizar a abertura da partitura não se paga.
 
@@ -65,7 +64,7 @@ URL de caminho no GitHub Pages (precisaria de um `404.html` que redireciona).
 
 1. `grep -rn 'MaterialPageRoute' lib` não acha nada.
 2. `just analyze` e `just test` limpos.
-3. Web: navegar até uma lição, recarregar a página e cair na mesma lição;
+3. Web: navegar até uma música, recarregar a página e cair na mesma música;
    o voltar do navegador volta tela a tela **(manual)**.
 4. Android: o botão voltar do sistema faz o mesmo que antes **(manual)**.
 

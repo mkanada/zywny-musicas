@@ -6,7 +6,9 @@ Cada tela do app nas duas orientações de um celular (emulador `Medium_Phone_2`
 - Análise de UX das duas orientações: o mesmo arquivo.
 - Cada tela na orientação em que o app a mostra: [`INDICE.md`](INDICE.md).
 
-Total: 59 telas, 86 fotos.
+Total: 46 telas, 60 fotos. As telas de curso, lição e exercício (47–60 na
+numeração antiga) são do app de cursos, que virou o
+[zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado).
 
 | # | Tela | Retrato | Paisagem |
 |---|---|---|---|
@@ -56,19 +58,5 @@ Total: 59 telas, 86 fotos.
 | 44 | "Ajustar o atraso" (o nome do arquivo guarda o rótulo antigo) | — só paisagem (partitura) | <a href="celular/paisagem/44-calibrar-latencia.png"><img src="celular/paisagem/44-calibrar-latencia.png" width="360"></a> |
 | 45 | Painel "Teclas que chegam" | — só paisagem (partitura) | <a href="celular/paisagem/45-monitor-midi.png"><img src="celular/paisagem/45-monitor-midi.png" width="360"></a> |
 | 46 | Biblioteca ao voltar do estudo | <a href="celular/retrato/46-biblioteca-depois-do-estudo.png"><img src="celular/retrato/46-biblioteca-depois-do-estudo.png" width="160"></a> | <a href="celular/paisagem/46-biblioteca-depois-do-estudo.png"><img src="celular/paisagem/46-biblioteca-depois-do-estudo.png" width="360"></a> |
-| 47 | Sem biblioteca: cartão "Comece pelo curso inicial" | <a href="celular/retrato/47-curso-inicial-sem-biblioteca.png"><img src="celular/retrato/47-curso-inicial-sem-biblioteca.png" width="160"></a> | <a href="celular/paisagem/47-curso-inicial-sem-biblioteca.png"><img src="celular/paisagem/47-curso-inicial-sem-biblioteca.png" width="360"></a> |
-| 48 | Lição 1 aberta pelo cartão | <a href="celular/retrato/48-licao-1-pelo-cartao.png"><img src="celular/retrato/48-licao-1-pelo-cartao.png" width="160"></a> | <a href="celular/paisagem/48-licao-1-pelo-cartao.png"><img src="celular/paisagem/48-licao-1-pelo-cartao.png" width="360"></a> |
-| 49 | Biblioteca com a linha "Cursos" | <a href="celular/retrato/49-biblioteca-com-cursos.png"><img src="celular/retrato/49-biblioteca-com-cursos.png" width="160"></a> | <a href="celular/paisagem/49-biblioteca-com-cursos.png"><img src="celular/paisagem/49-biblioteca-com-cursos.png" width="360"></a> |
-| 50 | Lista de cursos | <a href="celular/retrato/50-lista-de-cursos.png"><img src="celular/retrato/50-lista-de-cursos.png" width="160"></a> | <a href="celular/paisagem/50-lista-de-cursos.png"><img src="celular/paisagem/50-lista-de-cursos.png" width="360"></a> |
-| 51 | Tela do curso: uma feita, uma aberta, o resto bloqueado | <a href="celular/retrato/51-tela-do-curso.png"><img src="celular/retrato/51-tela-do-curso.png" width="160"></a> | <a href="celular/paisagem/51-tela-do-curso.png"><img src="celular/paisagem/51-tela-do-curso.png" width="360"></a> |
-| 52 | Lição 2, começo (retrato) | <a href="celular/retrato/52-licao-2-topo.png"><img src="celular/retrato/52-licao-2-topo.png" width="160"></a> | <a href="celular/paisagem/52-licao-2-topo.png"><img src="celular/paisagem/52-licao-2-topo.png" width="360"></a> |
-| 53 | Lição 2, rolada até a partitura | <a href="celular/retrato/53-licao-2-partitura.png"><img src="celular/retrato/53-licao-2-partitura.png" width="160"></a> | <a href="celular/paisagem/53-licao-2-partitura.png"><img src="celular/paisagem/53-licao-2-partitura.png" width="360"></a> |
-| 54 | Lição 2, cartão do exercício ("Precisa do teclado") | <a href="celular/retrato/54-licao-2-exercicio.png"><img src="celular/retrato/54-licao-2-exercicio.png" width="160"></a> | <a href="celular/paisagem/54-licao-2-exercicio.png"><img src="celular/paisagem/54-licao-2-exercicio.png" width="360"></a> |
-| 55 | Exercício sem teclado: "Conecte o teclado" | — (defeito X1 do estudo) | — (defeito X1 do estudo) |
-| 56 | Exercício `name-note` (botões) | <a href="celular/retrato/56-exercicio-name-note.png"><img src="celular/retrato/56-exercicio-name-note.png" width="160"></a> | <a href="celular/paisagem/56-exercicio-name-note.png"><img src="celular/paisagem/56-exercicio-name-note.png" width="360"></a> |
-| 57 | Lição 8, cartão do `choice` | <a href="celular/retrato/57-licao-8-choice-cartao.png"><img src="celular/retrato/57-licao-8-choice-cartao.png" width="160"></a> | <a href="celular/paisagem/57-licao-8-choice-cartao.png"><img src="celular/paisagem/57-licao-8-choice-cartao.png" width="360"></a> |
-| 58 | Exercício `choice` | <a href="celular/retrato/58-exercicio-choice.png"><img src="celular/retrato/58-exercicio-choice.png" width="160"></a> | <a href="celular/paisagem/58-exercicio-choice.png"><img src="celular/paisagem/58-exercicio-choice.png" width="360"></a> |
-| 59 | Exercício `play-notes` antes da rodada (paisagem) | <a href="celular/retrato/59-exercicio-play-notes-antes.png"><img src="celular/retrato/59-exercicio-play-notes-antes.png" width="160"></a> | <a href="celular/paisagem/59-exercicio-play-notes-antes.png"><img src="celular/paisagem/59-exercicio-play-notes-antes.png" width="360"></a> |
-| 60 | Exercício `play-notes` aprovado (100%) | <a href="celular/retrato/60-exercicio-play-notes-depois.png"><img src="celular/retrato/60-exercicio-play-notes-depois.png" width="160"></a> | <a href="celular/paisagem/60-exercicio-play-notes-depois.png"><img src="celular/paisagem/60-exercicio-play-notes-depois.png" width="360"></a> |
 
 Extra: [`celular/retrato/extra-partitura-em-retrato.png`](celular/retrato/extra-partitura-em-retrato.png) — a partitura numa caixa em retrato, se a trava de orientação não valesse (achado O4).

@@ -1,6 +1,6 @@
 # B07 — Vocabulário e ordenação vindos do manifesto
 
-**Repo:** zywny · **Depende de:** B04 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B04 · **Decisão necessária:** não
 
 ## Objetivo
 

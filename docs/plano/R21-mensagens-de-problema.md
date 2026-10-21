@@ -1,6 +1,6 @@
 # R21 — Mensagens de problema
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** não
 
 ## Objetivo
 
@@ -24,12 +24,13 @@ Lugares que mostram a exceção ao aluno (levantados em 15/10 com
 | `lib/main.dart:1860` | `Não deu para abrir <o> <hino>: $error` (área da partitura) |
 | `lib/app/sound_output_controller.dart:278` | `som: erro ao iniciar ($e)` (via `onMessage`) |
 | `lib/app/sound_output_controller.dart:464` | `não consegui usar esse soundfont ($e)` |
-| `lib/app/general_settings_panel.dart:568` | `não consegui usar esse soundfont ($e)` |
-| `lib/course/course_installer.dart:55` e `:191` | `Não consegui abrir o seletor de arquivos: $e` |
-| `lib/course/course_installer.dart:143` | `Não consegui guardar o curso: $e` |
-| `lib/course/course_installer.dart:248` | `Não consegui ler "<nome>": $e` |
-| `lib/app/libraries_section.dart:93` | `Não consegui remover <biblioteca>: $e` |
-| `lib/app/courses_section.dart:104` | `Não consegui remover <curso>: $e` |
+| `lib/app/general_settings_panel.dart:568` (no zywny-comum) | `não consegui usar esse soundfont ($e)` |
+| `lib/app/libraries_section.dart:93` (no zywny-comum) | `Não consegui remover <biblioteca>: $e` |
+
+As mensagens do instalador e do seletor de arquivos de **curso** ficam no
+app de cursos
+([zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado)); o
+padrão de texto delas é o mesmo, para as duas telas falarem igual.
 
 - `lib/app/score_render_session.dart:396-397` guarda `_status = 'erro: $e'`
   e `_error = '$e'`; é a origem do texto da `main.dart:1860`.

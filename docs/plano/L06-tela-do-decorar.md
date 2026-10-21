@@ -1,6 +1,6 @@
 # L06 — Tela: entrar na trilha do decorar e executar etapas
 
-**Repo:** zywny · **Depende de:** J05, J06, L04, L05 · **Decisão
+**Repo:** zywny-musicas · **Depende de:** J05, J06, L04, L05 · **Decisão
 necessária:** nenhuma
 
 ## Objetivo

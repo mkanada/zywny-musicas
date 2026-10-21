@@ -1,6 +1,6 @@
 # R34 — Dependências em dia e `pubspec.yaml` limpo
 
-**Repo:** zywny · **Depende de:** R24 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R24 (no zywny-comum) · **Decisão necessária:** não
 
 ## Objetivo
 

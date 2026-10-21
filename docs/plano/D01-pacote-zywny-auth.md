@@ -154,7 +154,7 @@ raiz do `zywny-comum`), registrado no `pubspec.yaml` dos dois apps.
   `dl.google.com` na hora de compilar (centenas de MB), a menos que
   `FIREBASE_CPP_SDK_DIR` aponte para uma cópia da mesma versão. No Windows o
   login é pelo navegador do sistema (REST), então esse SDK não é usado — mas
-  o build paga o download. Registrado no [X02](X02-windows-render.md).
+  o build paga o download. Registrado no X02 (render no Windows), que está no zywny-comum.
 
 ### Testes
 

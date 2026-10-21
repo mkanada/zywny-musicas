@@ -1,6 +1,6 @@
 # R22 — Diálogos de confirmação
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** não
 
 ## Objetivo
 
@@ -17,11 +17,12 @@ aparece com cor de perigo (achado 15 da
 
 | Onde | Pergunta | Botão | Destrutivo? |
 |---|---|---|---|
-| `lib/trail/trail_widgets.dart:265` (`confirmTrailReset`) | título e texto do chamador | `confirmLabel` | sim (reinicia a trilha) |
-| `lib/app/courses_section.dart:80` | "Remover <curso>?" | Remover | sim |
-| `lib/app/libraries_section.dart:68` | "Remover <biblioteca>?" | Remover | sim |
-| `lib/sight_reading/sight_levels_screen.dart:38` | "Voltar ao <passo>?" / "Reiniciar a leitura?" | Voltar / Reiniciar | sim |
-| `lib/course/ui/course_screen.dart:322` | lição bloqueada | Abrir assim mesmo | não |
+| `lib/trail/trail_widgets.dart:265` (`confirmTrailReset`, no zywny-comum) | título e texto do chamador | `confirmLabel` | sim (reinicia a trilha) |
+| `lib/app/libraries_section.dart:68` (no zywny-comum) | "Remover <biblioteca>?" | Remover | sim |
+
+Os diálogos de curso, de leitura à vista e de lição bloqueada ficam no app
+de cursos
+([zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado)).
 
 - `confirmTrailReset` é chamado por `lib/main.dart` (`_confirmNewCut`,
   L507), `lib/app/general_settings_panel.dart` e o próprio
@@ -32,7 +33,7 @@ aparece com cor de perigo (achado 15 da
 - As cores do app estão em `lib/ui/theme.dart`. A cor de perigo já existe:
   `kBadColor`, que é o `error` do `kAppColorScheme` (`theme.dart:67`). Use
   `Theme.of(context).colorScheme.error`.
-- Os outros `AlertDialog` (`course_installer.dart`, `midi_device_picker.dart`,
+- Os outros `AlertDialog` (`midi_device_picker.dart`,
   `practice_tools.dart`, `transpose_check.dart`, `libraries_section.dart:103`)
   são avisos ou têm conteúdo próprio; ficam como estão.
 

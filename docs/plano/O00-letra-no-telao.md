@@ -1,6 +1,6 @@
 # O00 — Letra no telão, em sincronia com o pianista
 
-**Repo:** zywny (+ um passo no bridge) · **Status:** pesquisa e proposta
+**Repo:** zywny-musicas (+ um passo no bridge) · **Status:** pesquisa e proposta
 (2026-10-07), **nada implementado** · **Quando:** depois da 1.0 ·
 **Decisões necessárias:** sim, ver "Decisões" no fim.
 

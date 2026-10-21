@@ -65,7 +65,7 @@ Se só der para fazer cinco coisas: A1, A2, A3, A5 e A6.
 ### A — Partitura e trilha
 
 **A1 · alta · Sem teclado, a tela padrão é um beco.** (11, 12)
-<img src="../telas/celular/12-trilha-pede-teclado.png" width="460">
+<img src="../telas/celular/12-ouvindo-o-trecho.png" width="460">
 
 Quem abre um hino antes de ligar o teclado — todo mundo, na primeira vez —
 aperta o play e recebe "conecte um teclado MIDI primeiro" numa barra preta,

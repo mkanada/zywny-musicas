@@ -1,6 +1,6 @@
 # U16 — Primeiro uso: cartão de começo
 
-**Repo:** zywny · **Depende de:** U13, U15 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** U13, U15 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

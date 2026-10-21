@@ -1,6 +1,6 @@
 # U13 — Progresso à vista: gaveta, linha do hino e pontuação
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

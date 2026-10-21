@@ -1,6 +1,6 @@
 # U05 — O selo e o resumo na mesma régua
 
-**Repo:** zywny · **Depende de:** U01 · **Decisão necessária:** D-SELO
+**Repo:** zywny-musicas · **Depende de:** U01 · **Decisão necessária:** D-SELO
 
 ## Objetivo
 

@@ -136,24 +136,16 @@ teclado:
 
 O passo Q08 só vira "concluído" quando esta tabela estiver preenchida.
 
-### B4. Exercício do curso — dois pedidos seus ainda não feitos
+### B4. Diagnóstico temporário da partitura
 
-1. **"Continuar tocando"** no exercício em tempo real: você se perdeu no tempo
-   e errou várias notas; hoje a rodada segue e conta erro. Falta definir o
-   que significa (esperar? retomar? não parar?). **Decisão sua.**
-2. **Lição 10 (Ode):** a primeira vez só com notas, sem ritmo (modo espera);
-   depois com ritmo. Arquivo: `assets/cursos/iniciacao/lessons/10-juntando-tudo.md`
-   (hoje os três exercícios estão em `mode: realtime`).
-
-Também decidir o diagnóstico temporário `lib/render/score_size_log.dart`
-(grava `ZYWNY_TAMANHO` no diag.log e um PNG por partitura): tirar o PNG ou tudo.
+Decidir o diagnóstico temporário `lib/render/score_size_log.dart` (no
+[zywny-comum](https://github.com/mkanada/zywny-comum/tree/main/lib/render); grava `ZYWNY_TAMANHO` no diag.log
+e um PNG por partitura): tirar o PNG ou tudo.
 
 ### B5. Telas em retrato e paisagem (docs/ux/estudo-ux-orientacao.md)
 
 | # | Achado | O que conferir | Resultado | Observação |
 |---|---|---|---|---|
-| B5.1 | X1 | O exercício não percebe que o teclado caiu | | |
-| B5.2 | X2 | O markdown das lições mantém a quebra de linha das linhas suaves | | |
 | B5.3 | P1 | A página fica parada no meio da virada ao retomar a trilha (precisa de aparelho) | | |
 
 ### B6. Decisões abertas da fase U (docs/plano/README.md)
@@ -178,6 +170,6 @@ você desenhou de propósito; passo U com decisão só avança depois da sua res
 ## Como me passar o retorno
 
 Cole a tabela preenchida (ou só as linhas que falharam ou pedem mudança) e,
-nos itens de opinião (A1, A4, A5, A17, B4, B6), diga o que prefere. Com isso
+nos itens de opinião (A1, A4, A5, A17, B6), diga o que prefere. Com isso
 eu ajusto a distância e as cores das fantasmas, a regra da nota muito
 atrasada, e sigo com os passos que dependiam das suas decisões.

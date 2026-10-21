@@ -1,6 +1,6 @@
 # B03 — Guardar bibliotecas (nativo e Web)
 
-**Repo:** zywny · **Depende de:** B01 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B01 · **Decisão necessária:** não
 
 ## Objetivo
 

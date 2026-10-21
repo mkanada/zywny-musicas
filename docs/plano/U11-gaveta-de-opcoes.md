@@ -1,6 +1,6 @@
 # U11 — Gaveta de opções: um seletor de modo, e o que vale na trilha
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** D-MODOS
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** D-MODOS
 
 ## Objetivo
 

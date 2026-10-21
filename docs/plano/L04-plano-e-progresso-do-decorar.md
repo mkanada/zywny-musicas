@@ -1,6 +1,6 @@
 # L04 — Plano, desbloqueio e progresso do decorar
 
-**Repo:** zywny · **Depende de:** J03, L01 · **Decisão necessária:**
+**Repo:** zywny-musicas · **Depende de:** J03, L01 · **Decisão necessária:**
 nenhuma (regras em [L00](L00-trilha-do-decorar.md))
 
 ## Objetivo

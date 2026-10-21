@@ -1,6 +1,6 @@
 # J08 — Saltos no caminho: músicas com casas e vários ritornelos
 
-**Repo:** zywny (pode tocar no `score_bridge` — ver abaixo) · **Depende
+**Repo:** zywny-musicas (pode tocar no `score_bridge` — ver abaixo) · **Depende
 de:** J04, J07 · **Decisão necessária:** **D-SALTO** (abaixo), a resolver
 com a medição do J01
 

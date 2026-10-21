@@ -1,6 +1,8 @@
 # D03 — Projeto Firebase (plano Spark) e configuração nas 4 plataformas
 
-**Repo:** zywny-musicas + zywny-aprendizado · **Depende de:** D01, D02 · **Decisão necessária:** confirmar o `applicationId` definitivo do Android (ex.: `com.zywny.musicas` e `com.zywny.aprendizado`)
+**Repo:** zywny-musicas + zywny-aprendizado · **Depende de:** D01, D02 · **Decisão necessária:** resolvida (2026-10-19): o `applicationId` do Android é `br.com.kanada.zywny.musicas` (app das músicas) e `br.com.kanada.zywny.aprendizado` (app dos cursos)
+
+**Status (2026-10-19): o código está pronto; falta criar o projeto no console do Firebase** (isso exige o login do usuário) e o aceite manual do login nas 4 plataformas. Ver "Notas de execução" no fim.
 
 ## Objetivo
 
@@ -67,6 +69,12 @@ Configurar o projeto no **Google Firebase** dentro do **plano gratuito (Spark)**
    - Em Linux e Windows: `FirebaseRestAuthStore(apiKey: ..., googleClientId: ...)`.
 5. Documentar no `README.md` os comandos para obter o SHA-1 de debug (`keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore`) para que qualquer máquina de desenvolvimento possa autenticar no emulador/aparelho Android.
 
+> **Como foi feito (2026-10-19):** os passos 1, 4 e 5 estão prontos; os 2 e 3
+> dependem do login do usuário no console do Firebase. O passo 3 mudou de
+> forma: a configuração não vem do `flutterfire configure` e sim de
+> `keys/firebase.json` por `--dart-define` (o motivo está em "Notas de
+> execução", abaixo).
+
 ## Fora de escopo
 
 - Regras de banco de dados de relatórios e MIDI (entram nos passos seguintes da fase D).
@@ -77,3 +85,120 @@ Configurar o projeto no **Google Firebase** dentro do **plano gratuito (Spark)**
 2. Login com conta Google funcionando no **Android** e na **Web**.
 3. Fechar e reabrir o app mantém o usuário logado sem pedir login de novo (e continua abrindo em modo avião dentro da janela de 7 dias).
 4. `just analyze` e `just test` verdes.
+
+**Status (2026-10-19): o critério 4 passou; os 1–3 dependem do projeto no console** (o usuário cria o projeto, preenche `keys/firebase.json` e o aceite é manual). Ver "Notas de execução".
+
+## Notas de execução (2026-10-19)
+
+### O que ficou pronto (código)
+
+- O `applicationId` definitivo do Android, nos dois apps:
+  `br.com.kanada.zywny.musicas` (músicas) e `br.com.kanada.zywny.aprendizado`
+  (cursos) — em `android/app/build.gradle.kts` (`namespace` e
+  `applicationId`) e no `MainActivity.kt`, que mudou de pasta.
+- A configuração do projeto no Firebase e a escolha do caminho de login de
+  cada plataforma, no pacote compartilhado `zywny_auth` (zywny-comum).
+- O `main()` dos dois apps cria o store da plataforma e o passa ao `MyApp`
+  (com `requireNickname: true`).
+- A configuração sai de `keys/firebase.json` (fora do git) e entra no build
+  por `--dart-define`; o `justfile` de cada app monta as flags.
+- O `README.md` de cada app traz o passo a passo do console e o comando do
+  SHA-1.
+
+### Desvios do plano
+
+1. **A configuração não vem do `flutterfire configure`.** O plano pedia
+   `lib/firebase_options.dart` e `android/app/google-services.json`
+   versionados. Aqui a configuração fica **fora do git**, em
+   `keys/firebase.json` (como as chaves das bibliotecas), e entra por
+   `--dart-define`; o app monta o `FirebaseOptions` na mão
+   (`packages/zywny_auth/lib/firebase_config.dart`). Motivos:
+   - o repositório já tem a regra de "chave fora do git" (`keys/`, com
+     `--dart-define`), e a configuração do Firebase é do mesmo tipo;
+   - sem o arquivo, o app **compila** e abre direto (testes, `just telas`),
+     em vez de quebrar a build de quem não tem o projeto;
+   - as `FirebaseOptions` explícitas dispensam o plugin Gradle
+     `com.google.gms.google-services` (e o `google-services.json`): o
+     `server_client_id` do Android, que vinha de lá, é uma flag
+     (`ZYWNY_GOOGLE_SERVER_CLIENT_ID`).
+   O `firebase_options.dart` do FlutterFire **não** é gerado: se alguém rodar
+   `flutterfire configure`, o arquivo sai sem uso (o app lê o
+   `firebase_config.dart`).
+2. **Sem a configuração, o app abre sem o portão da conta.** O `D02` já
+   deixava anotado que "sem `authStore`, o app abre direto"; agora é a
+   própria configuração que decide: com o projeto configurado, o portão fecha
+   e o login vira obrigatório (`D-NEG-SEM-CONTA`); sem ele, o app abre
+   direto — é assim que os testes e o roteiro `just telas` continuam
+   funcionando.
+3. **`ZYWNY_AUTH_OFF=true` desliga o portão.** O roteiro `just telas` percorre
+   o app de verdade: com a configuração no build, ele pararia na tela de
+   entrada. A flag desliga o portão só nesse roteiro (e em depuração) —
+   **nunca** em release.
+4. **O `applicationId` é `br.com.kanada.zywny.musicas`** (decidido pelo
+   usuário em 2026-10-19), e não `com.zywny.musicas` como o plano exemplificava.
+5. **O código compartilhado foi para o `zywny_auth`** (zywny-comum), e não
+   para cada app: os dois apps (músicas e cursos) usam a mesma conta, e a
+   configuração do projeto é a mesma.
+
+### Arquivos
+
+| Arquivo (repo) | O que é |
+| --- | --- |
+| `zywny-comum/packages/zywny_auth/lib/firebase_config.dart` | a configuração do projeto (vinda das flags), o que falta para cada plataforma e as opções do SDK |
+| `zywny-comum/packages/zywny_auth/lib/auth_bootstrap.dart` | a plataforma em que o app roda, o caminho do login (SDK ou REST) e a criação do store |
+| `zywny-comum/packages/zywny_auth/test/firebase_config_test.dart` | os testes da configuração e da escolha do caminho (7 testes) |
+| `zywny-comum/tool/firebase_defines.py` | lê `keys/firebase.json` e imprime as flags `--dart-define` (`--check` diz o que falta) |
+| `zywny-comum/tool/firebase.example.json` | o modelo do `keys/firebase.json` |
+| `zywny-musicas/lib/main.dart` | o `main()` cria o store e o passa ao `MyApp` |
+| `zywny-musicas/android/app/build.gradle.kts` e `.../kotlin/br/com/kanada/zywny/musicas/MainActivity.kt` | o `applicationId` definitivo |
+| `zywny-musicas/justfile` | `firebase_opts` nas receitas de build, `firebase_off` no `just telas` e a receita `firebase-check` |
+| `zywny-musicas/README.md` | o passo a passo do console e o SHA-1 |
+| `zywny-aprendizado/` | o mesmo nos quatro arquivos correspondentes |
+
+### O que falta (precisa do login do usuário no console)
+
+1. Criar o projeto no console do Firebase, no plano **Spark** (sem cartão):
+   <https://console.firebase.google.com/> — um projeto só para o ecossistema
+   Zywny (o app das músicas, o dos cursos e o painel do tutor apontam para
+   o mesmo).
+2. Em *Authentication > Sign-in method*, habilitar **Google** e anotar o
+   e-mail de suporte e o nome público do projeto.
+3. Registrar os apps:
+   - **Android das músicas**: `br.com.kanada.zywny.musicas`, com o SHA-1 de
+     debug **e** de release;
+   - **Android dos cursos**: `br.com.kanada.zywny.aprendizado`, com os
+     mesmos SHA-1;
+   - **Web**: o app do zywny-musicas (o do zywny-aprendizado pode vir
+     depois).
+4. No *Google Cloud Console > APIs & Services > Credentials* (do mesmo
+   projeto): um **OAuth 2.0 Client ID do tipo "Desktop"** (o do login pelo
+   navegador do sistema, no Linux e no Windows — ele aceita qualquer porta do
+   loopback e não tem segredo) e o **OAuth do tipo "Web" do app Android**
+   (o `server_client_id`, que vai no `google-services.json` do app).
+   Adicionar os dois na lista de IDs permitidos do provedor Google.
+5. Preencher `keys/firebase.json` (modelo em
+   `../zywny-comum/tool/firebase.example.json`) e conferir com
+   `just firebase-check`.
+6. Rodar o app (`just run` no Linux, `just run-android`, `just build-web`) e
+   conferir o login.
+
+O SHA-1 de debug (o mesmo em todas as máquinas de desenvolvimento):
+
+```sh
+keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore
+```
+
+(a senha é `android`).
+
+### Números medidos
+
+- `zywny_auth`: **32 testes** (25 do D01 + 7 do D03), verdes.
+- `just analyze` do zywny-comum: limpo.
+- `just analyze` + `just test` do zywny-musicas: 271 testes, verdes.
+- `just analyze` + `just test` do zywny-aprendizado: 508 testes, verdes.
+
+### Fora de escopo, como o plano previa
+
+O login **de verdade** (o critério 1–3) só pode ser conferido com o projeto
+no console; o código do portão e do store já está, e o `FakeAuthStore`
+continua cobrindo os testes.

@@ -1,6 +1,6 @@
 # U12 — Resumos: erros na pauta e frases no lugar de milissegundos
 
-**Repo:** zywny · **Depende de:** U02, U05 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** U02, U05 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

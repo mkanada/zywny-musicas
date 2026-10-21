@@ -1,6 +1,6 @@
 # U08 — Cores do destaque: primeira nota, mão do app, legenda
 
-**Repo:** zywny (`lib/` + `score_bridge/`) · **Depende de:** — ·
+**Repo:** zywny-musicas (`lib/` + `score_bridge/`) · **Depende de:** — ·
 **Decisão necessária:** nenhuma
 
 ## Objetivo

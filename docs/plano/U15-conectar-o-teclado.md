@@ -1,6 +1,6 @@
 # U15 — Conectar o teclado: orientação e estado
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** nenhuma
 
 ## Objetivo
 
@@ -21,7 +21,7 @@ escrito, não só num ponto colorido. Achado C5 e parte do E3; sugestão C5.
   L635-L680.
 - `lib/settings/general_settings_panel.dart` L197-L209 (a linha
   "Dispositivo").
-- [M01](M01-entrada-midi.md): "Contexto" (USB por OTG funciona sem
+- "Contexto" do M01 (no zywny-comum): USB por OTG funciona sem
   permissão; BLE é pacote à parte, **pendente**).
 - `test/midi_device_manager_test.dart`.
 

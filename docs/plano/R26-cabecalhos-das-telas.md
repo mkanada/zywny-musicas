@@ -1,6 +1,6 @@
 # R26 — Cabeçalhos das telas
 
-**Repo:** zywny · **Depende de:** R25 · **Decisão necessária:** sim
+**Repo:** zywny-musicas · **Depende de:** R25 (no zywny-comum) · **Decisão necessária:** sim
 (D-REV-CABEC)
 
 ## Objetivo
@@ -12,21 +12,20 @@ para ela) têm o mesmo cabeçalho: mesmo voltar, mesma fonte e mesmo fundo
 ## Ler antes (só isto)
 
 - [Revisão](../revisao/2026-10-15-revisao-geral.md): achado 19.
-- `lib/course/ui/course_chrome.dart` (`CourseScrollScaffold`, L175).
 
 ## Contexto que você precisa
 
 | Tela | Cabeçalho de hoje |
 |---|---|
-| Cursos (`lib/course/ui/courses_screen.dart`) | `AppBar` |
-| Curso, lição (`course_chrome.dart`, `CourseScrollScaffold`) | `AppBar` próprio do curso |
-| Níveis da leitura (`lib/sight_reading/sight_levels_screen.dart`) | `AppBar` com `kPanelSideBg` e `serifDisplay(22)` |
-| Sobre (`lib/about/about_screen.dart`) | `AppBar` |
-| Rascunho e problemas do curso (`lib/course/draft/`) | `AppBar` |
-| Exercício (`lib/course/ui/exercise_screen.dart`) | `AppBar` |
-| Configurações gerais (`lib/app/general_settings_panel.dart`) | cabeçalho próprio |
+| Sobre (`lib/about/about_screen.dart`, no zywny-comum) | `AppBar` |
+| Configurações gerais (`lib/app/general_settings_panel.dart`, no zywny-comum) | cabeçalho próprio |
 | Biblioteca (`lib/app/library_screen.dart`) | cabeçalho próprio (tela principal) |
-| Partitura (`lib/main.dart`) | `PhoneTitleBar` (`lib/ui/phone_chrome.dart:268`) |
+| Partitura (`lib/main.dart`) | `PhoneTitleBar` (`lib/ui/phone_chrome.dart`, no zywny-comum) |
+
+As telas de curso, lição, exercício e níveis da leitura também usam `AppBar`,
+mas moram no app de cursos
+([zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado)) e não
+entram neste passo.
 
 - Os dois `_Header` privados (`about_screen.dart:186` e
   `general_settings_panel.dart:646`) **não** são cabeçalhos de tela: o

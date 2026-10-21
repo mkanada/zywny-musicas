@@ -1,6 +1,6 @@
 # Q06 — Conferência no teclado
 
-**Repo:** zywny · **Depende de:** Q05 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** Q05 · **Decisão necessária:** não
 (D-TRP-CONFERIR decidida: primeira vez por teclado + ao tocar no selo)
 
 ## Objetivo

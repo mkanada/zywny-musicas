@@ -1,6 +1,6 @@
 # L05 — `PracticeController`: passagem com sumiço e revelação
 
-**Repo:** zywny · **Depende de:** J04, L02, L03 · **Decisão necessária:**
+**Repo:** zywny-musicas · **Depende de:** J04, L02, L03 · **Decisão necessária:**
 nenhuma
 
 ## Objetivo

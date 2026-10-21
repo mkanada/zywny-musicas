@@ -1,6 +1,6 @@
 # J07 — Fase final e reforço
 
-**Repo:** zywny · **Depende de:** J05 (e usa J02) · **Decisão necessária:**
+**Repo:** zywny-musicas · **Depende de:** J05 (e usa J02) · **Decisão necessária:**
 nenhuma
 
 ## Objetivo

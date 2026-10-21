@@ -1,6 +1,6 @@
 # R10 — `PlaybackController`
 
-**Repo:** zywny · **Depende de:** R09 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R09 · **Decisão necessária:** não
 
 ## Objetivo
 

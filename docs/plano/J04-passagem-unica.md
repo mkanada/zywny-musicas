@@ -1,6 +1,6 @@
 # J04 — `PracticeController`: passagem única de um intervalo, com resultado
 
-**Repo:** zywny · **Depende de:** J02 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J02 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

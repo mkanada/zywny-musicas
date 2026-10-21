@@ -1,6 +1,6 @@
 # U06 — Virada de página que deixa ler adiante
 
-**Repo:** zywny (`score_bridge/` + `lib/main.dart`) · **Depende de:** — ·
+**Repo:** zywny-musicas (`score_bridge/` + `lib/main.dart`) · **Depende de:** — ·
 **Decisão necessária:** D-VIRADA
 
 ## Objetivo

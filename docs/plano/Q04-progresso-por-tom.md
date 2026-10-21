@@ -1,6 +1,6 @@
 # Q04 — Progresso separado por tom
 
-**Repo:** zywny · **Depende de:** Q03 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** Q03 · **Decisão necessária:** não
 (D-TRP-PROGRESSO decidida: separado)
 
 ## Objetivo

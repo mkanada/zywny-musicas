@@ -1,6 +1,6 @@
 # B09 — Curadoria dos clássicos (OpenScore)
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** sim, a lista
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** sim, a lista
 final (o usuário aprova)
 
 ## Objetivo

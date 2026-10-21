@@ -1,6 +1,6 @@
 # U20 — "Sobre o Zywny" e o tutorial de primeiro uso
 
-**Repo:** zywny · **Depende de:** U16 (primeiro uso), U17 (vocabulário) ·
+**Repo:** zywny-musicas · **Depende de:** U16 (primeiro uso), U17 (vocabulário) ·
 **Decisão necessária:** nenhuma (as escolhas abaixo foram minhas; o usuário
 pode revisar)
 
@@ -31,7 +31,7 @@ cartão "Comece por aqui"); este passo o faz.
 
 ## Como funciona
 
-- **Biblioteca.** Na primeira abertura, com a lista e os cursos já na tela, o
+- **Biblioteca.** Na primeira abertura, com a lista já na tela, o
   passeio começa sozinho — `LibraryScreen.tourDelay` espera a abertura
   (splash) sair, 2,4 s no app (zero nos testes). Os passos que o app tem
   agora: boas-vindas, Cursos, Músicas (instalar, só sem biblioteca), Busca,

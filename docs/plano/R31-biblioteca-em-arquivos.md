@@ -1,6 +1,6 @@
 # R31 — Biblioteca em arquivos menores
 
-**Repo:** zywny · **Depende de:** R28 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R28 · **Decisão necessária:** não
 
 ## Objetivo
 

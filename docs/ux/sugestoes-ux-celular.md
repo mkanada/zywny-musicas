@@ -473,7 +473,8 @@ carona).
 ### E1 · Dois visuais no mesmo app
 
 **Proposta.** Um `ColorScheme` escrito à mão a partir da paleta de
-`lib/ui/theme.dart`, no lugar do gerado pela semente: `primary` = azul
+`lib/ui/theme.dart` (hoje no [zywny-comum](https://github.com/mkanada/zywny-comum/tree/main/lib/ui)),
+no lugar do gerado pela semente: `primary` = azul
 `kAccent`, `surface` = branco, contêineres nos beges da biblioteca. Diálogos,
 folhas, botões, interruptores e controles deslizantes passam a herdar daí; os
 `activeColor: kAccent` espalhados somem.

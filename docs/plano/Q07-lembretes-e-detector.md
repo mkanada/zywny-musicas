@@ -1,6 +1,6 @@
 # Q07 — Lembrete de voltar ao normal e detector de deslocamento
 
-**Repo:** zywny · **Depende de:** Q05 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** Q05 · **Decisão necessária:** não
 
 ## Objetivo
 

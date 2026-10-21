@@ -1,6 +1,6 @@
 # R19 — Ler sem apagar o progresso
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** não
 
 ## Objetivo
 
@@ -13,31 +13,28 @@ continua começando do zero, como hoje.
 
 - [Revisão](../revisao/2026-10-15-revisao-geral.md): achado 12 e "Já
   corrigido".
-- Os quatro stores, nos trechos abaixo.
+- Os stores, nos trechos abaixo.
 
 ## Contexto que você precisa
 
-Os quatro stores juntam "não consegui ler" e "não há nada" num valor vazio:
+Os stores juntam "não consegui ler" e "não há nada" num valor vazio. Neste
+app são dois:
 
 | Store | Onde lê | O que faz no erro | O que o aluno perderia |
 |---|---|---|---|
-| `CourseProgressStore` | `_read`, `lib/course/course_progress.dart` | devolve `null` | lições concluídas e exercícios aprovados do curso |
 | `PieceProgressStore` | `load`, `packages/zywny_library/lib/piece_progress.dart` (~L87–L111) | `_byId.clear()`; `_save` regrava o mapa da biblioteca inteira | notas e "Continuar" de todas as músicas da biblioteca |
-| `TrailProgressStore` | `ensureLoaded` (L299) e `_readAll` (~L349), `lib/trail/trail_progress.dart` | remove a trilha / pula a música | a trilha da música (o `TrailRunner`, `lib/app/trail_runner.dart:321`, parte do vazio e a primeira etapa grava por cima) |
-| `SightReadingStore` | `_load`, `lib/sight_reading/sight_progress.dart` | volta ao 1a | o passo da leitura à vista |
+| `TrailProgressStore` | `ensureLoaded` (L299) e `_readAll` (~L349), `lib/trail/trail_progress.dart` (no zywny-comum) | remove a trilha / pula a música | a trilha da música (o `TrailRunner`, `lib/app/trail_runner.dart:321`, parte do vazio e a primeira etapa grava por cima) |
+
+Os outros dois (`CourseProgressStore` e `SightReadingStore`) são do app de
+cursos e foram para o
+[zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado).
 
 - O erro de leitura vem de `SharedPreferencesAsync.getString`/`getKeys`
   (`PlatformException` no nativo; armazenamento bloqueado na Web). JSON
   ruim vem de `jsonDecode` (`FormatException`) ou do `fromJson`
   (`TypeError`, cast). Hoje um `try` só cobre os dois.
-- A correção de 16/10 já fez as escritas do curso esperarem a leitura
-  (`CourseProgressStore._update` e `_load`); falta a leitura dizer que
-  falhou.
-- `test/sight_progress_test.dart` tem um `_BrokenPrefs` (implementa
-  `SharedPreferencesAsync` com `noSuchMethod`) que serve de modelo para um
-  prefs que falha no `getString`.
-- `PieceProgressStore` mora em `packages/zywny_library`, de que o app já
-  depende; os outros três moram no app.
+- `PieceProgressStore` mora em `packages/zywny_library` (no zywny-comum), de
+  que o app já depende; o `TrailProgressStore` também está no zywny-comum.
 
 ## O que fazer
 

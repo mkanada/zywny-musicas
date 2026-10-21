@@ -2,6 +2,9 @@
 
 Consulta feita em 04/10/2026.
 
+> Vale para o ecossistema inteiro (os três repositórios), não só para o app de
+> músicas. Está aqui porque é a única fonte sobre o nome.
+
 ## Resumo
 
 O zywny.com **não está disponível**: foi registrado em 03/03/2026 e está

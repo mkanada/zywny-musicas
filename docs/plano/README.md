@@ -1,17 +1,16 @@
-# Plano de implementação — som, MIDI e treino (zywny 1.0)
+# Plano de implementação — app de músicas (zywny-musicas)
 
-Meta da 1.0: o usuário **treina qualquer música no teclado MIDI**. A
-apresentação da partitura está pronta (no Linux). Falta a parte sonora e
-MIDI: tocar a música por soundfont, tocar por MIDI no teclado plugado,
-receber e avaliar o que o usuário toca — em **Linux, Android, Web e Windows**
+Meta da 1.0: o usuário **abre uma música de uma biblioteca, vê a partitura e
+toca essa música no teclado MIDI** — em **Linux, Android, Web e Windows**
 (ordem de implementação, decidida pelo usuário: Windows por último por causa
 do custo de infraestrutura — sem máquina local, precisa de VM/CI).
 
-Este diretório divide o trabalho em passos pequenos, cada um executável por um
-modelo com contexto limitado (~250k tokens). Leia **só** este README e o
-arquivo do passo que for executar. Cada passo traz, em **"Contexto que você
-precisa"**, os fatos já medidos/pesquisados — não refaça a pesquisa; se um
-fato estiver errado, corrija o documento (passo 6 abaixo).
+Este diretório é o plano **deste app**. O trabalho foi dividido em três
+repositórios em 19/10/2026; cada fase mora onde o código dela mora (ver
+**Onde está cada fase**). Leia **só** este README e o arquivo do passo que for
+executar. Cada passo traz, em **"Contexto que você precisa"**, os fatos já
+medidos/pesquisados — não refaça a pesquisa; se um fato estiver errado,
+corrija o documento (passo 6 abaixo).
 
 ## Como executar um passo
 
@@ -29,133 +28,63 @@ fato estiver errado, corrija o documento (passo 6 abaixo).
    futuro, **corrija o documento** — um número errado custa mais que nenhum.
 7. Não faça commit nem push sem o usuário pedir.
 
-## Dois repositórios
+## Os três repositórios
 
 | Repo | Caminho | Papel |
 | --- | --- | --- |
-| zywny (este) | `/home/mauricio/IdeaProjects/zywny` | App Flutter. Aqui moram o motor de áudio (`native/zywny_audio`, Rust), a camada MIDI e o treino |
-| verovio_flutter_bridge | `/home/mauricio/rust_projects/verovio_flutter_bridge` | Fork do Verovio (C++) que exporta `.vsb` + pacote Dart `score_bridge` (parser, `ScoreView`, `ScoreController`, `ScorePlayer`). Dependência por `path:` no `pubspec.yaml` do zywny |
+| **zywny-musicas** (este) | `/home/mauricio/IdeaProjects/zywny-musicas` | App de músicas: a biblioteca (`.zywny`), a tela da biblioteca, a partitura aberta, o play com som e a trilha de estudo de uma música da biblioteca |
+| zywny-aprendizado | `/home/mauricio/IdeaProjects/zywny-aprendizado` | App de cursos: lições, exercícios, leitura à vista. Instala só pacotes de curso (`course.md`) |
+| zywny-comum | `/home/mauricio/IdeaProjects/zywny-comum` | Núcleo compartilhado: o pacote `zywny_comum` (partitura, prática, trilha, MIDI, som, configurações, telas comuns), os pacotes `packages/*`, o `score_bridge/` e o motor de som nativo (`native/`) |
 
-Ao editar o **bridge**, siga também o `CLAUDE.md` e as convenções de
-`docs/plano/README.md` **de lá** (estilo C++ do Verovio, `.clang-format`,
-saídas temporárias em `compare/out/`, não alterar `View`/`SvgDeviceContext`,
-a spec `docs/formato/especificacao-v1.md` é atualizada junto com o formato).
-O plano **daquele** repo usa os prefixos F/S/R/A/E/P (+ G, ver abaixo); os
-passos deste plano usam prefixos próprios (X, N, C, K, M, T, W, V, J, L,
-U, B, I, Q, O e EX) para não colidir. As letras simples acabaram: a fase
-EX tem prefixo de duas letras.
+Cada app instala só o seu tipo de pacote: este instala bibliotecas e, se
+receber um curso, diz que ele se abre no zywny-aprendizado.
 
-A fase **J** (trilha de estudo: a música em trechos, com etapas que se
-desbloqueiam como fases de um jogo) tem especificação própria em
-[J00-trilha-de-estudo.md](J00-trilha-de-estudo.md) — quem executa um passo
-J lê também esse arquivo.
+O app usa o núcleo por caminho (`path:` no `pubspec.yaml`), que precisa estar
+**ao lado**:
 
-A fase **L** (trilha do decorar: opcional, as notas dão lugar a pausas
-coloridas até a prova com a partitura coberta) tem especificação em
-[L00-trilha-do-decorar.md](L00-trilha-do-decorar.md) e se apoia na fase J —
-quem executa um passo L lê o J00 e o L00. A parte que depende do fork e do
-formato `.vsb` (glifos de pausa, figura da nota, regra do que apagar) está
-no plano **do bridge**, como G07–G09; L02 e L03 são a porta Dart.
+```
+../zywny-comum              # obrigatório: o núcleo compartilhado
+../verovio_flutter_bridge   # obrigatório: o pacote `verovio` e a libverovio.so
+../Hymn_Grabber             # opcional: só para o pacote de hinos (uso privado)
+```
 
-A fase **U** (UX do celular) executa as sugestões de
-[`docs/ux/sugestoes-ux-celular.md`](../ux/sugestoes-ux-celular.md), que
-respondem ao estudo de [`docs/ux/estudo-ux-celular.md`](../ux/estudo-ux-celular.md)
-sobre as telas de `docs/telas/celular/`. O índice, os princípios e o modo
-de conferir uma mudança de tela (`just telas`) estão em
-[U00-ux-do-celular.md](U00-ux-do-celular.md) — quem executa um passo U lê
-também esse arquivo e a sugestão citada no passo.
+`ZYWNY_COMUM` (no `justfile`) e `VEROVIO_BRIDGE` (nos scripts) sobrescrevem os
+caminhos. Os scripts que compilam as bibliotecas nativas moram no zywny-comum e
+escrevem o resultado na pasta deste app.
 
-A fase **B** (bibliotecas instaláveis: o app vem vazio e as músicas chegam
-em pacotes `.zywny` — hinos, clássicos — abertos por arquivo) tem
-especificação e decisões em
-[B00-bibliotecas-instalaveis.md](B00-bibliotecas-instalaveis.md) — quem
-executa um passo B lê também esse arquivo.
+### Onde está cada fase
 
-**N01 e N02 são 100%/quase 100% código do bridge** (fork C++ + spec, e
-`score_bridge/` — que também é pacote do bridge, não do zywny). Por isso os
-arquivos `N01-notes-json-no-fork.md` e `N02-notes-no-score-bridge.md` aqui
-são só ponteiros: o trabalho de verdade está detalhado e é executado **lá**,
-como **G01** e **G02** (fase nova do plano do bridge, letra escolhida por
-não colidir com nenhum prefixo dos dois planos). N02 mantém aqui só o
-passo zywny-side de verificação (`just native`, rodar o app).
+A regra que vale: **o passo aponta para o repositório onde o código mora.**
 
-A fase **I** (lições de terceiros: cursos em markdown com marcas, escritos
-por professores; o zywny mostra o conteúdo, roda os exercícios e confere os
-critérios de aceite) tem especificação em
-[I00-licoes-e-curso-inicial.md](I00-licoes-e-curso-inicial.md). O primeiro
-curso nesse formato, o **curso inicial** (teclado, pauta, claves, acidentes,
-tempos), é o teste de aceite da plataforma. As decisões D-LIC-\* foram
-tomadas em 2026-10-04 (chaves do formato em inglês, só cursos assinados pelo
-usuário, sem teclado na tela) — quem executa um passo I lê também o I00.
-
-A fase **Q** (transpor para ler sem acidentes: a partitura vai para um tom
-sem sustenidos nem bemóis e o app diz quanto ajustar no TRANSPOSE do teclado
-para a música voltar a soar no tom original) tem especificação em
-[Q00-transpor-sem-acidentes.md](Q00-transpor-sem-acidentes.md) — quem
-executa um passo Q lê também esse arquivo. As decisões D-TRP-\* foram
-tomadas em 2026-10-04 (progresso **separado por tom**).
-
-A fase **E** (exercícios de ouvido: o zywny toca uma nota ou um intervalo
-e o aluno descobre qual foi, no teclado ou nos botões) tem especificação
-em [E00-exercicios-de-ouvido.md](E00-exercicios-de-ouvido.md) — quem
-executa um passo E lê também esse arquivo. As decisões D-OUV-\* foram
-propostas em 2026-10-13 (tipo de exercício do curso, referência opcional).
-A segunda parte da fase (E05–E10, **ouvido junto com a leitura**: a
-partitura gerada pelo treino de leitura soa com uma diferença e o aluno
-diz onde) tem as decisões D-LEI, tomadas com o usuário em 2026-10-13, na
-seção "Segunda parte" do mesmo E00.
-
-A fase **EX** (exercícios do curso completo: tocar acordes pela cifra,
-acompanhar uma grade no andamento com base gerada, ouvir e repetir,
-harmonizar, nota-alvo, improviso com regras e medidores de legato,
-dinâmica, pedal e swing) tem especificação em
-[EX00-exercicios-do-curso-completo.md](EX00-exercicios-do-curso-completo.md).
-Ela vem da avaliação dos livros convertidos no repositório
-`music_books_grabber` (`curso/tipos-de-exercicio.md`). Quem executa um
-passo EX lê também o EX00. As decisões D-EXE-\* estão abertas (propostas
-em 2026-10-17).
-
-A fase **D** (papéis e distribuição: plataforma, tutor e aluno; login social
-no Firebase Auth compartilhado no `zywny-comum`; conteúdo atribuído por aluno,
-com validade; relatórios e MIDI das sessões para o tutor) tem especificação e
-decisões em [D00-papeis-e-distribuicao.md](D00-papeis-e-distribuicao.md) e
-primeiros passos em [D01](D01-pacote-zywny-auth.md)–[D04](D04-licencas-de-pacotes-por-conta.md).
-
-A fase **R** (revisão de código: quebrar os ciclos entre as pastas de
-`lib/`, desmontar `main.dart` em controllers e dividir o app em pacotes de
-um workspace Dart) tem especificação em
-[../revisao/2026-10-06-qualidade-e-divisao.md](../revisao/2026-10-06-qualidade-e-divisao.md)
-— quem executa um passo R lê também esse arquivo. Não muda nada que a
-pessoa veja; os passos seguem a ordem R01 → R17.
-
-A **segunda rodada da fase R** (R18–R35: bugs de dados, consistência das
-telas, serviços do app fora da biblioteca, um motor de som só, divisão dos
-arquivos grandes, lints e dependências) tem especificação em
-[../revisao/2026-10-15-revisao-geral.md](../revisao/2026-10-15-revisao-geral.md)
-— quem executa um passo R18–R35 lê esse arquivo, não o da primeira rodada.
-Diferente da primeira, alguns passos **mudam o que a pessoa vê** (R20–R26)
-e pedem `just telas` antes e depois. As decisões D-REV-\* estão na tabela
-de decisões.
+| Fase | Assunto | Onde está |
+| --- | --- | --- |
+| **B** | Bibliotecas instaláveis (`.zywny`), peças, curadoria, abrir pelo sistema | **aqui** (a tela e os geradores) e no zywny-comum (o envelope, o store, o `Piece`) |
+| **D** | Papéis, distribuição, conta (Firebase Auth) e licenciamento por `uid` | **aqui** (a especificação e o portão do app); o pacote `zywny_auth` no zywny-comum |
+| **J** | Trilha de estudo: a música em trechos, com etapas que se desbloqueiam | **aqui** (o `TrailRunner` do app); a política da trilha no zywny-comum |
+| **L** | Trilha do decorar: as notas dão lugar a pausas coloridas até a prova com a partitura coberta | **aqui** (a entrada na biblioteca); o sumiço e a pausa substituta no zywny-comum |
+| **O** | Letra no telão | **aqui** |
+| **Q** | Transpor sem acidentes: ler a música em um tom sem sustenidos | **aqui** (a gaveta e o selo); o cálculo no zywny-comum |
+| **R** | Revisão de código (bugs de dados, telas, serviços, arquivos grandes) | **aqui** os passos do app; os do núcleo e os do app de cursos foram para os repositórios deles |
+| **U** | UX do celular: as telas do app de músicas | **aqui** (as telas); os widgets no zywny-comum |
+| **V** | Portão da 1.0: matriz de plataformas | **aqui** |
+| **Z** | Planos futuros | **aqui** |
+| C, H, K, M, N, T, W, X, Y | Relógio, expressividade, motor de som, MIDI, notas, treino, Web, render por plataforma, nota fantasma | **zywny-comum** (o arquivo de passo saiu daqui) |
+| E, EX, I | Ouvido, exercícios do curso, lições e curso inicial | **zywny-aprendizado** (os arquivos de passo já foram para lá) |
 
 ## Convenções
 
 - **Rodar o app (Linux)**: `just run` (= `flutter run -d linux
   --no-enable-impeller`; sem Impeller por causa de flutter#191171).
   `just test`, `just analyze`. Headless: `xvfb-run -a` quando `DISPLAY` vazio.
+  `just test-comum` e `just analyze-comum` rodam a suíte do zywny-comum.
 - **Refazer a libverovio.so** depois de mexer no fork: `just native` (chama
   `verovio/bindings/dart/build_linux_so.sh` do bridge e faz `strip`).
   CLI do fork: `cd verovio/tools && cmake ../cmake && make -j4` →
   `verovio/tools/verovio --resource-path verovio/data`. Rode `cmake ../cmake`
   de novo ao criar `.cpp` (glob).
-- **score_bridge**: `cd score_bridge && flutter test` (fixtures `.vsb` em
-  `score_bridge/test/fixtures/`).
 - **Estilo Dart**: `dart format` + `flutter analyze` sem avisos. Comentários
   em português no bridge; no zywny o código existente comenta em inglês —
   imite o arquivo que estiver editando.
-- **Estilo Rust** (`native/zywny_audio`): `cargo fmt`, `cargo clippy -- -D
-  warnings`, nada de `unsafe` fora da fronteira FFI, **nada que aloque ou
-  trave (mutex, println, Vec::push sem capacidade) dentro do callback de
-  áudio**.
 - **Tempo**: tudo em **milissegundos musicais** da partitura (o `tstamp` do
   timemap, andamento original). Tempo de parede = musical / `speed`.
 - **Testes de lógica sem hardware**: toda lógica (agendador, casamento de
@@ -163,74 +92,52 @@ de decisões.
   nos critérios marcados **(manual)** — descreva o que foi feito e o
   resultado nas notas.
 - Saídas temporárias: diretório de scratch do sistema, nunca no repo.
+- **Caminhos nos passos são um retrato da época.** As fases B, J, L, Q, R, U
+  e D foram escritas quando o app era um repositório só; os caminhos citados
+  dentro dos arquivos de passo (`lib/library/`, `lib/practice/`,
+  `lib/trail/`, `lib/settings/`, `lib/render/`, `score_bridge/`,
+  `packages/`) são os de então. Hoje a maior parte está no zywny-comum, e o
+  **Mapa do código** abaixo é a referência atual.
 
-## Arquitetura alvo
+## Mapa do código (estado em 2026-10-20)
 
-```
-.vsb (gerado no app pelo fork do Verovio)
-  ├─ scene.json / glyphs.json  → ScoreView (pronto)
-  ├─ timemap.json              → ScoreTimeline / ScorePlayer (pronto)
-  └─ notes.json  (N01, novo)   → NoteTable (N02): pitch, pauta, canal, ligadura por id
-
-zywny
-  PerformanceTrack (N03)  = NoteTable × timemap → eventos {id, pitch, onMs, offMs, staff, ch, vel}
-      │
-      ├─ ScoreAudioScheduler (K04) ── janela à frente ──► SoundEngine (interface Dart)
-      │                                                    ├─ NativeSoundEngine (K02/K03: Rust rustysynth+cpal, FFI)
-      │                                                    ├─ MidiOutSoundEngine (M03: teclado externo)
-      │                                                    └─ WebSoundEngine (W04: SpessaSynth, js_interop)
-      │
-      ├─ PlaybackClock (C01) ◄── posição do áudio (quem manda é o áudio)
-      │        └─ ScorePlayer (bridge) lê o relógio → destaque / virada
-      │
-      └─ MidiInputService (M01/M02: flutter_midi_command) ──► PracticeSession (T01..T04)
-                                                              └─ cores no ScoreController
-```
-
-## Mapa do código (estado em 2026-09-24)
-
-### zywny
+### zywny-musicas (este app)
 
 | Conceito | Onde |
 | --- | --- |
-| Entrada, estado da tela, play/stop | `lib/main.dart`: `main` L17 (`--debug`), `_ScoreHomePageState` L59, `_renderAndShow` L212 (cria `ScorePlayer` ~L262), `_togglePlay` L298, `_stop` L312, `_onEntry` L322, `build` L550 |
-| Render do `.vsb` num isolate (FFI) | `lib/render/verovio_render.dart`: `VsbRenderRequest` L34, `renderScoreToVsb` L75, `_renderInIsolate` L82 |
-| Localizar `libverovio.so` | `lib/render/verovio_paths.dart` `findVerovioLibrary` — **só Linux** hoje |
-| Dados do Verovio (zip → diretório) | `lib/render/verovio_resources.dart` (`archive` + `path_provider`) |
-| Painel de opções | `lib/app/layout_panel.dart`, `lib/render/layout_options.dart` |
-| Build | `justfile`, `tool/build_verovio_linux.sh`, `tool/build_verovio_assets.sh`, `linux/CMakeLists.txt` L109+ (instala `libverovio.so` em `lib/` do bundle) |
-| Testes | `test/widget_test.dart`, `test/vsb_render_test.dart`, `test/layout_options_test.dart` |
-| Bibliotecas (fase B): formato | `lib/library/library_envelope.dart` (cifra AES-256-GCM + assinatura Ed25519, `ZYWN`), `lib/library/library_package.dart` (`LibraryManifest`, `LibraryTerm`, `LibraryPackage.parse` — o zip de dentro), `tool/library_crypto.py`, `tool/build_library.py`, `tool/build_hymn_assets.py` (`just pacote-hinos`) |
-| Bibliotecas: guardar/instalar | `lib/library/library_store.dart` (`LibraryStore`, lista + em uso em `shared_preferences`), `library_blob_store*.dart` (arquivo no nativo, IndexedDB na Web, memória nos testes), `library_installer.dart` (`installLibraryFromFile`), `lib/app/libraries_section.dart` |
-| Bibliotecas: músicas | `lib/library/piece.dart` (`Piece`, `PieceCatalog`: `libraryId`+`id`, número opcional), `library_keys.dart` (chaves por biblioteca), `piece_progress.dart`, `lib/settings/piece_settings.dart`, `lib/trail/trail_progress.dart`, `legacy_migration.dart`, `library_term_scope.dart` (vocabulário) |
-| Cursos (fase I): formato e motor | `lib/course/format/` (modelo, leitor `course_reader.dart`, validador, `course_render_check.dart` do `--render`), `lib/course/exercise/` (tipos, rodada, `pass`, aluno simulado nos testes), `tool/zywny_course.dart` (`just curso-validar`), `tool/build_course.py` (`just pacote-curso`) |
-| Cursos: telas e progresso | `lib/course/ui/` (`courses_screen.dart`, `course_screen.dart`, `lesson_screen.dart`, `exercise_screen.dart`, `question_body.dart`, `markdown_view.dart`), `lib/course/course_progress.dart` (`CourseProgressStore`, JSON `course_progress:<id>`), `lib/course/draft/` (rascunho I12), `assets/cursos/iniciacao/` (curso embutido) |
+| Entrada do app, `MyApp`, `AuthGate` | `lib/main.dart` |
+| A tela da biblioteca e a busca | `lib/app/library_screen.dart` |
+| Instalar uma biblioteca por arquivo | `lib/app/package_install.dart` |
+| Escolha da saída de som (motor nativo ou MIDI out) | `lib/app/sound_output_controller.dart` |
+| Render da partitura e transposição | `lib/app/score_render_session.dart` |
+| Play, agendador, loop, metrônomo, contagem | `lib/app/playback_controller.dart` |
+| A trilha de estudo de uma música da biblioteca | `lib/app/trail_runner.dart` |
+| Os passeios de primeiro uso | `lib/tutorial/` |
+| Bibliotecas: gerar pacotes | `tool/build_library.py`, `tool/build_hymn_assets.py` (hinos), `tool/build_classics.py`, `tool/fetch_classics.py` (curadoria) |
+| Testes do app | `test/` (biblioteca, telas, controladores, teste de camadas) e `integration_test/telas_celular_test.dart` (as fotos das telas) |
 
-### score_bridge (no bridge)
+### zywny-comum (núcleo, `../zywny-comum`)
 
 | Conceito | Onde |
 | --- | --- |
-| Modelo | `score_bridge/lib/src/model.dart`: `VsbDocument` L167 (`manifest`, `glyphs`, `pages`, `timemap`, `meta`, `alternates` preguiçoso), `TimemapEntry` L633 (`tstamp` ms, `on`, `off`, `restsOn`, `restsOff`, `tempo`, `measureOn`, `qstamp`, `qfrac`) |
-| Parser | `score_bridge/lib/src/parser.dart`: lê `manifest.files.timemap`/`.meta`/`.alternates` do zip (L57-L121) |
-| Player | `score_bridge/lib/src/score_player.dart`: `Ticker` próprio, `_positionMs`, `speed`, `play` ~L150, `pause`, `_onTick` (soma `delta*speed`), `advance(Duration)`, `_advanceToMs`, `_apply` (on → `highlightAll`, off → `release`), `seek`, `seekToElement` L269, `onEntry`, `dispose` L346 |
-| Linha do tempo | `score_bridge/lib/src/score_timeline.dart`: `ScoreTimeline(document)`, `entries`, `durationMs`, `measures` (`MeasureInfo`: id, page, noteIds, startMs, endMs, pass, view), `measureIndexAt` |
-| Ids expandidos | `score_bridge/lib/src/expansion.dart`: `VsbDocument.sceneIdOf(id)` tira o `-rend<N>`; `passOf` |
-| Destaque | `score_bridge/lib/src/score_controller.dart`: `highlightAll`, `release`, `releaseAll`, `clearHighlights`, `clearAll`, cores por id |
-| API pública | `score_bridge/lib/score_bridge.dart` (exporte daqui tudo que o app usar) |
+| Partitura | `lib/render/` (Verovio, layout, tamanho de página), `score_bridge/` (parser do `.vsb`, `ScenePainter`, `ScorePlayer`) |
+| Prática e trilha | `lib/practice/` (sessão, modos, avaliação, cores, transpose check), `lib/trail/` (caminho, plano, etapa, progresso) |
+| MIDI | `lib/midi/`, `packages/zywny_midi` |
+| Som | `lib/audio/`, `packages/zywny_audio`, `native/zywny_audio` (Rust) e `web_src/` (SpessaSynth) |
+| Configurações | `lib/settings/` (`AppSettings`, `PieceSettings`, transposição efetiva) |
+| Interface comum | `lib/ui/`, `lib/app/` (painéis e telas compartilhados), `lib/about/` |
+| Biblioteca (dados) | `packages/zywny_library` (envelope, pacote, store, `Piece`), `lib/incoming/` (pacotes abertos pelo sistema) |
+| Autenticação | `packages/zywny_auth` (contrato `AuthStore`, SDK do Firebase, login de desktop) |
+| Diagnóstico | `packages/zywny_diag` |
 
-### Fork do Verovio (no bridge, `verovio/`)
+### Os dois outros repositórios
 
 | Conceito | Onde |
 | --- | --- |
-| Empacotar `.vsb` | `src/toolkit.cpp` `Toolkit::RenderToBridgeFile` (~L2364): timemap via `RenderToTimemap("{\"includeMeasures\": true}")`, `ZipFileWriter`, `BridgeWriter::WriteManifest(generator, pages, hasTimemap, hasMeta, hasAlternates, hasDebug)`; também `RenderToBridgeJson` (JSON único) |
-| Doc expandido (repetições) | `Toolkit::SetMidiDoc()` L287 → `m_midiDoc` (ids `-rend<N>`) |
-| Geração de MIDI | `src/doc.cpp` `Doc::ExportMIDI` (~L450-L620): laço por pauta (`staffDef->GetN()` = track), canal de `instrDef->GetMidiChannel()`, `transSemi`, patch |
-| Nota → MIDI | `src/midifunctor.cpp` `GenerateMIDIFunctor::VisitNote` L807: pula `HasSameasLink`, cue (se `m_noCue`), **ligadura secundária** (`GetScoreTimeTiedDuration() < 0`); `velocity = HasVel ? GetVel : MIDI_VELOCITY`; trinados/tremolos expandidos em `m_expandedNotes`; pitch via `GenerateMIDIFunctor::GetMIDIPitch` L1149 = `note->GetMIDIPitch(m_transSemi, m_octaveShift)` (**inclui 8va** via `HandleOctave`) |
-| Timemap | `GenerateTimemapFunctor::AddTimemapEntry` L1237: **toda** nota (inclusive ligada secundária) entra em `on`/`off` com seu próprio tempo |
-| Ligaduras | `InitTimemapTiesFunctor::VisitTie` L313: nota 1 recebe a duração somada; nota 2 fica com `-1` |
-| Bindings Dart | `verovio/bindings/dart/lib/src/verovio_toolkit.dart` (`renderToMIDI` L252, `getMIDIValuesForElement` L173 — **este ignora 8va/transposição**, não use para pitch) |
+| Cursos, lições, exercícios, leitura à vista | `../zywny-aprendizado/lib/` |
+| Formato de curso | `../zywny-comum/packages/zywny_course_format` |
 
-## Fatos (pesquisados em 2026-09-24)
+## Fatos (pesquisados em 2026-09-24, revistos em 2026-10-20)
 
 - **Bibliotecas (fase B, 2026-10-04):** o app **não traz música nenhuma**; as
   músicas vêm de `.zywny` instalados por arquivo (D-BIB). O `.zywny` é um
@@ -242,8 +149,7 @@ zywny
   74.238.467 para 71.183.847 B, o bundle Linux de 59.683.240 para 56.595.310 B
   e a Web de 72.319.773 para 69.174.996 B (~3,1 MB cada).
 
-
-- **Estado das plataformas hoje**: só Linux roda. Android: existe
+- **Estado das plataformas hoje:** só Linux roda. Android: existe
   `verovio/bindings/dart/android-libs/arm64-v8a/libverovio.so` no bridge e um
   `build_android_so.sh`, mas o zywny não empacota a lib nem sabe achá-la.
   Windows: **não existe build** da `verovio.dll`. Web: nada roda (FFI,
@@ -252,53 +158,29 @@ zywny
   `~/Android/Sdk/ndk/` (23…29), `cargo`/`rustup` com só
   `x86_64-unknown-linux-gnu`/`musl` instalados, Chrome disponível
   (`flutter devices`). **Sem `emcc`**, sem máquina Windows local.
-- **MIDI I/O**: `flutter_midi_command` 1.3.0 (set/2026) cobre Android
-  (`android.media.midi`, USB e BLE), Linux (ALSA), Windows (WinMM) e Web (Web
-  MIDI). API: `MidiCommand().devices`, `connectToDevice(d)`,
-  `onMidiDataReceived` (`MidiDataReceivedEvent{device, transport, timestamp,
-  message}` com mensagens tipadas `NoteOnMessage`, `CCMessage`…),
-  `sendData(bytes, deviceId:)`, `onMidiSetupChanged`. BLE é pacote à parte
-  (`flutter_midi_command_ble`). Alternativa: crate Rust `midir` (ALSA,
-  WinMM/WinRT, Web MIDI, Android API 29+ via AMidi).
-- **Síntese**: nenhum pacote Flutter faz SF2 nas 4 plataformas
-  (`flutter_midi_pro` 4.0.4: só Android/iOS/macOS; `dart_melty_soundfont`:
-  só PCM e sem saída de áudio multiplataforma; `flutter_pcm_sound`: sem
-  Linux/Windows/Web). Escolha: crate próprio com **`rustysynth` 1.3.6** (MIT,
-  SF2; **SF3 não documentado — assuma sem SF3**) + **`cpal`** (AAudio no
-  Android, ALSA no Linux — PipeWire atende via pipewire-alsa —, WASAPI no
-  Windows, WebAudio/AudioWorklet em wasm).
-- **Web**: Web MIDI em Chrome/Edge/Opera/Samsung Internet; Firefox 108+ só
-  com site-permission add-on; **Safari/iOS não têm**. Exige HTTPS (ou
-  `localhost`). `AudioContext` só abre com gesto do usuário. Sintetizador web
-  recomendado: **`spessasynth_lib`** (Apache-2.0, AudioWorklet, SF2/SF3/DLS;
-  `npm i spessasynth_core spessasynth_lib`,
-  `ctx.audioWorklet.addModule(...)`, `new WorkletSynthesizer(ctx)`; versões
-  < 4.3.0 sem suporte).
-- **Windows**: WinMM era de cliente único (porta ocupada por outro app =
-  falha). O Windows MIDI Services (Win11 24H2/25H2, a partir de fev/2026)
-  torna tudo multi-cliente, inclusive para WinMM. **Win10 continua
-  exclusivo** → tratar "porta ocupada" com mensagem clara.
-- **Windows a partir do Linux**: a `verovio.dll` cross-compila com
-  mingw-w64 (testado: 14,9 MB, só `KERNEL32`/`msvcrt`, carrega no Wine),
-  mas precisa de dois ajustes no fork. O app Flutter **não** compila no
-  Linux (`"build windows" only supported on Windows hosts`). Detalhes, VM e
-  CI gratuito em [windows-a-partir-do-linux.md](windows-a-partir-do-linux.md).
 - **Latência**: alvo tecla→som ≤ 20 ms (bom ≤ 10 ms). Fone Bluetooth soma
   150-250 ms — avise o usuário. Android varia muito por aparelho → calibração
-  (T04).
+  (no zywny-comum).
 - **Piano digital tem som próprio**: se o app também sintetizar a entrada,
   sai som em dobro. O monitor da entrada pelo sintetizador do app vem
   **desligado** por padrão quando a saída é o próprio teclado.
+- **A conta do aluno (fase D):** o login é feito no Firebase Authentication,
+  no plano gratuito (Spark), num projeto só para o ecossistema Zywny — o app
+  das músicas, o dos cursos e o painel do tutor apontam para o mesmo projeto,
+  e a conta é a mesma nos dois. A configuração fica fora do git, em
+  `keys/firebase.json`, e entra no build por `--dart-define`. Sem esse arquivo
+  o app **compila do mesmo jeito e abre sem a conta** (é assim que os testes e
+  o roteiro `just telas` rodam). Passo a passo em
+  [D03](D03-configuracao-firebase-e-android-web.md).
 
 ## Decisões
 
 | Id | Pergunta | Bloqueia | Recomendação | Status |
 | --- | --- | --- | --- | --- |
-| D-SF | Qual soundfont empacotar (tamanho × licença × qualidade)? | K01 | GeneralUser GS (~30 MB, licença permissiva, GM completo) como padrão; permitir o usuário carregar outro `.sf2` | **aberta** |
-| D-MIDI | Pilha MIDI: `flutter_midi_command` ou `midir` (Rust)? | M01 | `flutter_midi_command` (pronto nas 4 plataformas); `midir` só se M01 medir problema | **aberta** (recomendação pronta) |
-| D-WIN | Como compilar e testar no Windows (máquina própria, VM, CI)? | X02, K06 | DLLs cross-compiladas no Linux (mingw) + app compilado e testado numa VM Windows 11 no KVM; CI opcional — ver [windows-a-partir-do-linux.md](windows-a-partir-do-linux.md) | **aberta** (pesquisa feita) |
-| D-WEB | A Web entra na 1.0 com o mesmo peso? | ordem da fase W | Sim, mas depois do Android e antes do Windows (ordem do usuário: Linux → Android → Web → Windows); o custo é portar o render (Verovio→wasm), não o som | **decidida**: sim — o usuário mandou trabalhar na Web (2026-10-04) |
-| D-WEB-SYNTH | Síntese na Web: SpessaSynth (JS) ou o crate Rust em wasm? | W04 | SpessaSynth (maduro, AudioWorklet pronto); mesmo `.sf2` nos dois lados | **decidida**: SpessaSynth (2026-10-04, ao seguir a recomendação no W04) |
+| D-BIB | Bibliotecas instaláveis: distribuição, app vazio, origem, Web, fonte dos clássicos, remover, atualizar, migrar, termo, extensão | fase B | — | **decidida** (2026-10-04): as 14 decisões D-BIB-* no [B00](B00-bibliotecas-instalaveis.md) |
+| D-BIB-CIFRA | Pacote `.zywny` cifrado e assinado; privada gera, pública sob controle do usuário, chaves fora do git | fase B | — | **decidida** (2026-10-04): ver o B00 "O envelope" |
+| D-SALTO | Trilha em músicas cujo caminho sem repetições tem salto (casas de 1ª/2ª vez, vários ritornelos): salto no agendador ou usar a última passagem? | J08 | (a) salto no agendador (generaliza o loop para vãos; sessões pré-filtradas sem os vãos) — a via (b) resgatava só 15/115 saltos | **decidida (a)**: ver [J08](J08-saltos-no-caminho.md) |
+| D-TRP | Transpor sem acidentes: alvo, direção, tom do som do app, escopo, progresso, conferência, nomes, lições | fase Q | — | **decidida** (2026-10-04): as 8 decisões D-TRP-* no [Q00](Q00-transpor-sem-acidentes.md) |
 | D-TREINO | Tolerâncias e UX do treino (janela de acerto, o que conta como erro) | T03 | ±75 ms "certo", ±150 ms "quase", fora disso "errado/perdido"; ornamentos e apojaturas não cobrados na 1.0 | **aberta** |
 | D-RITMO | Treino de rítmica: janelas, cobrar duração, som do toque | T05 | ±60 ms "certo", ±130 ms "quase" (de parede); duração não cobrada; toque soa as notas esperadas do onset ("piano mágico") | **aberta** |
 | D-FAIXA | Onde mora a informação da trilha no celular: na barra do título, ou numa faixa própria que não cobre a pauta? (O J00 pede "uma faixa fina na partitura"; hoje ela cobre as cifras e o cabeçalho dos painéis) | U01 | (a) barra do título — a área da partitura não muda e não há re-render; (b) faixa própria sempre presente, que custa 34 dp de pauta | **aberta** |
@@ -310,64 +192,51 @@ zywny
 | D-SISTEMAS | Dois sistemas por página no celular (notação menor que 12)? | U10 (parte 3) | Decidir com a tabela que o U10 mede (compassos por página × altura do pentagrama); as partes 1 e 2 do passo não dependem disto | **decidida**: não — `kPhoneUnit` fica em 12 (a medição do U10 mostra que dois sistemas só cabem com unit ≈ 6) |
 | D-MODOS | Um seletor só de quatro modos (Ouvir, Espera, Tempo real, Ritmo) no lugar do seletor de dois + dois interruptores? | U11 | Sim | **decidida**: sim (U11) |
 | D-ORDEM | A seta da ordenação: direção real ("↑" crescente) ou a regra do artboard ("↓" = direção padrão da chave)? | U14 (só a seta) | Direção real | **decidida**: direção real (U14) |
-| D-SALTO | Trilha em músicas cujo caminho sem repetições tem salto (casas de 1ª/2ª vez, vários ritornelos): salto no agendador ou usar a última passagem? | J08 | **decidida (a)**: salto no agendador (generaliza o loop para vãos; sessões pré-filtradas sem os vãos) — a via (b) resgatava só 15/115 saltos (o resto é intro+casas e ritornelos seguidos); medição refeita: 0 hinos sem trilha — ver [J08](J08-saltos-no-caminho.md) | **decidida** |
-| D-BIB | Bibliotecas instaláveis: distribuição, app vazio, origem, Web, fonte dos clássicos, remover, atualizar, migrar, termo, extensão | fase B | — | **decidida** (2026-10-04): as 14 decisões D-BIB-* no [B00](B00-bibliotecas-instalaveis.md) |
-| D-LIC | Lições de terceiros: sintaxe das marcas, idioma, confiança, vídeo, notação, autoria, curso inicial, nomes, sem teclado, entrada | fase I | — | **decidida** (2026-10-04): as 10 decisões D-LIC-\* no [I00](I00-licoes-e-curso-inicial.md) |
-| D-TRP | Transpor sem acidentes: alvo, direção, tom do som do app, escopo, progresso, conferência, nomes, lições | fase Q | — | **decidida** (2026-10-04): as 8 decisões D-TRP-\* no [Q00](Q00-transpor-sem-acidentes.md) |
-| D-BIB-CIFRA | Pacote `.zywny` cifrado e assinado; privada gera, pública sob controle do usuário, chaves fora do git | fase B | — | **decidida** (2026-10-04): ver o B00 "O envelope" |
 | D-REV-SIMPL | A nota da versão simplificada: mostrar as duas na linha da música, ou juntar numa só? | R20 | (a) mostrar as duas ("simplificada N%"); a ordenação usa a do original | **aberta** |
 | D-REV-CABEC | Cabeçalho das telas secundárias: `AppBar` com tema, ou um cabeçalho próprio no desenho da biblioteca? | R26 | (a) `AppBar` com `appBarTheme`; biblioteca e partitura ficam com o cromo delas | **aberta** |
 | D-REV-DI | Como os serviços do app chegam às telas: `provider` ou `InheritedWidget` à mão? | R27 | (a) `provider` | **aberta** |
 | D-REV-ROTAS | Adotar `go_router` (URL de `#` na Web) ou ficar com `Navigator.push`? | R35 | (b) ficar como está por enquanto; rever se a Web ganhar uso próprio | **aberta** |
-| D-EXE | Exercícios do curso completo: grafia da cifra, rigor do acorde, quando conferir, mãos sem partitura, base gerada, aprovação do improviso, swing, limiares dos medidores, ordem | fase EX | — | **aberta** (2026-10-17): as 9 decisões D-EXE-\* no [EX00](EX00-exercicios-do-curso-completo.md) |
-| D-NEG | Papéis, distribuição, login obrigatório no Firebase Auth (Google e redes sociais, plano Spark até 50k MAU, compartilhado no `zywny-comum`) e licenciamento de pacotes por conta | fase D | — | **decidida** (2026-10-17 e 2026-10-19): as 15 decisões D-NEG-\* no [D00](D00-papeis-e-distribuicao.md) |
+| D-NEG | Papéis, distribuição, login obrigatório no Firebase Auth (Google e redes sociais, plano Spark até 50k MAU, compartilhado no `zywny-comum`) e licenciamento de pacotes por conta | fase D | — | **decidida** (2026-10-17 e 2026-10-19): as 15 decisões D-NEG-* no [D00](D00-papeis-e-distribuicao.md) |
+
+As decisões do núcleo (D-SF, D-MIDI, D-WIN, D-WEB, D-WEB-SYNTH) e as do app
+de cursos (D-LIC, D-OUV, D-LEI, D-EXE) saíram daqui com as fases delas.
 
 ## Riscos conhecidos
 
-1. **Web é o item mais caro** e não é por causa do som: o pipeline do `.vsb`
-   é todo FFI. Mitigação: protótipo W01 cedo (pode rodar em paralelo à fase
-   K), mesmo com a fase W só entrando de fato depois do Android na ordem de
-   implementação.
-2. **Latência no Android**. Mitigação: K05 mede de ponta a ponta antes de
+1. **A Web é o item mais caro** e não é por causa do som: o pipeline do `.vsb`
+   é todo FFI. Mitigação: o protótipo do Verovio em wasm (W01, no
+   zywny-comum) antes de ligar a Web.
+2. **Latência no Android**. Mitigação: medir de ponta a ponta antes de
    construir o treino em cima.
-3. **Drift áudio × vídeo** se o `Ticker` continuar mandando. Mitigação: C01
-   (relógio plugável) antes de ligar o som.
-4. **Notas presas** (note on sem note off) em pause/seek/erro. Mitigação: toda
+3. **Notas presas** (note on sem note off) em pause/seek/erro. Mitigação: toda
    implementação de `SoundEngine` tem `allNotesOff()` e ela é chamada em
    pause, stop, seek, troca de dispositivo e `dispose`.
-5. **Pitch errado com 8va/transposição**: não use `getMIDIValuesForElement`.
-   Mitigação: N01 grava o pitch que o `GenerateMIDIFunctor` calcula.
+4. **Pitch errado com 8va/transposição**: não use `getMIDIValuesForElement`.
+   Mitigação: o pitch que o Verovio calcula é o que o app usa.
 
 ## Passos
 
+Os passos do app. Os do núcleo e os do app de cursos não estão aqui (ver
+**Onde está cada fase**).
+
 | Passo | Título | Depende de | Decisão | Status |
 | --- | --- | --- | --- | --- |
-| [N01](N01-notes-json-no-fork.md) | Fork: eventos MIDI no `.vsb` (`midi.json`, ex-`notes.json`) | — | — | concluído (via G01 no bridge) |
-| [N02](N02-notes-no-score-bridge.md) | `score_bridge`: modelo e parser de `midi.json` | N01 | — | concluído (via G02 no bridge + verificação aqui) |
-| [N03](N03-performance-track.md) | `PerformanceTrack`: eventos tocáveis por id, com ligaduras e mãos | N02 | — | concluído |
-| [C01](C01-relogio-plugavel.md) | `ScorePlayer` com relógio plugável | — | — | concluído |
-| [K01](K01-crate-de-audio-prototipo.md) | Crate `zywny_audio`: rustysynth + cpal tocando no Linux (CLI) | — | D-SF | concluído |
-| [K02](K02-api-ffi-do-motor.md) | API C do motor: comandos, agenda por amostra, relógio | K01 | — | concluído |
-| [K03](K03-sound-engine-dart.md) | `SoundEngine` (Dart) + `NativeSoundEngine` via FFI no Linux | K02 | — | concluído |
-| [K04](K04-agendador-e-play-com-som.md) | Agendador da partitura + botão Play com som, relógio do áudio | K03, N03, C01 | — | concluído (critérios manuais 4/5 — deriva com Maple Leaf Rag — pendentes) |
-| [M01](M01-entrada-midi.md) | Dispositivos MIDI e entrada (monitor de notas) | — | D-MIDI | concluído (critério manual 2 — Android/OTG — verificado em 2026-09-29; medição de jitter pendente) |
-| [M02](M02-monitor-pelo-sintetizador.md) | Tocar a entrada pelo sintetizador do app (monitor) | M01, K03 | — | concluído (medição de latência pendente) |
-| [M03](M03-saida-midi.md) | Tocar a partitura no teclado externo (MIDI out) | M01, K04 | — | concluído (critérios manuais 2/3 — teclado real, jitter — pendentes) |
-| [T01](T01-casador-de-notas.md) | `PracticeSession`: acordes esperados e casador (Dart puro) | N03 | — | concluído |
-| [T02](T02-modo-espera.md) | Modo espera + escolha de mão + app toca a outra | T01, K04, M01 | — | concluído (critérios 2-3 manuais, aguardando verificação) |
-| [T03](T03-modo-tempo-real-e-nota.md) | Modo tempo real com avaliação e resumo | T02 | D-TREINO | concluído (critério 2 manual, aguardando verificação) |
-| [T04](T04-calibracao-loop-metronomo.md) | Calibração de latência, loop A-B, metrônomo | T03 | — | concluído (critérios 3-4 manuais, aguardando verificação) |
-| [T05](T05-treino-de-ritmica.md) | Treino de rítmica: qualquer tecla, no ritmo da partitura | T01, T03, T04 | D-RITMO | concluído (critérios 1-6 e 8; critério 7 manual, aguardando verificação) |
-| [X01](X01-android-render.md) | Android: `.vsb` e partitura rodando (sem som) | — | — | concluído |
-| [K05](K05-motor-no-android.md) | Motor de áudio no Android (cargo-ndk, AAudio) e latência | K04, X01 | — | pendente |
-| [W01](W01-verovio-wasm.md) | Protótipo: fork do Verovio em wasm gerando `.vsb` no navegador | — | D-WEB | concluído (a paginação "diferente" era a referência nativa sem `-a`; wasm idêntico ao nativo — ver correção nas notas) |
-| [W02](W02-app-na-web.md) | zywny compilando e desenhando a partitura na Web | W01 | — | concluído (Play/destaque conferidos no Chromium headless em W04; falta a página alternativa do Maple Leaf Rag) |
-| [W03](W03-web-midi.md) | Web MIDI (entrada e saída) | W02, M03 | — | concluído (critério 2 manual — Safari/iOS — não testado; Firefox testado) |
-| [W04](W04-som-na-web.md) | Som na Web: `WebSoundEngine` (SpessaSynth) | W02, K04 | D-WEB-SYNTH | concluído (critérios manuais conferidos no Chromium headless com Web MIDI falso; falta ouvir num Chrome de verdade e a Gymnopédie/Maple Leaf Rag) |
-| [Y01](Y01-nota-fantasma.md) | Nota fantasma: tecla errada desenhada na pauta (lado zywny de G03–G05) | N03, T02 | — | concluído (falta ver no app) |
-| [X02](X02-windows-render.md) | Windows: `verovio.dll` e partitura rodando (sem som) | — | D-WIN | pendente |
-| [K06](K06-motor-no-windows.md) | Motor de áudio no Windows (WASAPI) | K04, X02 | D-WIN | pendente |
-| [V01](V01-portao-da-1-0.md) | Portão da 1.0: matriz de plataformas | todos | — | pendente |
+| [B01](B01-formato-e-leitor.md) | Bibliotecas: formato `.zywny` e leitor (Dart puro) | — | D-BIB | concluído |
+| [B02](B02-gerador-de-pacotes.md) | Bibliotecas: gerador de pacotes e o `hinos.zywny` | B01 | D-BIB | concluído |
+| [B03](B03-guardar-bibliotecas.md) | Bibliotecas: guardar pacotes (nativo e IndexedDB) e a em uso | B01 | D-BIB | concluído |
+| [B04](B04-musicas-por-biblioteca.md) | Bibliotecas: `Piece`, chaves por biblioteca e migração | B01, B03 | D-BIB | concluído |
+| [B05](B05-instalar-por-arquivo.md) | Bibliotecas: tela sem biblioteca e instalar por arquivo | B04 | D-BIB | concluído em código (aceite manual pendente) |
+| [B06](B06-bibliotecas-nas-configuracoes.md) | Bibliotecas: seção nas configurações gerais | B05 | D-BIB | concluído em código (aceite manual pendente) |
+| [B07](B07-vocabulario-da-biblioteca.md) | Bibliotecas: vocabulário e ordenação do manifesto | B04 | D-BIB | concluído em código (aceite manual pendente) |
+| [B08](B08-app-sem-hinos-embutidos.md) | Bibliotecas: o app sem hinos embutidos | B05, B06, B07 | D-BIB | concluído (aceite manual pendente) |
+| [B09](B09-curadoria-dos-classicos.md) | Bibliotecas: curadoria dos clássicos (musetrainer/library) | — | lista aprovada pelo usuário | proposta pronta (43 peças), **aguardando aprovação** |
+| [B10](B10-pacote-dos-classicos.md) | Bibliotecas: pacote dos clássicos | B02, B09 | D-BIB | pendente (espera a aprovação do B09) |
+| [B11](B11-abrir-pelo-sistema.md) | Bibliotecas: o app abre `.zywny` pelo sistema (associação de arquivos) | B05 | — | Android feito e testado no emulador; Linux parcial; sem commit |
+| [D01](D01-pacote-zywny-auth.md) | Autenticação: pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, SDK + REST/Loopback, `FakeAuthStore`) | — | D-NEG | concluído (2026-10-19) |
+| [D02](D02-tela-de-login-e-auth-gate.md) | Autenticação: `SignInScreen`, `AuthGate`, apelido inicial e seção Conta nas configurações | D01 | D-NEG | concluído (2026-10-19) |
+| [D03](D03-configuracao-firebase-e-android-web.md) | Autenticação: projeto Firebase (plano Spark), `applicationId` e credenciais OAuth2 nas 4 plataformas | D01, D02 | D-NEG | código pronto (2026-10-19); **falta criar o projeto no console** |
+| [D04](D04-licencas-de-pacotes-por-conta.md) | Licenciamento: abertura e catálogo de bibliotecas/pacotes vinculados ao `uid` e validade | D01, D02, D03 | D-NEG | pendente |
+| [D05](D05-publicacao-no-google-play.md) | Publicação: chave de release, AAB e upload pela Play Developer API | D03 | — | código pronto (2026-10-20), 1ª versão na faixa `internal`; **faltam os questionários e o teste fechado** |
 | [J01](J01-caminho-e-trechos.md) | Trilha: caminho sem repetições e corte em trechos (Dart puro) | — | — | concluído (medição dos 600 nas notas) |
 | [J02](J02-avaliacao-da-etapa.md) | Trilha: avaliação da etapa e blocos de reforço (Dart puro) | — | — | concluído |
 | [J03](J03-modelo-e-progresso.md) | Trilha: modelo, desbloqueio e progresso persistente | J01 | — | concluído |
@@ -385,6 +254,34 @@ zywny
 | [L06](L06-tela-do-decorar.md) | Decorar: tela para entrar na trilha e executar etapas | J05, J06, L04, L05 | — | pendente |
 | [L07](L07-prova-as-cegas.md) | Decorar: prova às cegas e marca "de cor" | L06 | — | pendente |
 | [L08](L08-decorar-na-biblioteca.md) | Decorar: na biblioteca | J09, L04 | — | pendente |
+| [Q01](Q01-verovio-transpondo.md) | Transpor: medir o Verovio transpondo (`.vsb`, repetições, determinismo, faixa) | — | — | concluído (469 hinos, 0 problemas; ids mudam a cada render — ver as notas) |
+| [Q02](Q02-calculo-da-transposicao.md) | Transpor: `Transposition` e `PitchFrame` (cálculo puro) | — | D-TRP | concluído |
+| [Q03](Q03-guardar-e-renderizar.md) | Transpor: guardar por música, chave geral, render transposto | Q01, Q02 | D-TRP | **concluído** (2026-10-06) |
+| [Q04](Q04-progresso-por-tom.md) | Transpor: progresso separado por tom | Q03 | D-TRP | **concluído** (2026-10-06) |
+| [Q05](Q05-as-alturas-no-app.md) | Transpor: casador na altura escrita, som no tom original | Q02, Q03 | D-TRP | **concluído** (2026-10-06) |
+| [Q06](Q06-conferencia-no-teclado.md) | Transpor: conferência no teclado | Q05 | D-TRP | **concluído** (2026-10-06) |
+| [Q07](Q07-lembretes-e-detector.md) | Transpor: lembrete de voltar a 0 e detector de deslocamento | Q05 | — | **concluído** (2026-10-06) |
+| [Q08](Q08-tela-e-aceite.md) | Transpor: gaveta, selo, lista dos 12 tons e aceite manual | Q04, Q06, Q07 | D-TRP | código, testes e `just telas` feitos (2026-10-06); **aceite manual pendente** (teclado do usuário) |
+| [R05](R05-telas-do-app-em-lib-app.md) | Revisão: biblioteca e painéis de configuração em `lib/app/` (achado 8) | — | — | **concluído** (2026-10-06) |
+| [R06](R06-arquivos-soltos-da-raiz.md) | Revisão: arquivos soltos da raiz de `lib/`; lista de desvios vazia (achado 8) | R05 | — | **concluído** (2026-10-06) |
+| [R07](R07-opened-piece-obrigatorio.md) | Revisão: `OpenedPiece` obrigatório (achado 6) | R05 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
+| [R08](R08-sound-output-controller.md) | Revisão: `SoundOutputController` (achado 5) | R07 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
+| [R09](R09-score-render-session.md) | Revisão: `ScoreRenderSession` (achado 5) | R08 | — | código e testes feitos (2026-10-07); **`just telas` pendente** |
+| [R10](R10-playback-controller.md) | Revisão: `PlaybackController` (achado 5) | R09 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
+| [R11](R11-trail-runner.md) | Revisão: `TrailRunner` (achado 5) | R10 | — | código e testes feitos (2026-10-07); **`just telas` e aceite manual pendentes** |
+| [R12](R12-workspace-e-mockup.md) | Revisão: workspace na raiz; mockup em `apps/zywny_mockup` (achado 10) | R06 | — | feito (2026-10-07); **`just run-mockup` (manual) pendente** |
+| [R19](R19-ler-sem-apagar.md) | Revisão 2: erro de leitura não apaga o progresso (achado 12) | — | — | pendente |
+| [R20](R20-nota-da-simplificada.md) | Revisão 2: nota da versão simplificada na lista (achado 13) | — | D-REV-SIMPL | pendente |
+| [R21](R21-mensagens-de-problema.md) | Revisão 2: mensagens de problema (achado 14) | — | — | pendente |
+| [R22](R22-dialogos-de-confirmacao.md) | Revisão 2: diálogos de confirmação (achado 15) | — | — | pendente |
+| [R26](R26-cabecalhos-das-telas.md) | Revisão 2: cabeçalhos das telas (achado 19) | — | D-REV-CABEC | pendente |
+| [R27](R27-servicos-do-app.md) | Revisão 2: serviços do app (achado 20) | R19 | D-REV-DI | pendente |
+| [R28](R28-um-motor-de-som.md) | Revisão 2: um motor de som para o app (achado 21) | R27 | — | pendente |
+| [R29](R29-partitura-e-transposicao.md) | Revisão 2: partitura em `lib/score/`; fluxo de transposição (achado 22) | R28 | — | pendente |
+| [R30](R30-partitura-em-widgets.md) | Revisão 2: partitura em widgets (achado 22) | R29 | — | pendente |
+| [R31](R31-biblioteca-em-arquivos.md) | Revisão 2: biblioteca em arquivos menores (achado 22) | R28 | — | pendente |
+| [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | — | — | pendente |
+| [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
 | [U01](U01-faixa-fora-da-pauta.md) | UX: a faixa da trilha sai de cima da pauta | — | D-FAIXA (a) | concluído (critérios 3–5, no emulador, aguardando verificação) |
 | [U02](U02-a-pauta-mostra-o-trecho.md) | UX: a pauta mostra o trecho da etapa | — | — | concluído (critérios 2–5, no emulador, aguardando verificação) |
 | [U03](U03-ouvir-o-trecho.md) | UX: ouvir o trecho, e o que fazer sem teclado | U01 | D-OUVIR | concluído (critérios 3–5, no emulador e no aparelho, aguardando verificação) |
@@ -405,128 +302,45 @@ zywny
 | [U18](U18-um-visual-so.md) | UX: um visual só — tema e superfícies | U12 | — | concluído (critérios 5–6, no emulador e no aparelho, aguardando verificação) |
 | [U19](U19-refazer-as-telas.md) | UX: refazer as telas e conferir os achados | todos os U | — | concluído (fotos refeitas; achados conferidos na seção "Depois da fase U" do estudo) |
 | [U20](U20-sobre-e-tutorial.md) | UX: tela "Sobre o Zywny" e tutorial de primeiro uso | U16, U17 | — | concluído (código, testes e Web; aceite no aparelho pendente, ver o passo) |
-| [B01](B01-formato-e-leitor.md) | Bibliotecas: formato `.zywny` e leitor (Dart puro) | — | D-BIB | concluído |
-| [B02](B02-gerador-de-pacotes.md) | Bibliotecas: gerador de pacotes e o `hinos.zywny` | B01 | D-BIB | concluído |
-| [B03](B03-guardar-bibliotecas.md) | Bibliotecas: guardar pacotes (nativo e IndexedDB) e a em uso | B01 | D-BIB | concluído |
-| [B04](B04-musicas-por-biblioteca.md) | Bibliotecas: `Piece`, chaves por biblioteca e migração | B01, B03 | D-BIB | concluído |
-| [B05](B05-instalar-por-arquivo.md) | Bibliotecas: tela sem biblioteca e instalar por arquivo | B04 | D-BIB | concluído em código (aceite manual pendente) |
-| [B06](B06-bibliotecas-nas-configuracoes.md) | Bibliotecas: seção nas configurações gerais | B05 | D-BIB | concluído em código (aceite manual pendente) |
-| [B07](B07-vocabulario-da-biblioteca.md) | Bibliotecas: vocabulário e ordenação do manifesto | B04 | D-BIB | concluído em código (aceite manual pendente) |
-| [B08](B08-app-sem-hinos-embutidos.md) | Bibliotecas: o app sem hinos embutidos | B05, B06, B07 | D-BIB | concluído (aceite manual pendente) |
-| [B09](B09-curadoria-dos-classicos.md) | Bibliotecas: curadoria dos clássicos (musetrainer/library) | — | lista aprovada pelo usuário | proposta pronta (43 peças), **aguardando aprovação** |
-| [B10](B10-pacote-dos-classicos.md) | Bibliotecas: pacote dos clássicos | B02, B09 | D-BIB | pendente (espera a aprovação do B09) |
-| [B11](B11-abrir-pelo-sistema.md) | Bibliotecas: o app abre `.zywny` pelo sistema (associação de arquivos) | B05, I04 | — | Android feito e testado no emulador; Linux parcial; sem commit |
-| [E00](E00-exercicios-de-ouvido.md) | Exercícios de ouvido: `listen-note`, `listen-interval` e ouvido na leitura (passos E01–E10) | I07, I09 | D-OUV, D-LEI | especificação (D-OUV propostas; D-LEI decididas em 2026-10-13) |
-| [E01](E01-formato-e-rodada.md) | Ouvido: `listen-note`, formato, rodada e curso inicial | — | D-OUV | concluído, sem commit |
-| [E02](E02-som-e-tela.md) | Ouvido: tocar o som e a tela da pergunta | E01 | D-OUV | feito, sem commit (`just telas` pendente) |
-| [E03](E03-aceite.md) | Ouvido: especificação do formato e aceite manual | E02 | — | feito, sem commit (aceite manual pendente, ver o passo) |
-| [E04](E04-intervalos.md) | Ouvido: `listen-interval` | E03 | D-OUV | feito, sem commit (aceite manual pendente, ver o passo) |
-| [E05](E05-mudanca-e-frase.md) | Ouvido na leitura: a frase que soa e a mudança sorteada (Dart puro) | E04 | D-LEI | pendente |
-| [E06](E06-listen-score-formato.md) | Ouvido na leitura: `listen-score`, formato, rodada e curso inicial | E05 | D-LEI | pendente |
-| [E07](E07-listen-score-tela.md) | Ouvido na leitura: a tela (partitura por pergunta, som e revelação) | E06 | D-LEI | pendente |
-| [E08](E08-ouvido-no-treino.md) | Ouvido na leitura: no treino de leitura (depois de cada leitura e "só ouvido") | E07 | D-LEI | feito, sem commit (aceite manual pendente: itens 2 e 3, com o usuário) |
-| [E09](E09-ditado-com-ritmo.md) | Ouvido na leitura: ditado com o ritmo dado | E07 | D-LEI-DITADO | pendente (confirmar com o usuário: agora ou depois da 1.0) |
-| [E10](E10-tocar-na-nota.md) | Ouvido na leitura: responder tocando na nota | E07 (E08 no item 5) | D-LEI-NOTA | pendente |
-| [EX00](EX00-exercicios-do-curso-completo.md) | Exercícios do curso completo: especificação, decisões e índice (passos EX01–EX22) | — | D-EXE | especificação (decisões abertas) |
-| [EX01](EX01-modelo-de-acordes.md) | Acordes: cifra, grau, voicing e ciclos (Dart puro) | — | D-EXE-CIFRA | pendente |
-| [EX02](EX02-play-chord-formato-e-sessao.md) | `play-chord`: formato, rodada e conferência do acorde | EX01 | D-EXE-ACORDE, D-EXE-QUANDO | pendente |
-| [EX03](EX03-play-chord-tela-e-curso.md) | `play-chord`: a tela, o modo com tempo e um curso de teste | EX02 | D-EXE-CIFRA | pendente |
-| [EX04](EX04-listen-chord.md) | `listen-chord`: qualidade do acorde; casa ou tensão | EX01 | — | pendente |
-| [EX05](EX05-keys-e-cycle-no-play-score.md) | `play-score` com `keys:` e `cycle:` | — | — | pendente |
-| [EX06](EX06-play-pattern.md) | `play-pattern`: escalas, arpejos e padrões gerados | EX01, EX05 | — | pendente |
-| [EX07](EX07-gravacao-e-medidores.md) | Medidores: gravação da execução e nove medidores (Dart puro) | — | D-EXE-LIMIARES | pendente |
-| [EX08](EX08-medidores-no-pass-e-na-tela.md) | Medidores no `pass`, no resumo e "ouvir o que toquei" | EX07 | D-EXE-LIMIARES | pendente |
-| [EX09](EX09-grade-zywny-chart.md) | Grade: modelo, marca `zywny-chart` e desenho | EX01 | — | pendente |
-| [EX10](EX10-timed-round-e-chart-session.md) | `TimedRound`, `TimedRoundRunner` e `ChartSession` | EX07, EX09 | D-EXE-MAOS, D-EXE-SWING | pendente |
-| [EX11](EX11-play-chart.md) | `play-chart`: acompanhar a grade no andamento | EX10 | D-EXE-ACORDE | pendente |
-| [EX12](EX12-base-gerada.md) | Base gerada: bateria e baixo | EX11 | D-EXE-BASE, D-EXE-SWING | pendente |
-| [EX13](EX13-rhythm-com-duas-maos.md) | `rhythm` com duas mãos e `listen-groove` | EX07, EX10, EX12 | D-EXE-MAOS | pendente |
-| [EX14](EX14-echo.md) | `echo`: ouça e repita | EX10, EX12 | D-EXE-MAOS | pendente |
-| [EX15](EX15-listen-progression.md) | `listen-progression`: ouvir os graus | EX04, EX09 | — | pendente |
-| [EX16](EX16-harmonize.md) | `harmonize`: harmonizar uma melodia | EX02, EX10, EX11 | — | pendente |
-| [EX17](EX17-play-lead-sheet.md) | `play-lead-sheet`: melodia e cifra | EX11, EX16 | — | pendente |
-| [EX18](EX18-target-notes.md) | `target-notes`: nota-alvo no tempo forte | EX11 | — | pendente |
-| [EX19](EX19-improvise.md) | `improvise`: improviso com regras e retorno | EX14, EX18 | D-EXE-IMPROVISO | pendente |
-| [EX20](EX20-follow-form.md) | `follow-form`: não se perder na forma | EX12 | — | pendente |
-| [EX21](EX21-theory-quiz.md) | `theory-quiz`: perguntas de teoria geradas | EX01, EX02, EX06 | — | pendente |
-| [EX22](EX22-leitura-e-repertorio.md) | Leitura e repertório: cortina, ensaio, `tempo-ladder`, mãos em sequência, prática acumulativa | EX07 | — | pendente |
-| [I00](I00-licoes-e-curso-inicial.md) | Lições de terceiros e curso inicial: formato, tipos, testes e índice (passos I01–I13) | — | D-LIC | especificação (decisões tomadas) |
-| [I01](I01-formato-e-validador.md) | Lições: especificação v1, leitor e validador (Dart puro), `zywny_course validate` | — | D-LIC | **concluído** |
-| [I02](I02-partituras-das-licoes.md) | Lições: ABC no Verovio, cabeçalho ABC, gerador de MusicXML das rodadas, tempo de render | I01 | D-LIC | **concluído** (falta medir no celular) |
-| [I03](I03-motor-de-exercicios.md) | Lições: motor de exercícios, `pass`, `play-notes`, aluno simulado | I02 | — | **concluído** |
-| [I04](I04-pacote-de-curso.md) | Lições: pacote de curso assinado, instalar, guardar, remover | I01, I09 | D-LIC | **concluído** (código; manual Linux/Web/celular pendente) |
-| [I05](I05-leitor-de-licao.md) | Lições: leitor de lição (markdown seguro e marcas de conteúdo) | I01, I02 | D-LIC | **concluído** |
-| [I06](I06-teclado-da-tela.md) | Lições: teclado da tela | — | D-LIC | dispensado (sem teclado na tela) |
-| [I07](I07-tipos-por-pergunta.md) | Lições: tipos por pergunta (`find-key`, `name-note`, `count-beats`, `choice`) | I03, I09 | D-LIC | **concluído** |
-| [I08](I08-tipos-com-tempo.md) | Lições: tipos com tempo (`rhythm`, `play-score`) | I03, I09 | — | **concluído** |
-| [I09](I09-telas-e-progresso.md) | Lições: progresso, telas do curso, da lição e do exercício, entrada | I03, I05 | D-LIC | **concluído** |
-| [I10](I10-curso-inicial.md) | Lições: o curso inicial completo, embutido | I05, I07, I08 | D-LIC | **concluído** (código + conteúdo; manual no aparelho pendente, critérios 4–5) |
-| [I11](I11-testes-da-plataforma.md) | Lições: cobertura, aluno simulado, cursos quebrados | I10 | — | **concluído** (código; sem manual — o passo não pede aparelho) |
-| [I12](I12-autoria-e-rascunho.md) | Lições: `validate --render` e modo rascunho (desktop e Web) | I05, I09 | D-LIC | **concluído** (código; manual Linux/Web pendente, ver notas do I12) |
-| [I13](I13-conferencia.md) | Lições: conferência (`just telas`, Web, celular, lição de fora) | todos os I | — | em andamento (parte automática concluída: telas + web-smoke verdes; manuais 4–5 com o usuário) |
-| [Q00](Q00-transpor-sem-acidentes.md) | Transpor sem acidentes: as três alturas, a tabela de intervalos, a conferência no teclado e índice (passos Q01–Q08) | — | D-TRP | especificação (decisões tomadas) |
-| [Q01](Q01-verovio-transpondo.md) | Transpor: medir o Verovio transpondo (`.vsb`, repetições, determinismo, faixa) | — | — | concluído (469 hinos, 0 problemas; ids mudam a cada render — ver as notas) |
-| [Q02](Q02-calculo-da-transposicao.md) | Transpor: `Transposition` e `PitchFrame` (cálculo puro) | — | D-TRP | concluído |
-| [Q03](Q03-guardar-e-renderizar.md) | Transpor: guardar por música, chave geral, render transposto | Q01, Q02 | D-TRP | **concluído** (2026-10-06) |
-| [Q04](Q04-progresso-por-tom.md) | Transpor: progresso separado por tom | Q03 | D-TRP | **concluído** (2026-10-06) |
-| [Q05](Q05-as-alturas-no-app.md) | Transpor: casador na altura escrita, som no tom original | Q02, Q03 | D-TRP | **concluído** (2026-10-06) |
-| [Q06](Q06-conferencia-no-teclado.md) | Transpor: conferência no teclado | Q05 | D-TRP | **concluído** (2026-10-06) |
-| [Q07](Q07-lembretes-e-detector.md) | Transpor: lembrete de voltar a 0 e detector de deslocamento | Q05 | — | **concluído** (2026-10-06) |
-| [Q08](Q08-tela-e-aceite.md) | Transpor: gaveta, selo, lista dos 12 tons e aceite manual | Q04, Q06, Q07 | D-TRP | código, testes e `just telas` feitos (2026-10-06); **aceite manual pendente** (teclado do usuário) |
-| [R01](R01-teste-de-camadas.md) | Revisão: teste de camadas, com os desvios de hoje listados | — | — | **concluído** (2026-10-06) |
-| [R02](R02-nomes-de-nota-em-music.md) | Revisão: `note_name`/`note_names` para `music/` (achado 9) | R01 | — | **concluído** (2026-10-06) |
-| [R03](R03-configuracoes-sem-ciclo.md) | Revisão: `AppSettings` só com folhas; `audio/` sem `settings`/`midi` (achado 7) | R02 | — | **concluído** (2026-10-06) |
-| [R04](R04-pratica-sem-trilha.md) | Revisão: `practice/` sem `trail/` (achado 8) | R01 | — | **concluído** (2026-10-06) |
-| [R05](R05-telas-do-app-em-lib-app.md) | Revisão: biblioteca e painéis de configuração em `lib/app/` (achado 8) | R03 | — | **concluído** (2026-10-06) |
-| [R06](R06-arquivos-soltos-da-raiz.md) | Revisão: arquivos soltos da raiz de `lib/`; lista de desvios vazia (achado 8) | R03, R04, R05 | — | **concluído** (2026-10-06) |
-| [R07](R07-opened-piece-obrigatorio.md) | Revisão: `OpenedPiece` obrigatório (achado 6) | R05 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
-| [R08](R08-sound-output-controller.md) | Revisão: `SoundOutputController` (achado 5) | R07 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
-| [R09](R09-score-render-session.md) | Revisão: `ScoreRenderSession` (achado 5) | R08 | — | código e testes feitos (2026-10-07); **`just telas` pendente** |
-| [R10](R10-playback-controller.md) | Revisão: `PlaybackController` (achado 5) | R09 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
-| [R11](R11-trail-runner.md) | Revisão: `TrailRunner` (achado 5) | R10 | — | código e testes feitos (2026-10-07); **`just telas` e aceite manual pendentes** |
-| [R12](R12-workspace-e-mockup.md) | Revisão: workspace na raiz; mockup em `apps/zywny_mockup` (achado 10) | — | `lesson_debug_main`: apagado | feito (2026-10-07); **`just run-mockup` (manual) pendente** |
-| [R13](R13-pacote-zywny-music.md) | Revisão: pacote `zywny_music` | R06, R12 | — | **concluído** (2026-10-07) |
-| [R14](R14-pacote-zywny-course-format.md) | Revisão: pacote `zywny_course_format` | R13 | — | **concluído** (2026-10-07) |
-| [R15](R15-pacote-zywny-audio.md) | Revisão: pacote `zywny_audio` | R13 | `diag_log`: `packages/zywny_diag` | código e testes feitos (2026-10-07); **aceite manual pendente** |
-| [R16](R16-pacote-zywny-midi.md) | Revisão: pacote `zywny_midi` | R15 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
-| [R17](R17-pacote-zywny-library.md) | Revisão: pacote `zywny_library` | R13 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
-| [R18](R18-curso-sem-dois-pontos.md) | Revisão 2: arquivos de curso sem `:` no nome (achado 11) | — | — | pendente |
-| [R19](R19-ler-sem-apagar.md) | Revisão 2: erro de leitura não apaga o progresso (achado 12) | — | — | pendente |
-| [R20](R20-nota-da-simplificada.md) | Revisão 2: nota da versão simplificada na lista (achado 13) | — | D-REV-SIMPL | pendente |
-| [R21](R21-mensagens-de-problema.md) | Revisão 2: mensagens de problema (achado 14) | — | — | pendente |
-| [R22](R22-dialogos-de-confirmacao.md) | Revisão 2: diálogos de confirmação (achado 15) | — | — | pendente |
-| [R23](R23-niveis-da-leitura-acabamentos.md) | Revisão 2: tela de níveis da leitura, acabamentos (achado 16) | R22 | — | pendente |
-| [R24](R24-fontes-embutidas.md) | Revisão 2: fontes embutidas (achado 17) | — | — | pendente |
-| [R25](R25-escala-de-texto.md) | Revisão 2: escala de texto (achado 18) | R24 | — | pendente |
-| [R26](R26-cabecalhos-das-telas.md) | Revisão 2: cabeçalhos das telas (achado 19) | R25 | D-REV-CABEC | pendente |
-| [R27](R27-servicos-do-app.md) | Revisão 2: serviços do app (achado 20) | R19 | D-REV-DI | pendente |
-| [R28](R28-um-motor-de-som.md) | Revisão 2: um motor de som para o app (achado 21) | R27 | — | pendente |
-| [R29](R29-partitura-e-transposicao.md) | Revisão 2: partitura em `lib/score/`; fluxo de transposição (achado 22) | R28 | — | pendente |
-| [R30](R30-partitura-em-widgets.md) | Revisão 2: partitura em widgets (achado 22) | R29 | — | pendente |
-| [R31](R31-biblioteca-em-arquivos.md) | Revisão 2: biblioteca em arquivos menores (achado 22) | R28 | — | pendente |
-| [R32](R32-exercicio-pergunta-configuracoes.md) | Revisão 2: exercício, pergunta e configurações divididos (achado 22) | — | — | pendente |
-| [R33](R33-lints-estritos.md) | Revisão 2: regras estritas do analisador (achado 23) | — | — | pendente |
-| [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | R24 | — | pendente |
-| [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
-| [D00](D00-papeis-e-distribuicao.md) | Papéis, distribuição de conteúdo, Firebase Auth e modelo de negócios | — | D-NEG | especificação (decisões tomadas) |
-| [D01](D01-pacote-zywny-auth.md) | Autenticação: pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, SDK + REST/Loopback, `FakeAuthStore`) | — | D-NEG | concluído (2026-10-19) |
-| [D02](D02-tela-de-login-e-auth-gate.md) | Autenticação: `SignInScreen`, `AuthGate`, apelido inicial e seção Conta nas configurações | D01 | D-NEG | concluído (2026-10-19) |
-| [D03](D03-configuracao-firebase-e-android-web.md) | Autenticação: projeto Firebase (plano Spark), `applicationId` e credenciais OAuth2 nas 4 plataformas | D01, D02 | D-NEG | pendente |
-| [D04](D04-licencas-de-pacotes-por-conta.md) | Licenciamento: abertura e catálogo de bibliotecas/pacotes vinculados ao `uid` e validade | D01, D02, D03 | D-NEG | pendente |
+| [V01](V01-portao-da-1-0.md) | Portão da 1.0: matriz de plataformas | todos | — | pendente |
 
-Ordem de implementação (decidida pelo usuário): **Linux → Android → Web →
-Windows**. Ordem sugerida dos passos: N01→N02→N03 e C01 (dá para fazer em
-paralelo) → K01…K04 (som no Linux) → M01…M03 → T01…T04 → X01/K05 (Android) →
-W01…W04 (Web) → X02/K06 (Windows) → V01.
+Fases com especificação própria, que o passo correspondente deve ler:
 
-X01 e W01 não dependem de nada e podem ser adiantados a qualquer momento
-(inclusive como protótipo em paralelo à fase K, ver Riscos #1). **X02 e K06
-(Windows) ficam deliberadamente por último**, mesmo sem dependência técnica
-que os obrigue — é decisão de prioridade do usuário, não uma restrição de
-código: Windows não tem máquina de dev local (ver D-WIN e
-[windows-a-partir-do-linux.md](windows-a-partir-do-linux.md)), então convém
-deixá-lo para quando o resto já estiver estável.
+- [J00-trilha-de-estudo.md](J00-trilha-de-estudo.md) — a trilha, do começo
+  (caminho sem repetições) à fase final.
+- [L00-trilha-do-decorar.md](L00-trilha-do-decorar.md) — o decorar; se apoia
+  na fase J.
+- [Q00-transpor-sem-acidentes.md](Q00-transpor-sem-acidentes.md) — as três
+  alturas da transposição e a conferência no teclado.
+- [O00-letra-no-telao.md](O00-letra-no-telao.md) — a letra no telão (proposta
+  de execução expressiva, ainda sem passo).
+- [B00-bibliotecas-instalaveis.md](B00-bibliotecas-instalaveis.md) — o formato
+  do pacote `.zywny` e as decisões D-BIB.
+- [D00-papeis-e-distribuicao.md](D00-papeis-e-distribuicao.md) — os papéis
+  (plataforma, tutor, aluno) e as decisões D-NEG.
+- [U00-ux-do-celular.md](U00-ux-do-celular.md) — a fase U, que executa as
+  sugestões de [`../ux/sugestoes-ux-celular.md`](../ux/sugestoes-ux-celular.md).
+- [Z00-planos-futuros.md](Z00-planos-futuros.md) — ideias depois da 1.0.
 
-A fase **U** não depende das outras pendentes (K05, W, X02, L) e não as
-bloqueia: mexe só na tela do celular. Ordem dentro dela no
-[U00](U00-ux-do-celular.md).
+A fase **R** tem especificação em
+[`../revisao/2026-10-06-qualidade-e-divisao.md`](../revisao/2026-10-06-qualidade-e-divisao.md)
+(primeira rodada, R05–R12) e
+[`../revisao/2026-10-15-revisao-geral.md`](../revisao/2026-10-15-revisao-geral.md)
+(segunda, R19–R35). Quem executa um passo R lê o documento da rodada
+correspondente.
+
+## O que saiu daqui
+
+Em 19/10/2026 o projeto foi dividido em três repositórios. Estes arquivos de
+passo saíram deste diretório — o código que eles descrevem está em outro
+repositório:
+
+| Saiu | Onde o código está | Passos ainda abertos |
+| --- | --- | --- |
+| C01, H00, K01–K06, M01–M03, N01–N03, T01–T05, W01–W04, X01–X02, Y01, `windows-a-partir-do-linux.md` | [zywny-comum](https://github.com/mkanada/zywny-comum) | K05 (motor no Android), K06 (motor no Windows), X02 (render no Windows) |
+| R01–R04, R13–R17, R24, R25, R33 | [zywny-comum](https://github.com/mkanada/zywny-comum) | R24 (fontes embutidas), R25 (escala de texto), R33 (lints estritos) |
+| R18, R23, R32 | [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado/tree/main/docs/plano) | os três, para o app de cursos |
+| E00–E10, EX00–EX22, I00–I13 | [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado/tree/main/docs/plano) | E05–E10, EX01–EX22 (fases do app de cursos) |
+
+O histórico completo continua no repositório antigo `zywny` e no histórico do
+git deste repositório.

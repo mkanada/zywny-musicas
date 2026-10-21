@@ -1,6 +1,6 @@
 # U14 — Biblioteca: ordenar e buscar
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** D-ORDEM (só
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** D-ORDEM (só
 para a seta)
 
 ## Objetivo

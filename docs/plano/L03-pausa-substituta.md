@@ -1,6 +1,6 @@
 # L03 — `score_bridge`: pausa substituta colorida
 
-**Repo:** zywny (`score_bridge/`) · **Depende de:** L02, G09 do bridge ·
+**Repo:** zywny-musicas (`score_bridge/`) · **Depende de:** L02, G09 do bridge ·
 **Decisão necessária:** nenhuma
 
 ## Objetivo

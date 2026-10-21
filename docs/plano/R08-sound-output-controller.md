@@ -1,6 +1,6 @@
 # R08 — `SoundOutputController`
 
-**Repo:** zywny · **Depende de:** R07 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R07 · **Decisão necessária:** não
 
 ## Objetivo
 

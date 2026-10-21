@@ -1,6 +1,6 @@
 # R29 — Partitura em `lib/score/` e fluxo de transposição
 
-**Repo:** zywny · **Depende de:** R28 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R28 · **Decisão necessária:** não
 
 ## Objetivo
 
@@ -39,7 +39,7 @@ pessoa.
 
 1. `lib/score/score_screen.dart` recebe `ScoreHomePage` e o estado (pode
    manter o nome da classe, para não mexer nos testes). `lib/main.dart`
-   fica só com `main`, `_cursoArg` e `MyApp`.
+   fica só com `main` e `MyApp`.
 2. `lib/score/transpose_flow.dart` (`ChangeNotifier`): a lógica dos
    métodos acima, sem `BuildContext`. O que abre diálogo ou toca som entra
    por callbacks (como o `SoundOutputPlayback` do R08). A tela fica com os

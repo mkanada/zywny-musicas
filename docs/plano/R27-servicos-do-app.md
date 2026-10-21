@@ -1,6 +1,6 @@
 # R27 — Serviços do app
 
-**Repo:** zywny · **Depende de:** R19 · **Decisão necessária:** sim
+**Repo:** zywny-musicas · **Depende de:** R19 · **Decisão necessária:** sim
 (D-REV-DI)
 
 ## Objetivo
@@ -27,17 +27,16 @@ pessoa veja.
 - `_LibraryScreenState` cria, se não vierem pelo construtor:
   `LibraryStore`, `PieceProgressStore`, `MidiDeviceManager` (com
   `bluetooth:` ligado só no Android), `AppSettings` (e
-  `_settingsLoaded = _settings.load()`), `PieceSettingsStore`,
-  `TrailProgressStore`, `CourseStore`, `CourseProgressStore`. O `dispose`
-  descarta cada um só se não veio de fora (`if (widget.progress == null)
-  _progress.dispose()`, etc.): posse dupla.
-- A partitura recebe tudo isso pelo `OpenedPiece` (`library_screen.dart:60`),
-  montado em `_open` (L667).
-- 16 arquivos de teste montam a biblioteca; cada um tem o próprio
-  `pumpLibrary` (por exemplo `test/library_progress_test.dart:65`,
-  `test/incoming_install_test.dart:60`, `test/library_settings_test.dart:69`).
-  5 arquivos de teste montam `OpenedPiece`.
-- `SightReadingStore` é criado em cada tela (ver R23, item 5).
+  `_settingsLoaded = _settings.load()`), `PieceSettingsStore` e
+  `TrailProgressStore`. O `dispose` descarta cada um só se não veio de fora
+  (`if (widget.progress == null) _progress.dispose()`, etc.): posse dupla.
+- A partitura recebe tudo isso pelo `OpenedPiece` (`library_screen.dart:43`),
+  montado em `_open`.
+- Vários arquivos de teste montam a biblioteca; cada um tem o próprio
+  `pumpLibrary` (por exemplo `test/library_progress_test.dart`,
+  `test/incoming_install_test.dart`, `test/library_settings_test.dart`).
+- Os stores de curso e de leitura à vista não moram mais aqui: são do app de
+  cursos ([zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado)).
 
 ## Decisão necessária (D-REV-DI)
 
@@ -73,8 +72,7 @@ achado, se o usuário preferir não somar dependência.
 
 ## Fora de escopo
 
-O motor de som dos cursos (R28). Rotas (R35). Dividir `library_screen.dart`
-(R31).
+O motor de som (R28). Rotas (R35). Dividir `library_screen.dart` (R31).
 
 ## Critérios de aceite
 
@@ -82,8 +80,8 @@ O motor de som dos cursos (R28). Rotas (R35). Dividir `library_screen.dart`
    não acha nada.
 2. Nenhum store nem `MidiDeviceManager` é criado dentro de uma tela.
 3. `just analyze` e `just test` limpos.
-4. Conectar o teclado na biblioteca, abrir uma música e um curso: o
-   teclado continua conectado nos dois **(manual)**.
+4. Conectar o teclado na biblioteca e abrir uma música: o teclado continua
+   conectado nos dois **(manual)**.
 
 ## Notas de execução
 

@@ -1,6 +1,6 @@
 # Q08 — Tela da transposição e aceite manual
 
-**Repo:** zywny · **Depende de:** Q04, Q06, Q07 · **Decisão necessária:**
+**Repo:** zywny-musicas · **Depende de:** Q04, Q06, Q07 · **Decisão necessária:**
 não (D-TRP-NOME decidida: "Transpor")
 
 ## Objetivo

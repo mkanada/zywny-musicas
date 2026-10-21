@@ -1,6 +1,6 @@
 # B06 — Bibliotecas nas configurações gerais
 
-**Repo:** zywny · **Depende de:** B05 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B05 · **Decisão necessária:** não
 
 ## Objetivo
 

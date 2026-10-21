@@ -1,6 +1,6 @@
 # U02 — A pauta mostra o trecho da etapa
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

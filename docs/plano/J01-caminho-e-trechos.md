@@ -1,6 +1,6 @@
 # J01 — Caminho sem repetições e corte em trechos (Dart puro)
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** nenhuma
 (regras em [J00](J00-trilha-de-estudo.md))
 
 ## Objetivo

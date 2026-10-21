@@ -44,6 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Cache do Kotlin/Gradle (o build do Android).
+/android/.kotlin/
+
 # Widget Preview related
 .widget_preview/
 
@@ -73,3 +76,11 @@ app.*.map.json
 
 # Chaves das bibliotecas (D-BIB-CIFRA): nunca vao para o remoto.
 /keys/
+
+# Chave de assinatura do Android (upload key do Google Play). A de release
+# mora em keys/ (acima); estas regras protegem tambem um .jks criado em
+# outro lugar do repositorio.
+*.jks
+*.keystore
+key.properties
+android-release.properties

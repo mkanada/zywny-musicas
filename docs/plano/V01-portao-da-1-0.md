@@ -1,6 +1,6 @@
 # V01 — Portão da 1.0: matriz de plataformas
 
-**Repo:** zywny · **Depende de:** todos os passos anteriores ·
+**Repo:** zywny-musicas · **Depende de:** todos os passos anteriores ·
 **Decisão necessária:** não
 
 ## Objetivo

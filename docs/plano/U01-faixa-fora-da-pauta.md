@@ -1,6 +1,6 @@
 # U01 — A faixa da trilha sai de cima da pauta
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** D-FAIXA
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** D-FAIXA
 
 ## Objetivo
 

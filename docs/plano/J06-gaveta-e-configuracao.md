@@ -1,6 +1,6 @@
 # J06 — Tela: lista de etapas, pular, refazer e configuração de N
 
-**Repo:** zywny · **Depende de:** J05 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J05 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

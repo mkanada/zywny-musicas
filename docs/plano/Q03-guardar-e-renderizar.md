@@ -1,6 +1,6 @@
 # Q03 — Guardar a transposição e renderizar transposto
 
-**Repo:** zywny · **Depende de:** Q01, Q02 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** Q01, Q02 · **Decisão necessária:** não
 (D-TRP-ESCOPO decidida)
 
 ## Objetivo

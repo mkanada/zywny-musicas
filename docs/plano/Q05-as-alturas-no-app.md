@@ -1,6 +1,6 @@
 # Q05 — As alturas no app: o que se lê, o que se ouve, o que chega
 
-**Repo:** zywny · **Depende de:** Q02, Q03 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** Q02, Q03 · **Decisão necessária:** não
 (D-TRP-SOM decidida: o app soa no tom original)
 
 ## Objetivo
@@ -102,7 +102,8 @@ caso em `test/pitch_frame_test.dart`.
   altura escrita, então o `wrongPitches` já é a escrita; não havia texto com
   nome de nota na tela da partitura para converter.
 - Não foi tocado: o fluxo de cursos/lições (`question_body.dart`,
-  `score_round_runner.dart`), que não tem transposição (D-TRP-LICOES).
+  `score_round_runner.dart`), que não tem transposição (D-TRP-LICOES) — hoje
+  no [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado).
 
 **Critérios**
 1. `FakeMidiInput`, modo espera e tempo real, `k = −3`: teclado que não

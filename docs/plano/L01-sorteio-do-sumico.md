@@ -1,6 +1,6 @@
 # L01 — Colunas e sorteio do sumiço (Dart puro)
 
-**Repo:** zywny · **Depende de:** J01 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** J01 · **Decisão necessária:** nenhuma
 (regras em [L00](L00-trilha-do-decorar.md))
 
 ## Objetivo

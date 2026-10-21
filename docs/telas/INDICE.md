@@ -7,13 +7,14 @@ Todas as telas do app num só lugar, em ordem de uso. Capturas do app real num c
 - As mesmas telas em retrato e em paisagem, lado a lado: [`ORIENTACAO.md`](ORIENTACAO.md); análise em [`../ux/estudo-ux-orientacao.md`](../ux/estudo-ux-orientacao.md).
 - Protótipo navegável (não é o app): `apps/zywny_mockup/` (`just run-mockup`) — não entra nas fotos.
 
-Total: 67 telas.
+Total: 53 telas. São só as do app de músicas: as telas de curso, lição e
+exercício moram no [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado).
 
 ## Abertura e biblioteca
 
 Retrato. O que o aluno vê ao abrir o app e ao escolher um hino.
 
-Código: `lib/app/splash_screen.dart` · `lib/app/library_screen.dart`
+Código: `lib/app/library_screen.dart` · zywny-comum: `lib/app/splash_screen.dart`
 
 <table><tr><td align="center"><a href="celular/01-abertura.png"><img src="celular/01-abertura.png" width="200"></a><br><sub><b>01</b> · Abertura (splash)</sub></td><td align="center"><a href="celular/02-biblioteca-primeiro-uso.png"><img src="celular/02-biblioteca-primeiro-uso.png" width="200"></a><br><sub><b>02</b> · Biblioteca, primeiro uso</sub></td><td align="center"><a href="celular/03-biblioteca-busca.png"><img src="celular/03-biblioteca-busca.png" width="200"></a><br><sub><b>03</b> · Busca com resultados</sub></td><td align="center"><a href="celular/04-biblioteca-busca-sem-resultado.png"><img src="celular/04-biblioteca-busca-sem-resultado.png" width="200"></a><br><sub><b>04</b> · Busca sem resultado</sub></td></tr></table>
 
@@ -25,7 +26,7 @@ Código: `lib/app/splash_screen.dart` · `lib/app/library_screen.dart`
 
 Retrato (06, 29, 07–09) e paisagem (43–45). Seletor de teclado, configurações gerais e ferramentas de MIDI.
 
-Código: `lib/midi/midi_device_picker.dart` · `lib/app/general_settings_panel.dart` · `lib/settings/color_picker.dart` · `lib/midi/midi_monitor_panel.dart`
+Código: zywny-comum: `lib/midi/midi_device_picker.dart` · `lib/app/general_settings_panel.dart` · `lib/settings/color_picker.dart` · `lib/midi/midi_monitor_panel.dart`
 
 <table><tr><td align="center"><a href="celular/06-teclado-midi-nenhum.png"><img src="celular/06-teclado-midi-nenhum.png" width="200"></a><br><sub><b>06</b> · Teclado MIDI: nenhum</sub></td><td align="center"><a href="celular/29-teclado-midi-conectado.png"><img src="celular/29-teclado-midi-conectado.png" width="200"></a><br><sub><b>29</b> · Teclado MIDI: conectado</sub></td><td align="center"><a href="celular/07-configuracoes.png"><img src="celular/07-configuracoes.png" width="200"></a><br><sub><b>07</b> · Configurações gerais</sub></td><td align="center"><a href="celular/08-configuracoes-mudar-o-padrao.png"><img src="celular/08-configuracoes-mudar-o-padrao.png" width="200"></a><br><sub><b>08</b> · Confirmação “Mudar o tamanho dos trechos?”</sub></td></tr></table>
 
@@ -39,7 +40,7 @@ Código: `lib/midi/midi_device_picker.dart` · `lib/app/general_settings_panel.d
 
 Paisagem. O hino aberto, a trilha por trechos e a gaveta de etapas.
 
-Código: `lib/main.dart` · `lib/trail/trail_widgets.dart` · `lib/ui/side_panel.dart`
+Código: `lib/main.dart` · zywny-comum: `lib/trail/trail_widgets.dart` · `lib/ui/side_panel.dart`
 
 <table><tr><td align="center"><a href="celular/10-hino-abrindo.png"><img src="celular/10-hino-abrindo.png" width="440"></a><br><sub><b>10</b> · Partitura sendo gravada</sub></td><td align="center"><a href="celular/11-trilha-sem-teclado.png"><img src="celular/11-trilha-sem-teclado.png" width="440"></a><br><sub><b>11</b> · Trilha sem teclado</sub></td></tr></table>
 
@@ -53,7 +54,7 @@ Código: `lib/main.dart` · `lib/trail/trail_widgets.dart` · `lib/ui/side_panel
 
 Paisagem. Painéis laterais abertos sobre a partitura.
 
-Código: `apps/zywny_mockup/lib/mockup/options_panel.dart` · `lib/app/layout_panel.dart` · `lib/practice/practice_tools.dart`
+Código: `apps/zywny_mockup/lib/mockup/options_panel.dart` · zywny-comum: `lib/app/layout_panel.dart` · `lib/practice/practice_tools.dart`
 
 <table><tr><td align="center"><a href="celular/14-opcoes-de-estudo.png"><img src="celular/14-opcoes-de-estudo.png" width="440"></a><br><sub><b>14</b> · Opções de estudo (começo)</sub></td><td align="center"><a href="celular/15-opcoes-de-estudo-meio.png"><img src="celular/15-opcoes-de-estudo-meio.png" width="440"></a><br><sub><b>15</b> · Opções de estudo (meio)</sub></td></tr></table>
 
@@ -67,7 +68,7 @@ Código: `apps/zywny_mockup/lib/mockup/options_panel.dart` · `lib/app/layout_pa
 
 Paisagem. Tocar o hino sem trilha, com contagem e resumo.
 
-Código: `lib/practice/count_in_overlay.dart` · `lib/practice/practice_tools.dart`
+Código: zywny-comum: `lib/practice/count_in_overlay.dart` · `lib/practice/practice_tools.dart`
 
 <table><tr><td align="center"><a href="celular/21-treino-livre.png"><img src="celular/21-treino-livre.png" width="440"></a><br><sub><b>21</b> · Treino livre, parado</sub></td><td align="center"><a href="celular/22-contagem.png"><img src="celular/22-contagem.png" width="440"></a><br><sub><b>22</b> · Contagem regressiva</sub></td></tr></table>
 
@@ -81,7 +82,7 @@ Código: `lib/practice/count_in_overlay.dart` · `lib/practice/practice_tools.da
 
 Paisagem. Uma etapa em andamento, do início ao resumo.
 
-Código: `lib/trail/trail_widgets.dart` · `lib/ui/practice_legend.dart`
+Código: zywny-comum: `lib/trail/trail_widgets.dart` · `lib/ui/practice_legend.dart`
 
 <table><tr><td align="center"><a href="celular/32-etapa-espera.png"><img src="celular/32-etapa-espera.png" width="440"></a><br><sub><b>32</b> · Etapa do modo espera</sub></td><td align="center"><a href="celular/33-etapa-nota-errada.png"><img src="celular/33-etapa-nota-errada.png" width="440"></a><br><sub><b>33</b> · Etapa com tecla errada</sub></td></tr></table>
 
@@ -91,27 +92,11 @@ Código: `lib/trail/trail_widgets.dart` · `lib/ui/practice_legend.dart`
 
 <table><tr><td align="center"><a href="celular/39-resumo-da-etapa-reprovada.png"><img src="celular/39-resumo-da-etapa-reprovada.png" width="440"></a><br><sub><b>39</b> · Resumo da etapa reprovada</sub></td></tr></table>
 
-## Cursos da fase I
-
-Retrato (47–58), paisagem no exercício com partitura (59–60). O curso inicial embutido, a lição 2 e os três tipos de exercício com e sem teclado.
-
-Código: `lib/course/ui/courses_screen.dart` · `lib/course/ui/course_screen.dart` · `lib/course/ui/lesson_screen.dart` · `lib/course/ui/exercise_screen.dart`
-
-<table><tr><td align="center"><a href="celular/47-curso-inicial-sem-biblioteca.png"><img src="celular/47-curso-inicial-sem-biblioteca.png" width="200"></a><br><sub><b>47</b> · Curso inicial sem biblioteca</sub></td><td align="center"><a href="celular/48-licao-1-pelo-cartao.png"><img src="celular/48-licao-1-pelo-cartao.png" width="200"></a><br><sub><b>48</b> · Lição 1 pelo cartão</sub></td><td align="center"><a href="celular/49-biblioteca-com-cursos.png"><img src="celular/49-biblioteca-com-cursos.png" width="200"></a><br><sub><b>49</b> · Biblioteca com “Cursos”</sub></td><td align="center"><a href="celular/50-lista-de-cursos.png"><img src="celular/50-lista-de-cursos.png" width="200"></a><br><sub><b>50</b> · Lista de cursos</sub></td></tr></table>
-
-<table><tr><td align="center"><a href="celular/51-tela-do-curso.png"><img src="celular/51-tela-do-curso.png" width="200"></a><br><sub><b>51</b> · Curso: feita, aberta, bloqueadas</sub></td><td align="center"><a href="celular/52-licao-2-topo.png"><img src="celular/52-licao-2-topo.png" width="200"></a><br><sub><b>52</b> · Lição 2 (topo)</sub></td><td align="center"><a href="celular/53-licao-2-partitura.png"><img src="celular/53-licao-2-partitura.png" width="200"></a><br><sub><b>53</b> · Lição 2 (partitura)</sub></td><td align="center"><a href="celular/54-licao-2-exercicio.png"><img src="celular/54-licao-2-exercicio.png" width="200"></a><br><sub><b>54</b> · Lição 2 (“Precisa do teclado”)</sub></td></tr></table>
-
-<table><tr><td align="center"><a href="celular/55-exercicio-conecte-o-teclado.png"><img src="celular/55-exercicio-conecte-o-teclado.png" width="440"></a><br><sub><b>55</b> · “Conecte o teclado”</sub></td><td align="center"><a href="celular/56-exercicio-name-note.png"><img src="celular/56-exercicio-name-note.png" width="440"></a><br><sub><b>56</b> · Exercício `name-note`</sub></td></tr></table>
-
-<table><tr><td align="center"><a href="celular/57-licao-8-choice-cartao.png"><img src="celular/57-licao-8-choice-cartao.png" width="200"></a><br><sub><b>57</b> · Cartão do `choice`</sub></td><td align="center"><a href="celular/58-exercicio-choice.png"><img src="celular/58-exercicio-choice.png" width="440"></a><br><sub><b>58</b> · Exercício `choice`</sub></td></tr></table>
-
-<table><tr><td align="center"><a href="celular/59-exercicio-play-notes-antes.png"><img src="celular/59-exercicio-play-notes-antes.png" width="440"></a><br><sub><b>59</b> · `play-notes` antes</sub></td><td align="center"><a href="celular/60-exercicio-play-notes-depois.png"><img src="celular/60-exercicio-play-notes-depois.png" width="440"></a><br><sub><b>60</b> · `play-notes` aprovado</sub></td></tr></table>
-
 ## Transpor (fase Q)
 
 Paisagem (61–66) e retrato (67). O item “Transpor” da gaveta, a lista dos 12 tons, a confirmação ao trocar de tom com trilha começada, a conferência do teclado, o selo na barra do título, a chave geral e a armadura “3♭ → 0” na biblioteca.
 
-Código: `lib/ui/transpose_widgets.dart` · `lib/music/tone_choices.dart` · `lib/practice/transpose_check.dart` · `lib/main.dart`
+Código: `lib/main.dart` · zywny-comum: `lib/ui/transpose_widgets.dart` · `lib/practice/transpose_check.dart` · `packages/zywny_music/lib/tone_choices.dart`
 
 <table><tr><td align="center"><a href="celular/61-opcoes-transpor.png"><img src="celular/61-opcoes-transpor.png" width="440"></a><br><sub><b>61</b> · Gaveta: item “Transpor”</sub></td><td align="center"><a href="celular/62-transpor-12-tons.png"><img src="celular/62-transpor-12-tons.png" width="440"></a><br><sub><b>62</b> · Lista dos 12 tons</sub></td></tr></table>
 

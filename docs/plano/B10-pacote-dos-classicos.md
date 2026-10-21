@@ -1,6 +1,6 @@
 # B10 — Pacote dos clássicos
 
-**Repo:** zywny · **Depende de:** B02, B09 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** B02, B09 · **Decisão necessária:** não
 
 ## Objetivo
 

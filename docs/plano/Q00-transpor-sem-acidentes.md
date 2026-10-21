@@ -231,7 +231,7 @@ Todas tomadas pelo usuário em 2026-10-04.
 | D-TRP-PROGRESSO | O progresso vale com e sem transposição? | **Separado**: cada tom tem o seu progresso (seção "Progresso separado por tom") |
 | D-TRP-CONFERIR | Quando conferir o teclado | Na **primeira vez por teclado** (comportamento guardado pelo nome do dispositivo) e quando a pessoa toca no selo; o detector de deslocamento cobre o resto |
 | D-TRP-NOME | Como chamar na tela | **"Transpor"** na gaveta: "Não (3♭)" / "Sem acidentes" / "Escolher…"; no selo, "Mi♭ → Dó · teclado +3". Nomes Dó-Ré-Mi |
-| D-TRP-LICOES | Lições da fase I podem travar o tom? | **Fora da fase Q**. Se a fase I quiser, uma lição declara `tom: original` e o app esconde o item |
+| D-TRP-LICOES | Lições de curso podem travar o tom? | **Fora da fase Q**, e fora deste app: as lições são do [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado). Se ele quiser, uma lição declara `tom: original` e o app esconde o item |
 
 ## Passos
 
@@ -287,4 +287,4 @@ Todas tomadas pelo usuário em 2026-10-04.
 - Mudar a transposição no meio da música (uma por música).
 - Ler ou mandar o TRANSPOSE do teclado por MIDI (SysEx/RPN de afinação grossa
   varia por fabricante); a pessoa ajusta no botão.
-- Transpor partituras de lições (fase I) e exercícios gerados.
+- Transpor partituras de lições e exercícios gerados (app de cursos).

@@ -1,6 +1,6 @@
 # Q01 — Medir o Verovio transpondo
 
-**Repo:** zywny (medição; código no bridge só se algo quebrar) · **Depende
+**Repo:** zywny-musicas (medição; código no bridge só se algo quebrar) · **Depende
 de:** — · **Decisão necessária:** não (D-TRP-\* decididas no Q00)
 
 ## Objetivo

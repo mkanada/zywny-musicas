@@ -1,6 +1,6 @@
 # U17 — Vocabulário das configurações
 
-**Repo:** zywny · **Depende de:** U15 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** U15 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

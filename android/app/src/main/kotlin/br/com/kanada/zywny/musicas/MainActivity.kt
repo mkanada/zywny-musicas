@@ -1,4 +1,4 @@
-package com.example.zywny
+package br.com.kanada.zywny.musicas
 
 import android.content.Context
 import android.content.Intent

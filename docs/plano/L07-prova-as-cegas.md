@@ -1,6 +1,6 @@
 # L07 — Prova às cegas e marca "de cor"
 
-**Repo:** zywny · **Depende de:** L06 · **Decisão necessária:** nenhuma
+**Repo:** zywny-musicas · **Depende de:** L06 · **Decisão necessária:** nenhuma
 
 ## Objetivo
 

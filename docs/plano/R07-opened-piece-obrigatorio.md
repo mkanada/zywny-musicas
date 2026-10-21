@@ -1,6 +1,6 @@
 # R07 — `OpenedPiece` obrigatório
 
-**Repo:** zywny · **Depende de:** R05 · **Decisão necessária:** não
+**Repo:** zywny-musicas · **Depende de:** R05 · **Decisão necessária:** não
 
 ## Objetivo
 

@@ -1,6 +1,6 @@
 # U10 — Aproveitar a tela: imersivo, centro, dois sistemas
 
-**Repo:** zywny · **Depende de:** U01 · **Decisão necessária:** D-SISTEMAS
+**Repo:** zywny-musicas · **Depende de:** U01 · **Decisão necessária:** D-SISTEMAS
 (só para a parte 3)
 
 ## Objetivo

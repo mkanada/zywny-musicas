@@ -1,7 +1,15 @@
 # R12 — Workspace na raiz e mockup fora do app
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** sim, item 4
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** sim, item 4
 abaixo (o que fazer com `lesson_debug_main.dart`)
+
+> **Depois da divisão em três repositórios (19/10/2026).** Este passo foi
+> escrito quando o app ainda era um só. O fluxo de cursos — o outro lado do
+> ciclo que ele quebra — foi para o
+> [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado), e
+> `lib/library/`, `lib/settings/` e `lib/course/` foram para o
+> [zywny-comum](https://github.com/mkanada/zywny-comum). O texto abaixo é o
+> de 06/10 e serve para entender o porquê do passo.
 
 ## Objetivo
 

@@ -48,7 +48,7 @@ Regras, nas palavras do pedido:
   honesto do B00 vale aqui: quem extrai a chave do binário decifra **qualquer**
   pacote. Serve contra arquivo solto e pacote forjado, **não** controla
   "este aluno pode, aquele não".
-- **Cursos** (fase I, [I00](I00-licoes-e-curso-inicial.md)): o professor
+- **Cursos** (fase I, [I00](https://github.com/mkanada/zywny-aprendizado/blob/main/docs/plano/I00-licoes-e-curso-inicial.md)): o professor
   escreve markdown; hoje **só a plataforma assina** (D-LIC-CONFIANCA). O I00
   deixou fora de escopo "turmas, professor vendo o progresso do aluno, envio
   de gravações" — é exatamente o que esta fase traz.
@@ -220,5 +220,5 @@ para menores de 12 continua necessário.
 | --- | --- | --- | --- | --- |
 | [D01](D01-pacote-zywny-auth.md) | Pacote `zywny_auth` no `zywny-comum` (`AuthStore`, 7 dias offline, REST/Loopback no Linux/Windows, SDK no Android/Web, `FakeAuthStore`) | zywny-comum | — | concluído (2026-10-19) |
 | [D02](D02-tela-de-login-e-auth-gate.md) | Tela de entrada (`SignInScreen`), `AuthGate`, apelido inicial e seção Conta nas configurações | zywny-comum + apps | D01 | concluído (2026-10-19) |
-| [D03](D03-configuracao-firebase-e-android-web.md) | Projeto Firebase (plano Spark), `applicationId` definitivo e credenciais OAuth2 nas 4 plataformas | zywny-musicas + zywny-aprendizado | D01, D02 | pendente |
+| [D03](D03-configuracao-firebase-e-android-web.md) | Projeto Firebase (plano Spark), `applicationId` definitivo e credenciais OAuth2 nas 4 plataformas | zywny-musicas + zywny-aprendizado | D01, D02 | código pronto (2026-10-19); falta criar o projeto no console |
 | [D04](D04-licencas-de-pacotes-por-conta.md) | Liberação de bibliotecas e pacotes (`.zywny` e cursos) vinculada ao `uid` e validade (`D-NEG-VALIDADE`) | zywny-comum + apps | D01, D02, D03 | pendente |

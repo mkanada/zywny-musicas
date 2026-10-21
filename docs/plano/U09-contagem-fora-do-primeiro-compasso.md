@@ -1,6 +1,6 @@
 # U09 — A contagem sai de cima do primeiro compasso
 
-**Repo:** zywny · **Depende de:** — · **Decisão necessária:** D-CONTAGEM
+**Repo:** zywny-musicas · **Depende de:** — · **Decisão necessária:** D-CONTAGEM
 
 ## Objetivo
 
