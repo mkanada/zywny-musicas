@@ -11,6 +11,9 @@
 # Antes, ao menos uma vez: `tool/build_verovio_web.sh` e `just web-audio`.
 # A chave pública vem de keys/ (D-BIB-CIFRA); sem ela o app publicado não
 # instala biblioteca, então este script se recusa a seguir.
+#
+# Junto do app vai a política de privacidade (`web/privacidade.html`), que o
+# Play Console pede por URL: https://mkanada.github.io/zywny-musicas/privacidade.html
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -20,6 +23,7 @@ remote="$(git remote get-url origin)"
 [ -s keys/biblioteca.public.b64 ] || { echo "falta keys/biblioteca.public.b64" >&2; exit 1; }
 [ -f web/verovio/verovio-toolkit-hum.js ] || { echo "falta web/verovio/ (tool/build_verovio_web.sh)" >&2; exit 1; }
 [ -f web/audio/zywny_audio.js ] || { echo "falta web/audio/ (just web-audio)" >&2; exit 1; }
+[ -f web/privacidade.html ] || { echo "falta web/privacidade.html (a política de privacidade)" >&2; exit 1; }
 
 rm -rf "$out"
 # --no-web-resources-cdn: o CanvasKit sai daqui, não do gstatic, para o
@@ -31,6 +35,9 @@ flutter build web --release --base-href /zywny-musicas/ --no-web-resources-cdn \
 rm -f "$out/assets/assets/verovio_data.zip"
 # A soundfont é GPL-2: o aviso de copyright vai junto.
 cp assets/soundfonts/TimGM6mb.copyright "$out/assets/assets/soundfonts/"
+# A política de privacidade (LGPD) mora no `web/` e sai na raiz do site, com
+# o nome que o Play Console pede: .../zywny-musicas/privacidade.html.
+cp web/privacidade.html "$out/privacidade.html"
 # Sem Jekyll: o Pages serve os arquivos como estão.
 touch "$out/.nojekyll"
 # PWA: preenche VERSION e PRECACHE do sw.js com o que este build tem.

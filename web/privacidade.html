@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de Privacidade — Zywny (app de músicas)</title>
+  <meta name="description" content="Como o app Zywny trata os dados: conta, apelido, progresso de treino, licenças de conteúdo e o que é compartilhado com o tutor. Política de privacidade (LGPD).">
+  <meta name="theme-color" content="#5A1E2B">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    /* A página é autocontida: nenhuma fonte, script ou imagem de terceiro.
+       Uma política de privacidade não deve chamar o Google para mostrar texto. */
+    :root {
+      --tinta: #1C1D20;
+      --tinta-2: #5B5E66;
+      --tinta-3: #9A9CA3;
+      --vinho: #5A1E2B;
+      --azul: #2F5BD3;
+      --azul-escuro: #1F3F9E;
+      --fundo: #FBFAF8;
+      --borda: #E6E3DE;
+      --destaque: #FFF6D8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--fundo);
+      color: var(--tinta);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    main {
+      max-width: 46rem;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    header.capa {
+      border-bottom: 1px solid var(--borda);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .selo {
+      display: inline-block;
+      font-size: .78rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--vinho);
+      border: 1px solid var(--borda);
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      background: #fff;
+    }
+
+    h1 {
+      font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      font-size: 2.3rem;
+      line-height: 1.2;
+      margin: 1rem 0 .4rem;
+      letter-spacing: -.01em;
+    }
+
+    .subtitulo { color: var(--tinta-2); margin: 0 0 .8rem; }
+
+    .meta { color: var(--tinta-3); font-size: .9rem; margin: 0; }
+
+    h2 {
+      font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      font-size: 1.45rem;
+      line-height: 1.3;
+      margin: 2.6rem 0 .6rem;
+      scroll-margin-top: 1rem;
+    }
+
+    h3 { font-size: 1.05rem; margin: 1.6rem 0 .4rem; }
+
+    p { margin: .6rem 0; }
+
+    ul, ol { padding-left: 1.3rem; }
+    li { margin: .3rem 0; }
+
+    a { color: var(--azul); }
+    a:hover { color: var(--azul-escuro); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .88em;
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-radius: 4px;
+      padding: .05em .35em;
+    }
+
+    .resumo {
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-left: 4px solid var(--vinho);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .resumo p:first-child { margin-top: 0; }
+    .resumo p:last-child { margin-bottom: 0; }
+
+    .sumario {
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: .5rem 1.25rem 1rem;
+      margin: 0 0 2.5rem;
+      font-size: .95rem;
+    }
+
+    .sumario h2 { margin: .8rem 0 .2rem; font-size: 1.1rem; font-family: inherit; font-weight: 700; }
+    .sumario ol { margin: .2rem 0; }
+
+    .tabela-envolucro { overflow-x: auto; margin: 1rem 0 1.5rem; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .92rem;
+      background: #fff;
+    }
+
+    th, td {
+      border: 1px solid var(--borda);
+      padding: .55rem .7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #F3F1ED; font-weight: 600; }
+
+    .nota {
+      background: var(--destaque);
+      border: 1px solid #EADFAE;
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      font-size: .95rem;
+      margin: 1rem 0;
+    }
+
+    .nota p:first-child { margin-top: 0; }
+    .nota p:last-child { margin-bottom: 0; }
+
+    /* Placeholder de dado que ainda não foi preenchido pelo responsável pelo
+       app: fica visível, para ninguém publicar a página sem ver que falta. */
+    .a-definir {
+      background: var(--destaque);
+      border-bottom: 2px solid #C9A227;
+      padding: 0 .2rem;
+      font-weight: 600;
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--borda);
+      color: var(--tinta-2);
+      font-size: .92rem;
+    }
+
+    footer a { color: var(--azul); }
+
+    @media (max-width: 34rem) {
+      body { font-size: 16px; }
+      h1 { font-size: 1.9rem; }
+      main { padding: 1.75rem 1rem 3rem; }
+    }
+
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .sumario { display: none; }
+      a { color: inherit; text-decoration: none; }
+      h2 { break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="capa">
+      <span class="selo">Zywny · app de músicas</span>
+      <h1>Política de Privacidade</h1>
+      <p class="subtitulo">
+        Como o Zywny — o app de música do teclado MIDI — trata os seus dados.
+      </p>
+      <p class="meta">
+        Versão do app: 1.0.4 · Última atualização: 20 de outubro de 2026
+      </p>
+    </header>
+
+    <div class="resumo">
+      <p><strong>Em resumo.</strong> O Zywny guarda o mínimo para você estudar:
+      uma conta (login com a sua conta Google), um <strong>apelido</strong> e o
+      seu <strong>progresso de treino</strong>. Não há anúncios, não há
+      rastreamento de terceiros e nada do que você toca é vendido.</p>
+      <p>Quando você está ligado a um tutor, ele vê o seu progresso e as
+      gravações MIDI das sessões em que você usa o conteúdo dele — com aviso
+      na tela. Você pode apagar a sua conta e os seus dados quando quiser.</p>
+    </div>
+
+    <nav class="sumario">
+      <h2>Índice</h2>
+      <ol>
+        <li><a href="#controlador">Quem é o Zywny e quem controla os dados</a></li>
+        <li><a href="#dados">O que coletamos, onde fica e para quê</a></li>
+        <li><a href="#nao-coletamos">O que não coletamos</a></li>
+        <li><a href="#compartilhamento">Com quem compartilhamos</a></li>
+        <li><a href="#criancas">Crianças e adolescentes</a></li>
+        <li><a href="#bases">Por que podemos tratar os dados (bases legais)</a></li>
+        <li><a href="#retencao">Onde os dados ficam e por quanto tempo</a></li>
+        <li><a href="#seguranca">Como cuidamos da segurança</a></li>
+        <li><a href="#direitos">Seus direitos e como exercê-los</a></li>
+        <li><a href="#web">Cookies e armazenamento local na versão Web</a></li>
+        <li><a href="#alteracoes">Alterações desta política</a></li>
+        <li><a href="#contato">Contato e reclamação à ANPD</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="controlador">1. Quem é o Zywny e quem controla os dados</h2>
+
+    <p>
+      O <strong>Zywny</strong> é o app de treino musical no teclado MIDI
+      (Android, Web, Linux e Windows). A marca é controlada pela
+      <strong>Zywny</strong>, que é a controladora dos dados pessoais tratados
+      neste app, nos termos da Lei nº 13.709/2018 (LGPD).
+    </p>
+
+    <p>
+      O <strong>tutor</strong> (quem ensina música e disponibiliza conteúdo
+      para os seus alunos) e o <strong>responsável</strong> por um menor de
+      idade são operadores ou responsáveis por Treatments específicos,
+      descritos nas seções 4 e 5.
+    </p>
+
+    <p>
+      A conta é a mesma em todo o ecossistema Zywny: o app de músicas (este),
+      o app de cursos (<em>Zywny Aprendizado</em>) e o painel do tutor. O login
+      é feito uma vez e vale para todos.
+    </p>
+
+    <h2 id="dados">2. O que coletamos, onde fica e para quê</h2>
+
+    <p>
+      O app funciona sem conta? Não: para abrir a biblioteca, o Zywny exige um
+      login (a decisão <code>D-NEG-SEM-CONTA</code> do projeto). O login é
+      feito com a sua conta Google ou outra rede social — o app nunca vê a sua
+      senha.
+    </p>
+
+    <div class="tabela-envolucro">
+      <table>
+        <thead>
+          <tr>
+            <th>Dado</th>
+            <th>Onde fica</th>
+            <th>Para quê</th>
+            <th>Quem vê</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>Conta</strong>: identificador da conta (<code>uid</code>),
+              e-mail, nome de exibição e foto de perfil que a rede social
+              informou.
+            </td>
+            <td>Firebase Authentication (Google Cloud).</td>
+            <td>Abrir o app, manter a sessão, vincular a conta a um tutor e
+              liberar as partituras e os cursos da sua conta.</td>
+            <td>A Zywny e o Google (que opera o serviço de autenticação). O
+              tutor vê apenas o apelido e o código do aluno.</td>
+          </tr>
+          <tr>
+            <td><strong>Apelido</strong> — o nome com que o app te chama.</td>
+            <td>No seu aparelho.</td>
+            <td>Identificar você dentro do app e para o seu tutor. É o
+              identificador usado no lugar do seu nome verdadeiro.</td>
+            <td>Você e o tutor vinculado.</td>
+          </tr>
+          <tr>
+            <td><strong>Código do aluno</strong> (derivado do
+              <code>uid</code>).</td>
+            <td>No seu aparelho.</td>
+            <td>O tutor digita o código para vincular a sua conta à turma
+              dele.</td>
+            <td>Você e o tutor.</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Licenças de conteúdo</strong>: quais partituras e cursos
+              a sua conta pode abrir
+              (<code>users/{uid}/licenses</code>).
+            </td>
+            <td>Cloud Firestore (Google Cloud), com cópia assinada no seu
+              aparelho.</td>
+            <td>Decidir o que abre no seu app. A cópia local vale por até
+              7 dias sem internet e é verificada por assinatura digital.</td>
+            <td>A Zywny. O tutor vê o que ele próprio disponibilizou.</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Progresso de treino</strong>: o que você praticou, quando,
+              em que tom, quantas vezes errou, que etapa da trilha terminou.
+            </td>
+            <td>No seu aparelho; enviado ao tutor quando há vínculo.</td>
+            <td>Mostrar o seu progresso a você e no relatório ao tutor
+              (minutos por dia, dias seguidos, percentual de acerto,
+              andamento atingido, onde você mais erra e onde parou).</td>
+            <td>Você e o tutor — apenas sobre o conteúdo dele e o conteúdo da
+              plataforma.</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Gravações MIDI das sessões</strong>: as notas e o ritmo
+              que você tocou.
+            </td>
+            <td>No seu aparelho; enviado ao tutor enquanto houver vínculo.</td>
+            <td>Permitir ao tutor ver como a pessoa tocou. O app mostra um
+              aviso na tela quando o envio acontece.</td>
+            <td>Você e o tutor — apenas sobre o conteúdo dele.</td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Configurações</strong>: som, saída de áudio, tamanho da
+              notação, andamento, cores, tema e o que já foi visto no tutorial.
+            </td>
+            <td>No seu aparelho (armazenamento local do app).</td>
+            <td>Não repetir as perguntas a cada abertura do app.</td>
+            <td>Só você.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nota">
+      <p><strong>Nota de honestidade.</strong> No app publicado nesta versão, o
+      progresso e as gravações MIDI ficam <em>somente no aparelho</em>: o envio
+      ao tutor está em implantação e entra em vigor na próxima atualização. As
+      regras desta política já valem para ele — quando o envio começar, ele
+      passa a acontecer com o aviso na tela, como está descrito acima.</p>
+    </div>
+
+    <p>
+      As partituras e os cursos que você usa <strong>não</strong> são
+      tracker nem enviados para a Zywny: eles são arquivos
+      (<code>.zywny</code>) que você instala no aparelho, cifrados e
+      assinados. A plataforma nunca recebe o conteúdo das suas partituras
+      para treinar modelos ou para análise.
+    </p>
+
+    <h2 id="nao-coletamos">3. O que não coletamos</h2>
+
+    <ul>
+      <li><strong>Não há publicidade</strong> no app: nem banners, nem
+        anúncios, nem rastreamento de anunciantes.</li>
+      <li><strong>Não há analytics de terceiros</strong>: nem Google
+        Analytics, nem Firebase Analytics, nem ferramentas de crash report de
+        terceiros.</li>
+      <li><strong>Não acessamos</strong> câmera, microfone, contatos, agenda,
+        localização, SMS, galeria de fotos ou arquivos do seu aparelho além
+        do pacote de música que você escolher instalar.</li>
+      <li><strong>Não vendemos, alugamos nem trocamos</strong> dados pessoais
+        com terceiros.</li>
+      <li><strong>Não usamos</strong> os seus dados para publicidade
+        comportamental nem para decidir o que te mostrar.</li>
+      <li><strong>Não exigimos</strong> nome completo, endereço, telefone,
+        documento ou data de nascimento. O apelido basta.</li>
+    </ul>
+
+    <h2 id="compartilhamento">4. Com quem compartilhamos</h2>
+
+    <p>Os dados saem do seu aparelho em três situações, e só três:</p>
+
+    <ul>
+      <li>
+        <strong>Com o Google</strong>, como operador da nossa infraestrutura:
+        Firebase Authentication (login e conta), Cloud Firestore (licenças de
+        conteúdo) e, quando você assina, a Google Play Billing (o
+        pagamento). O app não recebe o número do seu cartão. Ao entrar com a
+        sua conta Google, o Google entrega o e-mail, o nome de exibição e a
+        foto — você pode escolher não compartilhá-los nas opções da conta
+        Google.
+      </li>
+      <li>
+        <strong>Com o seu tutor</strong>: o relatório de progresso e as
+        gravações MIDI das sessões em que você usa o conteúdo dele (e o
+        conteúdo da plataforma), enquanto o vínculo existir. O tutor não vê o
+        seu e-mail, nem a sua conta Google, nem o conteúdo de outros tutores.
+      </li>
+      <li>
+        <strong>Com o responsável</strong>, no caso de menor de 12 anos, para o
+        consentimento e para o cadastro.
+      </li>
+    </ul>
+
+    <p>
+      Além disso, o Zywny só entrega dados quando a lei exige: por ordem
+      judicial ou por determinação de autoridade competente.
+    </p>
+
+    <h2 id="criancas">5. Crianças e adolescentes</h2>
+
+    <p>
+      O Zywny é usado por crianças e adolescentes — por isso a LGPD trata
+      esse caso com mais cuidado (art. 14).
+    </p>
+
+    <ul>
+      <li>
+        Para <strong>menores de 12 anos</strong>, o consentimento específico é
+        dado por um dos pais ou responsáveis, no formulário da plataforma,
+        antes do primeiro uso. No app, o aviso é o do primeiro acesso: o
+        aceite do responsável é colhido fora do app.
+      </li>
+      <li>
+        O app pede um <strong>apelido</strong>, e não o nome completo. O
+        apelido é um dado pseudonimizado: ainda é um dado pessoal (a conta
+        Google liga a pessoa a um e-mail e o tutor sabe quem é), e por isso
+        continua valendo tudo o que está escrito aqui.
+      </li>
+      <li>
+        Colhemos o <strong>mínimo</strong>: nada de endereço, telefone,
+        documento, foto ou data de nascimento.
+      </li>
+      <li>
+        O responsável pode pedir, a qualquer momento, a <strong>eliminação dos
+        dados</strong> do menor — inclusive os que já foram enviados ao tutor.
+      </li>
+    </ul>
+
+    <h2 id="bases">6. Por que podemos tratar os dados (bases legais)</h2>
+
+    <p>Nos termos do art. 7º da LGPD, o tratamento se apoia em:</p>
+
+    <ul>
+      <li><strong>Consentimento</strong> (inciso I): o aceite da política de
+        privacidade e, para menores de 12 anos, o consentimento do
+        responsável.</li>
+      <li><strong>Execução de contrato</strong> (inciso V): para entregar o
+        app, as partituras e os cursos que a sua conta pode abrir, e para
+        gerar o relatório do seu tutor.</li>
+      <li><strong>Legítimo interesse</strong> (inciso IX): segurança da conta,
+        prevenção a abuso, integridade dos pacotes de conteúdo e melhoria do
+        app.</li>
+      <li><strong>Cumprimento de obrigação legal</strong> (inciso II):
+        obrigações fiscais e os requisitos das lojas de aplicativos.</li>
+    </ul>
+
+    <h2 id="retencao">7. Onde os dados ficam e por quanto tempo</h2>
+
+    <div class="tabela-envolucro">
+      <table>
+        <thead>
+          <tr>
+            <th>Onde</th>
+            <th>Por quanto tempo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No seu aparelho (progresso, gravações MIDI, configurações,
+              apelido, cache das licenças).</td>
+            <td>Até você apagar a conta no app ou desinstalar o aplicativo.</td>
+          </tr>
+          <tr>
+            <td>Na conta no Firebase (identificador, e-mail, nome, foto).</td>
+            <td>Até você usar “Apagar minha conta” nas Configurações ou pedir a
+              eliminação pelo e-mail de contato.</td>
+          </tr>
+          <tr>
+            <td>Licenças de conteúdo no Firestore.</td>
+            <td>Juntas com a conta: são apagadas quando a conta é apagada.</td>
+          </tr>
+          <tr>
+            <td>Relatórios e gravações MIDI no tutor.</td>
+            <td>Enquanto houver vínculo entre você e o tutor. Ao encerrar o
+              vínculo, o material daquele vínculo é apagado e os relatórios
+              param de ser enviados.</td>
+          </tr>
+          <tr>
+            <td>Registro do consentimento do responsável.</td>
+            <td>Enquanto durar o tratamento e pelo prazo de guarda legal para
+              que o Zywny possa demonstrar o consentimento (5 anos após o fim
+              do tratamento, art. 16 da LGPD).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="seguranca">8. Como cuidamos da segurança</h2>
+
+    <ul>
+      <li>Tudo trafega por conexão criptografada (HTTPS/TLS).</li>
+      <li>O login é feito pelo Google: o app recebe um token, nunca a sua
+        senha.</li>
+      <li>As regras do Firestore isolam os dados por conta: um aluno não lê a
+        licença de outro.</li>
+      <li>Os pacotes de partitura e curso são cifrados (AES-256-GCM) e
+        assinados (Ed25519); a cópia local da licença é assinada e verificada
+        antes de abrir qualquer conteúdo.</li>
+      <li>O cache do service worker guarda o app no aparelho para que ele
+        abra sem internet — é o mesmo cache que o navegador usa.</li>
+      <li>Nenhum dado é vendido e nenhum acesso é compartilhado fora do que
+        está na seção 4.</li>
+    </ul>
+
+    <p>
+      Nenhum sistema é infalível. Se você notar um uso indevido dos seus
+      dados, escreva para o e-mail de contato: a Zywny apaga o que puder e
+      investigate.
+    </p>
+
+    <h2 id="direitos">9. Seus direitos e como exercê-los</h2>
+
+    <p>
+      A LGPD (art. 18) garante a você, titular dos dados, o direito de:
+    </p>
+
+    <ul>
+      <li>confirmar a existência de tratamento;</li>
+      <li>acceder aos dados e receber uma cópia;</li>
+      <li>corrigir dados incompletos, inexatos ou desatualizados;</li>
+      <li>solicitar a anonimização, o bloqueio ou a <strong>eliminação</strong>
+        de dados desnecessários ou tratados em desconformidade com a lei
+        (o <em>direito de apagar</em>);</li>
+      <li>receber os dados em formato estruturado, para portabilidade;</li>
+      <li>saber com quem os dados foram compartilhados;</li>
+      <li>revogar o consentimento;</li>
+      <li>pedir a revisão de decisões tomadas só por meios automatizados;</li>
+      <li>reclamar à ANPD (seção 12).</li>
+    </ul>
+
+    <p>Você pode exercer esses direitos de duas formas:</p>
+
+    <ul>
+      <li>
+        <strong>No app</strong>: Configurações → Conta → “Apagar minha conta
+        e meus dados”. Isso apaga a conta no servidor e os dados que ficaram
+        no aparelho.
+      </li>
+      <li>
+        <strong>Por e-mail</strong>: escreva para
+        <span class="a-definir">[E-MAIL DE CONTATO]</span>. A resposta vem em
+        até 15 dias, e o pedido pode ser feito pelo titular ou pelo responsável,
+        no caso de menor.
+      </li>
+    </ul>
+
+    <h2 id="web">10. Cookies e armazenamento local na versão Web</h2>
+
+    <p>
+      A versão Web do Zywny guarda no navegador o seu progresso, as suas
+      configurações e a sua sessão, no armazenamento local do próprio
+      navegador (<code>localStorage</code>/IndexedDB) — sem cookie de
+      publicidade e sem rastreador de terceiros. Um <em>service worker</em>
+      guarda o app em cache para que ele abra sem internet.
+    </p>
+
+    <p>
+      O login na Web abre o Google numa janela separada (popup). O que o Google
+      faz com o seu login é assunto da política de privacidade do Google, não
+      desta.
+    </p>
+
+    <h2 id="alteracoes">11. Alterações desta política</h2>
+
+    <p>
+      Esta política pode ser atualizada quando o app mudar (por exemplo, quando
+      o envio de relatórios ao tutor entrar em vigor). A data no topo desta
+      página mostra a última atualização. Mudanças relevantes são avisadas no
+      app, na hora do primeiro acesso.
+    </p>
+
+    <h2 id="contato">12. Contato e reclamação à ANPD</h2>
+
+    <p>
+      Dúvidas sobre esta política, pedidos de acesso, correção ou apagamento
+      de dados: escreva para
+      <span class="a-definir">[E-MAIL DE CONTATO]</span>.
+    </p>
+
+    <p>
+      O código-fonte do app é público, e o canal de contato do projeto também:
+      <a href="https://github.com/mkanada/zywny-musicas">github.com/mkanada/zywny-musicas</a>.
+    </p>
+
+    <p>
+      Se a resposta não resolver, você pode reclamar da Zywny diretamente à
+      Autoridade Nacional de Proteção de Dados (ANPD):
+      <a href="https://www.gov.br/anpd">gov.br/anpd</a>.
+    </p>
+
+    <footer>
+      <p>
+        <strong>Zywny — app de músicas.</strong> Política de privacidade
+        (LGPD, Lei nº 13.709/2018). Versão 1.0.4 · 20 de outubro de 2026.
+      </p>
+      <p>
+        <a href="./">Abrir o app</a> ·
+        <a href="https://github.com/mkanada/zywny-musicas">Código-fonte</a>
+      </p>
+    </footer>
+  </main>
+</body>
+</html>
