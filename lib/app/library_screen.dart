@@ -38,7 +38,6 @@ import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_library/library_keys.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
-import 'package:zywny_library/library_installer.dart';
 import 'package:zywny_library/library_package.dart'
     show LibraryPackage, LibraryTerm;
 import 'package:zywny_library/library_term_scope.dart';
@@ -137,7 +136,6 @@ class LibraryScreen extends StatefulWidget {
     this.loadCatalog,
     this.loadScore,
     this.libraryStore,
-    this.pickLibraryFile = pickLibraryBytes,
     this.pickMusicXml = pickMusicXmlFile,
     this.progress,
     this.appSettings,
@@ -160,9 +158,6 @@ class LibraryScreen extends StatefulWidget {
   final Future<PieceCatalog> Function()? loadCatalog;
   final Future<Uint8List> Function(Piece piece)? loadScore;
   final LibraryStore? libraryStore;
-
-  /// O seletor do arquivo `.zywny` (biblioteca); os testes trocam por um falso.
-  final Future<Uint8List?> Function() pickLibraryFile;
 
   /// O seletor do MusicXML avulso (`.musicxml`, `.mxl`); os testes trocam
   /// por um falso.
@@ -338,21 +333,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
   }
 
-  /// Escolhe um `.zywny`, confere que é biblioteca, instala e, se deu certo,
-  /// vira a em uso. Curso não se instala aqui (ver `package_install.dart`).
-  Future<void> _installLibrary() async {
-    final installed = await installPackageFromFile(
-      context,
-      _libraries,
-      pick: widget.pickLibraryFile,
-    );
-    if (installed == null || !mounted) return;
-    _reloadCatalog();
-  }
-
-  /// Troca a biblioteca em uso (só com mais de uma instalada): a lista, com
-  /// instalar e remover, é a mesma das configurações. Ao fechar, a biblioteca
-  /// acompanha o que ficou em uso.
+  /// Gerencia as bibliotecas (a lista, com remover): a seleção da em uso só
+  /// aparece com mais de uma instalada. Ao fechar, a biblioteca acompanha o
+  /// que ficou em uso.
   Future<void> _openLibraries() async {
     await _libraries.load();
     if (!mounted) return;
@@ -362,18 +345,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         title: const Text('Bibliotecas'),
         content: SizedBox(
           width: 400,
-          child: LibrariesSection(
-            store: _libraries,
-            onInstall: () => unawaited(
-              installPackageFromFile(
-                context,
-                _libraries,
-                pick: widget.pickLibraryFile,
-              ).then((installed) {
-                if (installed != null) _reloadCatalog();
-              }),
-            ),
-          ),
+          child: LibrariesSection(store: _libraries),
         ),
         actions: [
           TextButton(
@@ -484,18 +456,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
         );
       } on Object catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Não deu para guardar: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Não deu para guardar: $e')));
         return;
       }
       if (!result.meta.isEmpty) {
         await _metadata.save(kImportedLibraryId, score.id, result.meta);
       }
       if (!mounted) return;
-      await _open(
-        score.toPiece(_metadata.get(kImportedLibraryId, score.id)),
-      );
+      await _open(score.toPiece(_metadata.get(kImportedLibraryId, score.id)));
     } finally {
       _importing = false;
     }
@@ -592,10 +561,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
       if (!catalog.numbered && _sort.key == SortKey.number) {
         _sort = const SortState(key: SortKey.title);
       }
-      await _metadata.load(
-        catalog.libraryId ?? '',
-        [for (final p in catalog.pieces) p.id],
-      );
+      await _metadata.load(catalog.libraryId ?? '', [
+        for (final p in catalog.pieces) p.id,
+      ]);
       await _metadata.load(kImportedLibraryId, [
         for (final s in _imported.scores) s.id,
       ]);
@@ -792,13 +760,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
             settings: _settings,
             midiDeviceManager: _midi,
             authStore: widget.authStore,
-            libraryStore: _libraries,
-            pickLibraryFile: widget.pickLibraryFile,
-            installLibrary: (context) => installPackageFromFile(
-              context,
-              _libraries,
-              pick: widget.pickLibraryFile,
-            ).then<void>((_) {}),
             onTutorial: widget.tourStore == null
                 ? null
                 : () {
@@ -921,9 +882,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     else ...[
                       _searchField(catalog.numbered),
                       const SizedBox(height: 14),
-                      if (_continuing(
-                        _effectivePieces(catalog),
-                      ) case final piece?) ...[
+                      if (_continuing(_effectivePieces(catalog))
+                          case final piece?) ...[
                         _continueCard(piece, catalog.term),
                         const SizedBox(height: 14),
                       ] else if (_progressLoaded) ...[
@@ -977,9 +937,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                   const SizedBox(height: 12),
                   if (!noLibrary && catalog != null) ...[
-                    if (_continuing(
-                      _effectivePieces(catalog),
-                    ) case final piece?) ...[
+                    if (_continuing(_effectivePieces(catalog))
+                        case final piece?) ...[
                       _continueCard(piece, catalog.term),
                       const SizedBox(height: 12),
                     ] else if (_progressLoaded) ...[
@@ -1075,18 +1034,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
             style: serifDisplay(fontSize: 22),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'O zywny não traz músicas. Elas chegam em bibliotecas: '
-            'arquivos .zywny que você abre aqui. Uma delas fica em uso '
-            'por vez, e você troca nas configurações.',
+          Text(
+            kIsWeb
+                ? 'O zywny não traz músicas. Elas chegam em bibliotecas: '
+                      'arquivos .zywny. Arraste um para esta página.'
+                : 'O zywny não traz músicas. Elas chegam em bibliotecas: '
+                      'arquivos .zywny. No gerenciador de arquivos, toque no '
+                      'arquivo e escolha “Abrir com” → zywny.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: kInkCaption, height: 1.4),
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: () => unawaited(_installLibrary()),
-            icon: const Icon(Icons.folder_open),
-            label: const Text('Abrir arquivo…'),
+            style: const TextStyle(
+              fontSize: 14,
+              color: kInkCaption,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -1137,23 +1097,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  /// Importar (.zywny e MusicXML), trocar de biblioteca, engrenagem e
-  /// teclado juntos, no canto. A troca só aparece com mais de uma instalada:
-  /// com uma só não há o que escolher.
+  /// Bibliotecas, MusicXML, engrenagem e teclado juntos, no canto. O
+  /// `.zywny` não se instala por aqui: ele chega pelo "Abrir com…" do
+  /// sistema (ou, na web, solto na página). A troca de biblioteca só aparece
+  /// com mais de uma instalada; com uma só, o diálogo informa.
   List<Widget> _headerActions() => [
     IconButton(
-      tooltip: 'Instalar biblioteca (.zywny)…',
-      onPressed: () => unawaited(_installLibrary()),
+      tooltip: 'Bibliotecas…',
+      onPressed: () => unawaited(_openLibraries()),
       color: kIconQuiet,
-      icon: const Icon(Icons.folder_open_outlined),
+      icon: const Icon(Icons.library_books_outlined),
     ),
-    if (_libraries.installed.length > 1)
-      IconButton(
-        tooltip: 'Trocar de biblioteca…',
-        onPressed: () => unawaited(_openLibraries()),
-        color: kIconQuiet,
-        icon: const Icon(Icons.library_books_outlined),
-      ),
     IconButton(
       tooltip: 'Importar MusicXML…',
       onPressed: () => unawaited(_importMusicXml()),
@@ -1653,9 +1607,7 @@ class _PieceRow extends StatelessWidget {
                 width: 38,
                 child: piece.number == null
                     ? Icon(
-                        imported
-                            ? Icons.audio_file_outlined
-                            : Icons.remove,
+                        imported ? Icons.audio_file_outlined : Icons.remove,
                         size: 18,
                         color: kInkCaption,
                         semanticLabel: imported ? 'importada' : null,

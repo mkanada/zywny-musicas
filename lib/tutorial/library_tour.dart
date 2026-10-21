@@ -45,8 +45,9 @@ List<TourStep> libraryTourSteps(
       title: 'Músicas',
       body:
           'O Zywny não traz músicas: elas chegam em bibliotecas, arquivos '
-          '.zywny. Abra uma aqui. Depois, pelas configurações, você troca de '
-          'biblioteca ou instala outras.',
+          '.zywny. No celular, abra o arquivo no gerenciador e toque em '
+          '“Abrir com” → Zywny; no computador, arraste o arquivo para a '
+          'página. Depois, o botão do topo troca a biblioteca em uso.',
     ),
     TourStep(
       targets: [keys.search],
@@ -90,7 +91,7 @@ List<TourStep> libraryTourSteps(
       targets: [keys.settings],
       title: 'Configurações',
       body:
-          'Som, cores, nome das notas (Dó-Ré-Mi ou C-D-E) e bibliotecas. No fim '
+          'Som, cores e nome das notas (Dó-Ré-Mi ou C-D-E). No fim '
           'da lista estão o “Sobre o Zywny” e este tutorial, '
           'para rever quando quiser.',
     ),

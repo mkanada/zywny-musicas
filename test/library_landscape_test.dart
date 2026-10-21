@@ -206,7 +206,7 @@ void main() {
       expect(install.dx, greaterThan(_phoneLandscape.width / 2));
       // O cartão cabe sem rolar.
       expect(
-        tester.getRect(find.text('Abrir arquivo…')).bottom,
+        tester.getRect(find.text('Instale uma biblioteca de músicas')).bottom,
         lessThan(_phoneLandscape.height),
       );
     });

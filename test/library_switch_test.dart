@@ -1,6 +1,5 @@
 // Importação visível (.zywny) e troca de biblioteca só com mais de uma.
 // B05 (instalar por arquivo), B06 (seção Bibliotecas), B11 (fila de entrada).
-import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:flutter_midi_command_platform_interface/flutter_midi_command_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,7 +30,6 @@ void main() {
   late TestKeys keys;
   late MemoryLibraryBlobStore blobs;
   late LibraryStore store;
-  Uint8List? picked;
 
   setUpAll(() async => keys = await TestKeys.generate());
 
@@ -45,7 +43,6 @@ void main() {
       prefs: SharedPreferencesAsync(),
       publicKey: keys.pub,
     );
-    picked = null;
   });
 
   Future<void> pumpLibrary(
@@ -60,7 +57,6 @@ void main() {
         theme: buildAppTheme(),
         home: LibraryScreen(
           libraryStore: store,
-          pickLibraryFile: () async => picked,
           scoreBuilder: (context, o) => const Scaffold(body: Text('x')),
         ),
       ),
@@ -77,43 +73,81 @@ void main() {
   }) async {
     await store.load();
     await store.install(
-      await keys.package(id, name: name ?? id, version: version, pieces: pieces),
+      await keys.package(
+        id,
+        name: name ?? id,
+        version: version,
+        pieces: pieces,
+      ),
     );
   }
 
-  group('botão de instalar no cabeçalho', () {
-    testWidgets('aparece sempre, mesmo com biblioteca instalada', (
-      tester,
-    ) async {
+  group('sem seletor de .zywny no app', () {
+    testWidgets('nem com biblioteca instalada, nem sem ela', (tester) async {
       await install('hinos', name: 'Hinário');
       await pumpLibrary(tester);
-      expect(find.text('T1'), findsOneWidget);
-      expect(
-        find.byTooltip('Instalar biblioteca (.zywny)…'),
-        findsOneWidget,
-      );
+      expect(find.byTooltip('Instalar biblioteca (.zywny)…'), findsNothing);
+      expect(find.text('Abrir arquivo…'), findsNothing);
     });
 
-    testWidgets('instala pelo cabeçalho e vira a em uso', (tester) async {
+    testWidgets('o cartão vazio só explica o "Abrir com…"', (tester) async {
       await pumpLibrary(tester);
       expect(find.text('Instale uma biblioteca de músicas'), findsOneWidget);
-      picked = await keys.package('hinos', name: 'Hinário', pieces: 3);
-      await tester.tap(find.byTooltip('Instalar biblioteca (.zywny)…'));
-      await tester.pumpAndSettle();
-      expect(find.text('Hinário instalada (3 hinos)'), findsOneWidget);
-      expect(store.activeId, 'hinos');
-      expect(find.text('T1'), findsOneWidget);
+      expect(find.textContaining('Abrir com'), findsOneWidget);
+      expect(find.text('Abrir arquivo…'), findsNothing);
+      expect(find.byTooltip('Instalar biblioteca (.zywny)…'), findsNothing);
     });
   });
 
-  group('troca de biblioteca no cabeçalho', () {
-    testWidgets('só aparece com mais de uma instalada', (tester) async {
+  group('bibliotecas no cabeçalho', () {
+    testWidgets('sempre visível, mesmo com uma só instalada', (tester) async {
       await install('hinos', name: 'Hinário');
       await pumpLibrary(tester);
-      expect(
-        find.byTooltip('Trocar de biblioteca…'),
-        findsNothing,
-      );
+      expect(find.byTooltip('Bibliotecas…'), findsOneWidget);
+    });
+
+    testWidgets('com uma só: sem seleção e sem instalar', (tester) async {
+      await install('hinos', name: 'Hinário');
+      await pumpLibrary(tester);
+      await tester.tap(find.byTooltip('Bibliotecas…'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bibliotecas'), findsWidgets);
+      expect(find.text('Hinário'), findsOneWidget);
+      expect(find.byIcon(Icons.radio_button_checked), findsNothing);
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
+      expect(find.text('Instalar outra…'), findsNothing);
+    });
+
+    testWidgets('remover a em uso passa para a que sobra', (tester) async {
+      await install('hinos', name: 'Hinário', pieces: 3);
+      await install('classicos', name: 'Clássicos', pieces: 2);
+      await pumpLibrary(tester);
+      await tester.tap(find.byTooltip('Bibliotecas…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Mais sobre Clássicos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remover…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remover'));
+      await tester.pumpAndSettle();
+      expect(store.activeId, 'hinos');
+      expect(store.installed.map((e) => e.id), ['hinos']);
+      await tester.tap(find.text('Fechar'));
+      await tester.pumpAndSettle();
+      expect(find.text('T3'), findsOneWidget);
+    });
+
+    testWidgets('Sobre mostra os créditos', (tester) async {
+      await install('hinos', name: 'Hinário', version: '2026.10.04', pieces: 3);
+      await pumpLibrary(tester);
+      await tester.tap(find.byTooltip('Bibliotecas…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Mais sobre Hinário'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sobre esta biblioteca'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Versão 2026.10.04'), findsOneWidget);
+      expect(find.textContaining('Créditos do teste.'), findsOneWidget);
     });
 
     testWidgets('abre o diálogo, troca e a lista acompanha', (tester) async {
@@ -123,7 +157,7 @@ void main() {
       await pumpLibrary(tester);
       expect(find.textContaining('Clássicos'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Trocar de biblioteca…'));
+      await tester.tap(find.byTooltip('Bibliotecas…'));
       await tester.pumpAndSettle();
       expect(find.text('Bibliotecas'), findsWidgets);
       expect(find.text('Hinário'), findsOneWidget);
@@ -143,34 +177,8 @@ void main() {
       await install('hinos', name: 'Hinário', pieces: 3);
       await install('classicos', name: 'Clássicos', pieces: 2);
       await pumpLibrary(tester, size: const Size(360, 640));
-      expect(find.byTooltip('Trocar de biblioteca…'), findsOneWidget);
-      expect(
-        find.byTooltip('Instalar biblioteca (.zywny)…'),
-        findsOneWidget,
-      );
+      expect(find.byTooltip('Bibliotecas…'), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('uma só instalada (sem seleção)', () {
-    testWidgets('nas configurações: sem rádio, com instalar e remover', (
-      tester,
-    ) async {
-      await install('hinos', name: 'Hinário', pieces: 3);
-      await pumpLibrary(tester);
-      await tester.tap(find.byTooltip('Configurações gerais'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Bibliotecas'), findsOneWidget);
-      expect(find.text('Hinário'), findsOneWidget);
-      expect(find.byIcon(Icons.radio_button_checked), findsNothing);
-      expect(find.byIcon(Icons.radio_button_unchecked), findsNothing);
-      expect(find.text('Instalar outra…'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Mais sobre Hinário'));
-      await tester.pumpAndSettle();
-      expect(find.text('Sobre esta biblioteca'), findsOneWidget);
-      expect(find.text('Remover…'), findsOneWidget);
     });
   });
 }
