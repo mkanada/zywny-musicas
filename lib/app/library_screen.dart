@@ -16,6 +16,7 @@ import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/settings/app_settings.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
+import 'package:zywny_comum/app/libraries_section.dart';
 import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
@@ -28,6 +29,7 @@ import 'package:zywny/app/edit_piece_dialog.dart';
 import 'package:zywny/app/imported_scores.dart';
 import 'package:zywny/app/musicxml_import.dart';
 import 'package:zywny/app/piece_metadata.dart';
+import 'package:zywny/app/web_drop.dart';
 import 'package:zywny/tutorial/library_tour.dart';
 import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
@@ -346,6 +348,56 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     if (installed == null || !mounted) return;
     _reloadCatalog();
+  }
+
+  /// Troca a biblioteca em uso (só com mais de uma instalada): a lista, com
+  /// instalar e remover, é a mesma das configurações. Ao fechar, a biblioteca
+  /// acompanha o que ficou em uso.
+  Future<void> _openLibraries() async {
+    await _libraries.load();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Bibliotecas'),
+        content: SizedBox(
+          width: 400,
+          child: LibrariesSection(
+            store: _libraries,
+            onInstall: () => unawaited(
+              installPackageFromFile(
+                context,
+                _libraries,
+                pick: widget.pickLibraryFile,
+              ).then((installed) {
+                if (installed != null) _reloadCatalog();
+              }),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+    // A troca (ou remoção) feita no diálogo reflete ao fechar; a instalação
+    // já recarregou por conta própria.
+    if (mounted && _shownLibrary != _librarySignature()) _reloadCatalog();
+  }
+
+  /// Os arquivos soltos na página (só Web): entram na mesma fila dos que o
+  /// sistema entrega (B11) — um por vez, com os mesmos diálogos.
+  void _onWebFiles(List<({String name, Uint8List bytes})> files) {
+    for (final file in files) {
+      final bytes = file.bytes;
+      _incomingQueue.add(
+        IncomingPackage(name: file.name, read: () async => bytes),
+      );
+    }
+    if (!_drainingIncoming) unawaited(_drainIncoming());
   }
 
   /// Corrige os dados de [piece] (nome, compositor, letrista, título
@@ -789,7 +841,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
       // Fundo claro: ícones escuros na barra de status.
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark,
-        child: _body(),
+        // Na Web, soltar um `.zywny` na página instala (fora dela, o seletor
+        // do botão "Instalar biblioteca" e o "Abrir com…" do sistema).
+        child: WebDropZone(onFiles: _onWebFiles, child: _body()),
       ),
     );
   }
@@ -830,6 +884,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     _settings,
                     _metadata,
                     _imported,
+                    _libraries,
                   ]),
                   builder: (context, _) => sideBySide
                       ? _contentSideBySide(snapshot)
@@ -1082,8 +1137,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  /// Importar, engrenagem e teclado juntos, no canto.
+  /// Importar (.zywny e MusicXML), trocar de biblioteca, engrenagem e
+  /// teclado juntos, no canto. A troca só aparece com mais de uma instalada:
+  /// com uma só não há o que escolher.
   List<Widget> _headerActions() => [
+    IconButton(
+      tooltip: 'Instalar biblioteca (.zywny)…',
+      onPressed: () => unawaited(_installLibrary()),
+      color: kIconQuiet,
+      icon: const Icon(Icons.folder_open_outlined),
+    ),
+    if (_libraries.installed.length > 1)
+      IconButton(
+        tooltip: 'Trocar de biblioteca…',
+        onPressed: () => unawaited(_openLibraries()),
+        color: kIconQuiet,
+        icon: const Icon(Icons.library_books_outlined),
+      ),
     IconButton(
       tooltip: 'Importar MusicXML…',
       onPressed: () => unawaited(_importMusicXml()),
