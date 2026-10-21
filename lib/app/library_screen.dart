@@ -24,6 +24,10 @@ import 'package:zywny_comum/trail/trail_widgets.dart'
 import 'package:zywny_comum/ui/device_kind.dart';
 import 'package:zywny_comum/ui/orientation.dart';
 import 'package:zywny/app/package_install.dart';
+import 'package:zywny/app/edit_piece_dialog.dart';
+import 'package:zywny/app/imported_scores.dart';
+import 'package:zywny/app/musicxml_import.dart';
+import 'package:zywny/app/piece_metadata.dart';
 import 'package:zywny/tutorial/library_tour.dart';
 import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
@@ -33,7 +37,8 @@ import 'package:zywny_library/library_keys.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny_library/library_installer.dart';
-import 'package:zywny_library/library_package.dart' show LibraryTerm;
+import 'package:zywny_library/library_package.dart'
+    show LibraryPackage, LibraryTerm;
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/library_sort.dart';
 import 'package:zywny_library/library_store.dart';
@@ -120,8 +125,9 @@ const _kShortcutsMaxWidth = 304.0;
 
 /// Tela inicial, em retrato — artboard `CelularBiblioteca.dc.html` do
 /// artefato "zywny — interface de estudo", com os hinos embutidos no lugar
-/// das partituras de exemplo. Não há "abrir arquivo": o app não importa
-/// música.
+/// das partituras de exemplo. Além das bibliotecas `.zywny`, importa
+/// MusicXML avulso (`.musicxml`, `.mxl`) e deixa corrigir os dados de
+/// qualquer música (nome, compositor…), guardados no aparelho.
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({
     super.key,
@@ -130,9 +136,12 @@ class LibraryScreen extends StatefulWidget {
     this.loadScore,
     this.libraryStore,
     this.pickLibraryFile = pickLibraryBytes,
+    this.pickMusicXml = pickMusicXmlFile,
     this.progress,
     this.appSettings,
     this.pieceSettings,
+    this.metadata,
+    this.imported,
     this.trailProgress,
     this.tourStore,
     this.tourDelay = Duration.zero,
@@ -152,9 +161,20 @@ class LibraryScreen extends StatefulWidget {
 
   /// O seletor do arquivo `.zywny` (biblioteca); os testes trocam por um falso.
   final Future<Uint8List?> Function() pickLibraryFile;
+
+  /// O seletor do MusicXML avulso (`.musicxml`, `.mxl`); os testes trocam
+  /// por um falso.
+  final PickMusicXmlFile pickMusicXml;
   final PieceProgressStore? progress;
   final AppSettings? appSettings;
   final PieceSettingsStore? pieceSettings;
+
+  /// As correções dos dados das músicas (qualquer biblioteca, mais as
+  /// importadas); os testes injetam com dados.
+  final PieceMetadataStore? metadata;
+
+  /// As partituras importadas, fora das bibliotecas; os testes injetam.
+  final ImportedScoresStore? imported;
 
   /// Resumos da trilha por hino (J09); os testes injetam com dados.
   final TrailProgressStore? trailProgress;
@@ -200,6 +220,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   late final Future<void> _settingsLoaded = _settings.load();
   late final PieceSettingsStore _pieceSettings =
       widget.pieceSettings ?? PieceSettingsStore();
+  late final PieceMetadataStore _metadata =
+      widget.metadata ?? PieceMetadataStore();
+  late final ImportedScoresStore _imported =
+      widget.imported ?? ImportedScoresStore();
   late final TrailProgressStore _trail =
       widget.trailProgress ?? TrailProgressStore();
 
@@ -228,6 +252,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// o cartão de começo não pode piscar para quem já estudou (U16).
   bool _progressLoaded = false;
   bool _opening = false;
+  bool _importing = false;
 
   /// Há pastilhas de ordenação fora da tela, à direita (o esmaecido na borda
   /// avisa; some ao rolar até o fim — U14).
@@ -250,6 +275,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _midi.dispose();
     if (widget.progress == null) _progress.dispose();
     if (widget.trailProgress == null) _trail.dispose();
+    if (widget.metadata == null) _metadata.dispose();
+    if (widget.imported == null) _imported.dispose();
     if (widget.appSettings == null) _settings.dispose();
     super.dispose();
   }
@@ -263,20 +290,50 @@ class _LibraryScreenState extends State<LibraryScreen> {
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   }
 
-  /// O catálogo da biblioteca em uso. Sem nenhuma instalada: vazio
-  /// ([PieceCatalog.none], que não é erro). Erro ao abrir o pacote sai como
-  /// exceção.
+  /// O catálogo da biblioteca em uso. Sem nenhuma instalada: instala e abre a
+  /// biblioteca embutida de clássicos (`assets/classicos.zywny`) quando o app
+  /// roda de verdade; nos testes (ou se o pacote não estiver disponível), cai
+  /// em [PieceCatalog.none]. Erro ao abrir o pacote sai como exceção.
   Future<PieceCatalog> _loadCatalog() async {
     final custom = widget.loadCatalog;
     if (custom != null) return custom();
     await _libraries.load();
-    _shownLibrary = _librarySignature();
     final id = _libraries.activeId;
     if (id != null) {
       final package = await _libraries.open(id);
-      if (package != null) return PieceCatalog.fromPackage(package);
+      if (package != null) {
+        _shownLibrary = _librarySignature();
+        return PieceCatalog.fromPackage(package);
+      }
     }
+    if (widget.libraryStore == null) {
+      final seeded = await _seedBundledLibrary();
+      if (seeded != null) {
+        _shownLibrary = _librarySignature();
+        return PieceCatalog.fromPackage(seeded);
+      }
+    }
+    _shownLibrary = _librarySignature();
     return const PieceCatalog.none();
+  }
+
+  Future<LibraryPackage?> _seedBundledLibrary() async {
+    final key = _libraries.publicKey;
+    if (key == null) return null;
+    try {
+      final data = await rootBundle.load('assets/classicos.zywny');
+      final bytes = Uint8List.sublistView(data);
+      final package = await _libraries.inspect(bytes);
+      try {
+        await _libraries.install(bytes, inspected: package);
+      } on Object {
+        // Se não puder persistir no disco agora, ainda mostra o catálogo aberto.
+      }
+      return package;
+    } on Object {
+      // Sem o asset ou sem chave compatível: abre vazio em vez de quebrar.
+      return null;
+    }
   }
 
   /// Escolhe um `.zywny`, confere que é biblioteca, instala e, se deu certo,
@@ -289,6 +346,107 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     if (installed == null || !mounted) return;
     _reloadCatalog();
+  }
+
+  /// Corrige os dados de [piece] (nome, compositor, letrista, título
+  /// original): vale para qualquer música, de biblioteca ou importada. Só o
+  /// que difere do pacote é guardado; "Restaurar" volta ao original.
+  Future<void> _editPiece(Piece piece) async {
+    final isImported = piece.libraryId == kImportedLibraryId;
+    final initial = _metadata.get(piece.libraryId, piece.id);
+    final result = await showEditPieceDialog(
+      context,
+      base: piece,
+      saved: initial,
+      canDelete: isImported,
+    );
+    if (result == null || !mounted) return;
+    if (result.deleted && isImported) {
+      await _imported.remove(piece.id);
+      await _metadata.clear(piece.libraryId, piece.id);
+      return;
+    }
+    if (result.meta.isEmpty) {
+      if (initial != null && !initial.isEmpty) {
+        await _metadata.clear(piece.libraryId, piece.id);
+      }
+      return;
+    }
+    await _metadata.save(piece.libraryId, piece.id, result.meta);
+  }
+
+  /// Escolhe um MusicXML (`.musicxml`, `.mxl`), confere que é uma partitura,
+  /// confirma os dados com a pessoa e abre. A importada entra na lista e
+  /// fica no aparelho.
+  Future<void> _importMusicXml() async {
+    if (_importing) return;
+    _importing = true;
+    try {
+      final picked = await widget.pickMusicXml();
+      if (picked == null || !mounted) return;
+      final ParsedMusicXml parsed;
+      try {
+        parsed = parseMusicXml(picked.name, picked.bytes);
+      } on MusicXmlFormatException catch (e) {
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Não deu para abrir'),
+            content: Text(e.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      // A base sem dados (só o nome do arquivo) e o que veio do arquivo para
+      // confirmar (e corrigir) antes de abrir. O diálogo devolve só o que
+      // difere da base — sem título no XML, vale o nome do arquivo.
+      final draft = ImportedScore(
+        id: '',
+        fileName: parsed.fileName,
+        fifths: parsed.fifths,
+      ).toPiece(null);
+      if (!mounted) return;
+      final result = await showEditPieceDialog(
+        context,
+        base: draft,
+        saved: PieceMetadata(
+          title: parsed.title,
+          composer: parsed.composer,
+          lyricist: parsed.lyricist,
+        ),
+      );
+      if (result == null || result.deleted || !mounted) return;
+      final ImportedScore score;
+      try {
+        score = await _imported.add(
+          fileName: parsed.fileName,
+          scoreXml: parsed.scoreXml,
+          fifths: parsed.fifths,
+        );
+      } on Object catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Não deu para guardar: $e')));
+        return;
+      }
+      if (!result.meta.isEmpty) {
+        await _metadata.save(kImportedLibraryId, score.id, result.meta);
+      }
+      if (!mounted) return;
+      await _open(
+        score.toPiece(_metadata.get(kImportedLibraryId, score.id)),
+      );
+    } finally {
+      _importing = false;
+    }
   }
 
   void _onIncoming(IncomingPackage package) {
@@ -344,35 +502,59 @@ class _LibraryScreenState extends State<LibraryScreen> {
   TrailProgress _trailOf(Piece piece) =>
       _trail[progressIdFor(piece.id, _toneInUse(piece))];
 
+  /// As peças para a lista: as importadas primeiro, depois as da biblioteca
+  /// em uso — todas com as correções da pessoa aplicadas. Os ids não mudam,
+  /// então progresso, trilha e ajustes continuam valendo.
+  List<Piece> _effectivePieces(PieceCatalog catalog) {
+    final libId = catalog.libraryId ?? '';
+    return [
+      for (final s in _imported.scores)
+        s.toPiece(_metadata.get(kImportedLibraryId, s.id)),
+      ..._metadata.applyAll(libId, catalog.pieces),
+    ];
+  }
+
   /// Lê a trilha dos tons que passaram a estar em uso (a chave geral mudou, ou
   /// a música foi aberta noutro tom) — só as que ainda não foram lidas.
   Future<void> _syncTrails() async {
     try {
       final catalog = await _catalog;
+      final pieces = _effectivePieces(catalog);
       await _trail.loadMissing([
-        for (final p in catalog.pieces) progressIdFor(p.id, _toneInUse(p)),
+        for (final p in pieces) progressIdFor(p.id, _toneInUse(p)),
       ]);
     } on Object {
       // Catálogo com erro: a tela já mostra o erro.
     }
   }
 
-  /// Lê o progresso e a trilha da biblioteca do catálogo (e só ela).
+  /// Lê o progresso e a trilha da biblioteca do catálogo (e das importadas).
   Future<void> _loadProgress() async {
     try {
+      // As importadas vivem fora das bibliotecas: entram na lista antes das
+      // correções serem lidas.
+      await _imported.load();
       final catalog = await _catalog;
       // Uma ordem que a biblioteca nova não tem (o número, nos clássicos)
       // cai na padrão dela.
       if (!catalog.numbered && _sort.key == SortKey.number) {
         _sort = const SortState(key: SortKey.title);
       }
+      await _metadata.load(
+        catalog.libraryId ?? '',
+        [for (final p in catalog.pieces) p.id],
+      );
+      await _metadata.load(kImportedLibraryId, [
+        for (final s in _imported.scores) s.id,
+      ]);
       final id = catalog.libraryId;
       if (id != null) {
         await _progress.load(id);
         // O tom em uso depende da chave geral: as configurações primeiro.
         await _settingsLoaded;
         await _trail.load([
-          for (final p in catalog.pieces) progressIdFor(p.id, _toneInUse(p)),
+          for (final p in _effectivePieces(catalog))
+            progressIdFor(p.id, _toneInUse(p)),
         ], id);
       }
     } on Object {
@@ -439,7 +621,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   /// Abre [base] na versão que a pessoa deixou nela (a completa, se nunca
-  /// escolheu). Trocar de versão na partitura volta aqui já na outra.
+  /// escolheu). Trocar de versão na partitura volta aqui já na outra. As
+  /// importadas abrem do aparelho, fora das bibliotecas.
   Future<void> _open(Piece base) async {
     if (_opening) return;
     _opening = true;
@@ -450,9 +633,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
           base.hasSimplified &&
           await _pieceSettings.loadSimplified(base.libraryId, base.id);
       final piece = simplified ? base.asSimplified() : base;
-      final scoreXml = simplified
-          ? await catalog.loadScore(base, simplified: true)
-          : await (widget.loadScore ?? catalog.loadScore)(base);
+      final Uint8List scoreXml;
+      if (base.libraryId == kImportedLibraryId) {
+        final bytes =
+            await (widget.loadScore?.call(base) ??
+                _imported.loadScore(base.id));
+        if (bytes == null) {
+          throw StateError(
+            'a partitura importada não foi encontrada no aparelho',
+          );
+        }
+        scoreXml = bytes;
+      } else if (simplified) {
+        scoreXml = await catalog.loadScore(base, simplified: true);
+      } else {
+        scoreXml = await (widget.loadScore ?? catalog.loadScore)(base);
+      }
       final pieceSettings = await _pieceSettings.load(
         piece.libraryId,
         piece.id,
@@ -628,7 +824,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
               child: FutureBuilder<PieceCatalog>(
                 future: _catalog,
                 builder: (context, snapshot) => ListenableBuilder(
-                  listenable: Listenable.merge([_progress, _trail, _settings]),
+                  listenable: Listenable.merge([
+                    _progress,
+                    _trail,
+                    _settings,
+                    _metadata,
+                    _imported,
+                  ]),
                   builder: (context, _) => sideBySide
                       ? _contentSideBySide(snapshot)
                       : _content(snapshot),
@@ -644,13 +846,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _content(AsyncSnapshot<PieceCatalog> snapshot) {
     final catalog = snapshot.data;
     final catalogError = snapshot.hasError;
+    // Sem biblioteca, só o cartão de instalar — a menos que já haja
+    // importadas para mostrar.
+    final noLibrary =
+        catalog != null && !catalog.hasLibrary && _imported.scores.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _header(catalog),
         const SizedBox(height: 14),
         Expanded(
-          child: catalog != null && !catalog.hasLibrary
+          child: noLibrary
               ? _noLibraryCard()
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -660,7 +866,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     else ...[
                       _searchField(catalog.numbered),
                       const SizedBox(height: 14),
-                      if (_continuing(catalog) case final piece?) ...[
+                      if (_continuing(
+                        _effectivePieces(catalog),
+                      ) case final piece?) ...[
                         _continueCard(piece, catalog.term),
                         const SizedBox(height: 14),
                       ] else if (_progressLoaded) ...[
@@ -687,7 +895,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _contentSideBySide(AsyncSnapshot<PieceCatalog> snapshot) {
     final catalog = snapshot.data;
     final catalogError = snapshot.hasError;
-    final noLibrary = catalog != null && !catalog.hasLibrary;
+    final noLibrary =
+        catalog != null && !catalog.hasLibrary && _imported.scores.isEmpty;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return LayoutBuilder(
       builder: (context, box) => Row(
@@ -713,7 +922,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                   const SizedBox(height: 12),
                   if (!noLibrary && catalog != null) ...[
-                    if (_continuing(catalog) case final piece?) ...[
+                    if (_continuing(
+                      _effectivePieces(catalog),
+                    ) case final piece?) ...[
                       _continueCard(piece, catalog.term),
                       const SizedBox(height: 12),
                     ] else if (_progressLoaded) ...[
@@ -827,10 +1038,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Piece? _continuing(PieceCatalog catalog) {
+  Piece? _continuing(List<Piece> pieces) {
     final id = _progress.lastOpenedId;
     if (id == null) return null;
-    for (final h in catalog.pieces) {
+    for (final h in pieces) {
       if (h.id == id) return h;
     }
     return null;
@@ -871,8 +1082,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  /// Engrenagem e teclado juntos, no canto.
+  /// Importar, engrenagem e teclado juntos, no canto.
   List<Widget> _headerActions() => [
+    IconButton(
+      tooltip: 'Importar MusicXML…',
+      onPressed: () => unawaited(_importMusicXml()),
+      color: kIconQuiet,
+      icon: const Icon(Icons.audio_file_outlined),
+    ),
     IconButton(
       key: _tourKeys.settings,
       tooltip: 'Configurações gerais',
@@ -1182,7 +1399,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _list(PieceCatalog catalog) {
     final pieces = filterPieces(
-      sortedPieces(catalog.pieces, _sort, _progress, progressOf: _progressOf),
+      sortedPieces(
+        _effectivePieces(catalog),
+        _sort,
+        _progress,
+        progressOf: _progressOf,
+      ),
       _query,
     );
     if (pieces.isEmpty) {
@@ -1229,6 +1451,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           match: pieceMatch(piece, _query),
           numbered: catalog.numbered,
           onTap: () => unawaited(_open(piece)),
+          onEdit: () => unawaited(_editPiece(piece)),
         );
         // A primeira linha é o alvo do tutorial.
         return i == 0 ? KeyedSubtree(key: _tourKeys.firstRow, child: row) : row;
@@ -1244,6 +1467,7 @@ class _PieceRow extends StatelessWidget {
     required this.trail,
     required this.now,
     required this.onTap,
+    this.onEdit,
     this.tone,
     this.numbered = true,
     this.match,
@@ -1264,6 +1488,9 @@ class _PieceRow extends StatelessWidget {
   final TrailProgress trail;
   final DateTime now;
   final VoidCallback onTap;
+
+  /// Abre o diálogo de corrigir os dados da música; `null` sem edição.
+  final VoidCallback? onEdit;
 
   /// A transposição em uso (fase Q): a armadura aparece como "3♭ → 0".
   final Transposition? tone;
@@ -1324,6 +1551,8 @@ class _PieceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = progress?.bestScore;
     final started = trail.total > 0;
+    final imported = piece.libraryId == kImportedLibraryId;
+    final edit = onEdit;
     // O que vem depois da armadura (ou da autoria que casou na busca), sem
     // reticências: é o começo quem cede.
     final lead = _lead();
@@ -1338,6 +1567,7 @@ class _PieceRow extends StatelessWidget {
         : parts.map((part) => ' · $part').join();
     return InkWell(
       onTap: onTap,
+      onLongPress: onEdit,
       child: DecoratedBox(
         decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: kBorderSoft)),
@@ -1346,19 +1576,29 @@ class _PieceRow extends StatelessWidget {
           children: [
             // O número do hinário, na coluna da esquerda: é por ele que se
             // acha um hino. Algarismos de largura fixa para alinhar. Sem
-            // numeração (clássicos), a coluna não existe.
+            // numeração (clássicos), a coluna não existe; a importada mostra
+            // uma pauta no lugar do número.
             if (numbered) ...[
               SizedBox(
                 width: 38,
-                child: Text(
-                  piece.number == null ? '' : '${piece.number}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: kInkCaption,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
+                child: piece.number == null
+                    ? Icon(
+                        imported
+                            ? Icons.audio_file_outlined
+                            : Icons.remove,
+                        size: 18,
+                        color: kInkCaption,
+                        semanticLabel: imported ? 'importada' : null,
+                      )
+                    : Text(
+                        '${piece.number}',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: kInkCaption,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
               ),
               const SizedBox(width: 6),
             ] else
@@ -1387,6 +1627,21 @@ class _PieceRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            // Corrigir os dados da música (nome, compositor…), em qualquer
+            // biblioteca — e apagar a importada, no diálogo.
+            if (edit != null)
+              IconButton(
+                tooltip: 'Editar dados da música',
+                onPressed: edit,
+                iconSize: 20,
+                color: kIconQuiet,
+                style: IconButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(36, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(Icons.edit_outlined),
+              ),
             // Só quem começou a trilha tem progresso à direita; sem ela, a
             // coluna fica vazia (nada de "—" em 600 linhas).
             if (started) _TrailCell(trail: trail),

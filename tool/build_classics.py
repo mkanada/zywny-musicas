@@ -18,6 +18,7 @@ comunidade MuseScore, de direitos não verificáveis — uso privado.
 """
 
 import datetime
+import shutil
 import sys
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from build_library import build_package
 PROJ = Path(__file__).resolve().parent.parent
 DEFAULT_SRC = Path.home() / "IdeaProjects" / "zywny_classicos"
 PACKAGE = PROJ / "dist" / "classicos.zywny"
+ASSET = PROJ / "assets" / "classicos.zywny"
 
 BACH = "Johann Sebastian Bach"
 BEETHOVEN = "Ludwig van Beethoven"
@@ -161,13 +163,15 @@ def main() -> int:
         "termo": {"singular": "peça", "plural": "peças", "genero": "f"},
         "numerada": False,
         "creditos": "Transcrições da comunidade MuseScore, reunidas em "
-        "github.com/musetrainer/library. Composições em domínio público; "
-        "as edições são de terceiros — uso privado. Compositores: "
+        "github.com/musetrainer/library. Composições em domínio público. "
+        "Compositores: "
         + ", ".join(sorted({p[3] for p in PIECES})) + ".",
         "idioma": "pt-BR",
     }
     stats = build_package(manifest, pieces, PACKAGE)
-    print(f"Gerado {PACKAGE}: {stats['pecas']} peças, {stats['bytes'] / 1e6:.1f} MB")
+    ASSET.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(PACKAGE, ASSET)
+    print(f"Gerado {PACKAGE} (e {ASSET}): {stats['pecas']} peças, {stats['bytes'] / 1e6:.1f} MB")
     return 0
 
 
