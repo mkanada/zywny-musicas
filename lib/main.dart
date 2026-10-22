@@ -73,7 +73,7 @@ import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
 import 'package:zywny_comum/ui/device_kind.dart';
 import 'package:zywny_comum/ui/orientation.dart';
-import 'package:zywny_comum/ui/page_pager.dart';
+import 'package:zywny_comum/ui/score_paging.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_comum/ui/practice_legend.dart';
 import 'package:zywny_comum/ui/side_panel.dart';
@@ -1086,14 +1086,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// muda de uma vez.
   bool get _pageTurnAnimated => _playback.playing || _runner.practice != null;
 
-  /// Os botões de página à vista: a pessoa não está tocando nem treinando e
-  /// a música tem mais de uma página.
-  bool get _pagerVisible => !_pageTurnAnimated && _session.pageCount > 1;
-
-  bool get _canPageBack => _session.pageIndex > 0 && !_session.busy;
-  bool get _canPageForward =>
-      _session.pageIndex < _session.pageCount - 1 && !_session.busy;
-
   void _previousPage() {
     _viewController.previousPage(animate: _pageTurnAnimated);
   }
@@ -1812,6 +1804,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
         final document = _session.document;
         final hasPage = document != null && document.pages.isNotEmpty;
+        final turn = ScorePageTurn(
+          barWidth: document == null ? 0 : _barWidthOf(document),
+          timed: _timedPractice,
+          speed: _playback.scheduler?.speed ?? 1,
+        );
         final Widget content = hasPage
             // InteractiveViewer gives its child unbounded room, so the
             // view is pinned to the score box.
@@ -1844,24 +1841,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                     overlayUniformHeight: true,
                     haloSigmaScale: _haloWidth,
                     barColor: _barColor,
-                    barWidth: _barWidthOf(document),
-                    // A página nova fica fora de foco até a haste começar a
-                    // sair — mas só de leve, e a haste sai a tempo de o 1º
-                    // compasso dela estar nítido antes da última nota da
-                    // página que toca. No treino com tempo não há desfoque: o
-                    // aluno precisa ler o que vem antes de tocar, e a virada é
-                    // curta (300 ms de parede, em qualquer andamento — o teto
-                    // é em ms musicais).
-                    revealBlurSigma: _timedPractice
-                        ? 0
-                        : _barWidthOf(document) * 2,
-                    maxSweepDuration: _timedPractice
-                        ? Duration(
-                            milliseconds:
-                                (300 * (_playback.scheduler?.speed ?? 1))
-                                    .round(),
-                          )
-                        : kDefaultMaxSweepDuration,
+                    barWidth: turn.barWidth,
+                    revealBlurSigma: turn.revealBlurSigma,
+                    maxSweepDuration: turn.maxSweepDuration,
                   ),
                 ),
               )
@@ -1911,14 +1893,16 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
                 right: 0,
                 child: LinearProgressIndicator(),
               ),
-            if (_pagerVisible)
+            if (hasPage)
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: PagePager(
-                  onPrevious: _canPageBack ? _previousPage : null,
-                  onNext: _canPageForward ? _nextPage : null,
+                child: ScorePager(
+                  controller: _viewController,
+                  pageCount: _session.pageCount,
+                  animated: _pageTurnAnimated,
+                  enabled: !_session.busy,
                 ),
               ),
             Positioned(
