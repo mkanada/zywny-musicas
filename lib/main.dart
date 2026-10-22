@@ -326,6 +326,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   late final MidiDeviceManager _midiDeviceManager =
       widget.opened.midiDeviceManager;
   late final MidiInputService _midiInput = FlutterMidiInputService(
+    resubscribeOn: _midiDeviceManager.transportInstalled,
     nowSeconds: () =>
         _sound.engine?.nowSeconds ?? _appClock.elapsedMicroseconds / 1e6,
   );
