@@ -80,6 +80,9 @@ import 'package:zywny_comum/ui/side_panel.dart';
 import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_comum/ui/transpose_widgets.dart';
 
+import 'package:zywny_comum/diag/bug_report_scope.dart';
+import 'package:zywny_comum/diag/diag_score_watch.dart';
+import 'package:zywny_comum/diag/diag_screens.dart';
 import 'package:zywny_diag/diag_log.dart';
 
 import 'package:zywny_comum/render/score_renderer.dart';
@@ -87,6 +90,7 @@ import 'package:zywny_comum/render/score_renderer.dart';
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await DiagLog.init();
+  DiagScreens.registerState();
   // Liberation Serif (the `t` runs of the scene, §5.4) ships inside
   // score_bridge and has to be registered before the first paint —
   // otherwise the engine falls back to a system serif without warning.
@@ -153,6 +157,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'zywny',
+      navigatorObservers: [DiagScreens.observer],
+      // O botão e o gesto de "Reportar bug", em todas as telas.
+      builder: (context, child) =>
+          BugReportScope(appName: 'musicas', child: child!),
       theme: buildAppTheme(),
       // A tela inicial é a biblioteca de hinos embutidos; a partitura
       // (ScoreHomePage) abre por cima dela, um hino por vez.
@@ -358,9 +366,24 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   bool get _canTrain =>
       _canPlay && _trainingMode && _midiDeviceManager.connected.value != null;
 
+  DiagScoreWatch? _diagScore;
+  VoidCallback? _diagOffState;
+
   @override
   void initState() {
     super.initState();
+    _diagScore = DiagScoreWatch(_viewController, label: _scoreName);
+    _diagOffState = DiagLog.setState(
+      'musica',
+      () => {
+        'musica': _scoreName,
+        'id': _piece.id,
+        'treino': _trainingMode,
+        'tocando': _playback.playing,
+        'velocidade': _playback.speed,
+        'metronomo': _playback.metronomeOn,
+      },
+    );
     _session = ScoreRenderSession(
       renderer: widget.renderer ?? createScoreRenderer(),
       scoreXml: widget.opened.scoreXml,
@@ -529,6 +552,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   @override
   void dispose() {
+    _diagScore?.dispose();
+    _diagOffState?.call();
     if (_kind != DeviceKind.desktop) {
       unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     }
@@ -1980,7 +2005,13 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => DiagSessionScope(
+    kind: 'musica',
+    name: _scoreName,
+    child: _buildScore(context),
+  );
+
+  Widget _buildScore(BuildContext context) {
     // Um layout só, o do celular, em qualquer largura (tablet, desktop, Web):
     // a partitura ocupa tudo, com a barra lateral à direita e as gavetas.
     // O "voltar" do aparelho fecha primeiro a gaveta aberta; só com todas

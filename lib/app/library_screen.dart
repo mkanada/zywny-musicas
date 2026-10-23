@@ -1,3 +1,5 @@
+import 'package:zywny_comum/diag/diag_screens.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
@@ -796,7 +798,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      DiagScreen(name: 'biblioteca', child: _buildLibrary(context));
+
+  Widget _buildLibrary(BuildContext context) {
     return Scaffold(
       backgroundColor: kLibraryCardBg,
       // Fundo claro: ícones escuros na barra de status.

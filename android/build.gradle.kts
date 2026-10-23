@@ -15,6 +15,15 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+// Plugins antigos (media_store_plus) compilam contra o Android 33, e as
+// dependências deles exigem 34 ou mais.
+subprojects {
+    afterEvaluate {
+        extensions.findByType<com.android.build.gradle.LibraryExtension>()?.apply {
+            if ((compileSdk ?: 0) < 36) compileSdk = 36
+        }
+    }
+}
 subprojects {
     project.evaluationDependsOn(":app")
 }

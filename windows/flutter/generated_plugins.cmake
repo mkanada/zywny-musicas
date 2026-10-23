@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_core
   flutter_midi_command_windows
+  share_plus
   universal_ble
   url_launcher_windows
 )
