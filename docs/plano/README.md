@@ -192,10 +192,6 @@ A regra que vale: **o passo aponta para o repositório onde o código mora.**
 | D-SISTEMAS | Dois sistemas por página no celular (notação menor que 12)? | U10 (parte 3) | Decidir com a tabela que o U10 mede (compassos por página × altura do pentagrama); as partes 1 e 2 do passo não dependem disto | **decidida**: não — `kPhoneUnit` fica em 12 (a medição do U10 mostra que dois sistemas só cabem com unit ≈ 6) |
 | D-MODOS | Um seletor só de quatro modos (Ouvir, Espera, Tempo real, Ritmo) no lugar do seletor de dois + dois interruptores? | U11 | Sim | **decidida**: sim (U11) |
 | D-ORDEM | A seta da ordenação: direção real ("↑" crescente) ou a regra do artboard ("↓" = direção padrão da chave)? | U14 (só a seta) | Direção real | **decidida**: direção real (U14) |
-| D-REV-SIMPL | A nota da versão simplificada: mostrar as duas na linha da música, ou juntar numa só? | R20 | (a) mostrar as duas ("simplificada N%"); a ordenação usa a do original | **aberta** |
-| D-REV-CABEC | Cabeçalho das telas secundárias: `AppBar` com tema, ou um cabeçalho próprio no desenho da biblioteca? | R26 | (a) `AppBar` com `appBarTheme`; biblioteca e partitura ficam com o cromo delas | **aberta** |
-| D-REV-DI | Como os serviços do app chegam às telas: `provider` ou `InheritedWidget` à mão? | R27 | (a) `provider` | **aberta** |
-| D-REV-ROTAS | Adotar `go_router` (URL de `#` na Web) ou ficar com `Navigator.push`? | R35 | (b) ficar como está por enquanto; rever se a Web ganhar uso próprio | **aberta** |
 | D-NEG | Papéis, distribuição, login obrigatório no Firebase Auth (Google e redes sociais, plano Spark até 50k MAU, compartilhado no `zywny-comum`) e licenciamento de pacotes por conta | fase D | — | **decidida** (2026-10-17 e 2026-10-19): as 15 decisões D-NEG-* no [D00](D00-papeis-e-distribuicao.md) |
 
 As decisões do núcleo (D-SF, D-MIDI, D-WIN, D-WEB, D-WEB-SYNTH) e as do app
@@ -262,26 +258,6 @@ Os passos do app. Os do núcleo e os do app de cursos não estão aqui (ver
 | [Q06](Q06-conferencia-no-teclado.md) | Transpor: conferência no teclado | Q05 | D-TRP | **concluído** (2026-10-06) |
 | [Q07](Q07-lembretes-e-detector.md) | Transpor: lembrete de voltar a 0 e detector de deslocamento | Q05 | — | **concluído** (2026-10-06) |
 | [Q08](Q08-tela-e-aceite.md) | Transpor: gaveta, selo, lista dos 12 tons e aceite manual | Q04, Q06, Q07 | D-TRP | código, testes e `just telas` feitos (2026-10-06); **aceite manual pendente** (teclado do usuário) |
-| [R05](R05-telas-do-app-em-lib-app.md) | Revisão: biblioteca e painéis de configuração em `lib/app/` (achado 8) | — | — | **concluído** (2026-10-06) |
-| [R06](R06-arquivos-soltos-da-raiz.md) | Revisão: arquivos soltos da raiz de `lib/`; lista de desvios vazia (achado 8) | R05 | — | **concluído** (2026-10-06) |
-| [R07](R07-opened-piece-obrigatorio.md) | Revisão: `OpenedPiece` obrigatório (achado 6) | R05 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
-| [R08](R08-sound-output-controller.md) | Revisão: `SoundOutputController` (achado 5) | R07 | — | código e testes feitos (2026-10-06); **aceite manual pendente** |
-| [R09](R09-score-render-session.md) | Revisão: `ScoreRenderSession` (achado 5) | R08 | — | código e testes feitos (2026-10-07); **`just telas` pendente** |
-| [R10](R10-playback-controller.md) | Revisão: `PlaybackController` (achado 5) | R09 | — | código e testes feitos (2026-10-07); **aceite manual pendente** |
-| [R11](R11-trail-runner.md) | Revisão: `TrailRunner` (achado 5) | R10 | — | código e testes feitos (2026-10-07); **`just telas` e aceite manual pendentes** |
-| [R12](R12-workspace-e-mockup.md) | Revisão: workspace na raiz; mockup em `apps/zywny_mockup` (achado 10) | R06 | — | feito (2026-10-07); **`just run-mockup` (manual) pendente** |
-| [R19](R19-ler-sem-apagar.md) | Revisão 2: erro de leitura não apaga o progresso (achado 12) | — | — | pendente |
-| [R20](R20-nota-da-simplificada.md) | Revisão 2: nota da versão simplificada na lista (achado 13) | — | D-REV-SIMPL | pendente |
-| [R21](R21-mensagens-de-problema.md) | Revisão 2: mensagens de problema (achado 14) | — | — | pendente |
-| [R22](R22-dialogos-de-confirmacao.md) | Revisão 2: diálogos de confirmação (achado 15) | — | — | pendente |
-| [R26](R26-cabecalhos-das-telas.md) | Revisão 2: cabeçalhos das telas (achado 19) | — | D-REV-CABEC | pendente |
-| [R27](R27-servicos-do-app.md) | Revisão 2: serviços do app (achado 20) | R19 | D-REV-DI | pendente |
-| [R28](R28-um-motor-de-som.md) | Revisão 2: um motor de som para o app (achado 21) | R27 | — | pendente |
-| [R29](R29-partitura-e-transposicao.md) | Revisão 2: partitura em `lib/score/`; fluxo de transposição (achado 22) | R28 | — | pendente |
-| [R30](R30-partitura-em-widgets.md) | Revisão 2: partitura em widgets (achado 22) | R29 | — | pendente |
-| [R31](R31-biblioteca-em-arquivos.md) | Revisão 2: biblioteca em arquivos menores (achado 22) | R28 | — | pendente |
-| [R34](R34-dependencias-e-pubspec.md) | Revisão 2: dependências e `pubspec.yaml` (achado 24) | — | — | pendente |
-| [R35](R35-rotas.md) | Revisão 2: rotas com `go_router` (achado 25) | R27, R31 | D-REV-ROTAS | pendente |
 | [U01](U01-faixa-fora-da-pauta.md) | UX: a faixa da trilha sai de cima da pauta | — | D-FAIXA (a) | concluído (critérios 3–5, no emulador, aguardando verificação) |
 | [U02](U02-a-pauta-mostra-o-trecho.md) | UX: a pauta mostra o trecho da etapa | — | — | concluído (critérios 2–5, no emulador, aguardando verificação) |
 | [U03](U03-ouvir-o-trecho.md) | UX: ouvir o trecho, e o que fazer sem teclado | U01 | D-OUVIR | concluído (critérios 3–5, no emulador e no aparelho, aguardando verificação) |
@@ -322,13 +298,6 @@ Fases com especificação própria, que o passo correspondente deve ler:
   sugestões de [`../ux/sugestoes-ux-celular.md`](../ux/sugestoes-ux-celular.md).
 - [Z00-planos-futuros.md](Z00-planos-futuros.md) — ideias depois da 1.0.
 
-A fase **R** tem especificação em
-[`../revisao/2026-10-06-qualidade-e-divisao.md`](../revisao/2026-10-06-qualidade-e-divisao.md)
-(primeira rodada, R05–R12) e
-[`../revisao/2026-10-15-revisao-geral.md`](../revisao/2026-10-15-revisao-geral.md)
-(segunda, R19–R35). Quem executa um passo R lê o documento da rodada
-correspondente.
-
 ## O que saiu daqui
 
 Em 19/10/2026 o projeto foi dividido em três repositórios. Estes arquivos de
@@ -338,8 +307,6 @@ repositório:
 | Saiu | Onde o código está | Passos ainda abertos |
 | --- | --- | --- |
 | C01, H00, K01–K06, M01–M03, N01–N03, T01–T05, W01–W04, X01–X02, Y01, `windows-a-partir-do-linux.md` | [zywny-comum](https://github.com/mkanada/zywny-comum) | K05 (motor no Android), K06 (motor no Windows), X02 (render no Windows) |
-| R01–R04, R13–R17, R24, R25, R33 | [zywny-comum](https://github.com/mkanada/zywny-comum) | R24 (fontes embutidas), R25 (escala de texto), R33 (lints estritos) |
-| R18, R23, R32 | [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado/tree/main/docs/plano) | os três, para o app de cursos |
 | E00–E10, EX00–EX22, I00–I13 | [zywny-aprendizado](https://github.com/mkanada/zywny-aprendizado/tree/main/docs/plano) | E05–E10, EX01–EX22 (fases do app de cursos) |
 
 O histórico completo continua no repositório antigo `zywny` e no histórico do
