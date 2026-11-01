@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apagar conta e dados — Zywny Responsáveis</title>
+  <meta name="description" content="Como apagar a sua conta e os seus dados do Zywny Responsáveis, pelo app ou por esta página.">
+  <meta name="theme-color" content="#5A1E2B">
+  <link rel="icon" type="image/png" href="../aprendizado/favicon.png">
+  <link rel="stylesheet" href="../conta/apagar-conta.css">
+</head>
+<body>
+<main>
+  <span class="selo">Zywny Responsáveis</span>
+  <h1>Apagar conta e dados</h1>
+  <p class="subtitulo">Como apagar a sua conta e os dados do app dos responsáveis.</p>
+
+  <h2>Pelo app</h2>
+  <p>Abra o app, abra a tela da conta e toque em <strong>Apagar conta</strong>. O app apaga os seus dados e depois a conta.</p>
+
+  <h2>Por esta página</h2>
+  <p>Se você não tem o app instalado, entre aqui com a mesma conta que usa nele e apague tudo.</p>
+
+  <div class="caixa">
+    <div id="entrar">
+      <p>Entre com a sua conta:</p>
+      <button data-provedor="google">Google</button>
+      <button data-provedor="microsoft">Microsoft</button>
+      <button data-provedor="github">GitHub</button>
+      <button data-provedor="apple">Apple</button>
+    </div>
+    <div id="confirmar" hidden>
+      <p>Conta: <strong id="quem"></strong></p>
+      <p>Isto apaga <strong>para sempre</strong> a conta e todos os dados dela. Não há como desfazer.</p>
+      <label><input type="checkbox" id="ok"> Entendi, quero apagar a minha conta e os meus dados.</label>
+      <p>
+        <button id="apagar" class="perigo" disabled>Apagar tudo</button>
+        <button id="cancelar">Cancelar</button>
+      </p>
+    </div>
+    <div id="pronto" hidden>
+      <p><strong>Pronto.</strong> A conta e os dados foram apagados.</p>
+    </div>
+    <p id="estado" role="status"></p>
+  </div>
+
+  <h2>O que é apagado</h2>
+  <ul>
+    <li>A conta de login (e-mail, nome e identificador).</li>
+    <li>Do aluno: o apelido, as sessões de treino, os minutos por dia, a meta, a constância, os convites e os vínculos com responsáveis.</li>
+    <li>Do responsável: o aceite do termo, os avisos configurados e os vínculos que criou.</li>
+  </ul>
+  <p>A mesma conta serve ao aluno e ao responsável, então os dois conjuntos são apagados juntos.</p>
+
+  <h2>O que fica</h2>
+  <p>Os arquivos que ficam só no seu aparelho (progresso local, relatórios de erro) saem ao desinstalar o app ou limpar os dados dele. Os avisos que um responsável configurou para um aluno que apagou a conta podem demorar a sair, mas ficam sem uso, sem vínculo que os leia. Não guardamos cópias de segurança fora do Firebase.</p>
+
+  <h2>Sem acesso à conta?</h2>
+  <p>Escreva para <a href="mailto:zywny.app@gmail.com">zywny.app@gmail.com</a> dizendo o e-mail da conta. Respondemos e apagamos os dados em até 30 dias.</p>
+
+  <footer>
+    <p><a href="../aprendizado/privacidade.html">Política de privacidade</a></p>
+  </footer>
+</main>
+<script type="module" src="../conta/apagar-conta.js"></script>
+</body>
+</html>
