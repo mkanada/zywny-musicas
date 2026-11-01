@@ -1,0 +1,47 @@
+/* Página autocontida, no estilo da política de privacidade. */
+:root {
+  --tinta: #1C1D20;
+  --tinta-2: #5B5E66;
+  --vinho: #5A1E2B;
+  --azul: #2F5BD3;
+  --azul-escuro: #1F3F9E;
+  --fundo: #FBFAF8;
+  --borda: #E6E3DE;
+  --alerta: #B3261E;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--fundo); color: var(--tinta);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 17px; line-height: 1.7;
+}
+main { max-width: 46rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+h1, h2 { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; line-height: 1.25; }
+h1 { font-size: 2.1rem; margin: 1rem 0 .4rem; }
+h2 { font-size: 1.35rem; margin: 2.2rem 0 .5rem; }
+.selo {
+  display: inline-block; font-size: .78rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--vinho); border: 1px solid var(--borda);
+  border-radius: 999px; padding: .2rem .7rem; background: #fff;
+}
+.subtitulo { color: var(--tinta-2); margin: 0 0 1rem; }
+a { color: var(--azul); }
+a:hover { color: var(--azul-escuro); }
+ul { padding-left: 1.3rem; }
+.caixa {
+  background: #fff; border: 1px solid var(--borda); border-radius: 12px;
+  padding: 1.1rem 1.25rem; margin: 1rem 0;
+}
+button {
+  font: inherit; cursor: pointer; border-radius: 10px; padding: .6rem 1rem;
+  border: 1px solid var(--borda); background: #fff; color: var(--tinta);
+  margin: .25rem .4rem .25rem 0;
+}
+button:hover:not(:disabled) { border-color: var(--azul); }
+button:disabled { opacity: .5; cursor: default; }
+button.perigo { background: var(--alerta); border-color: var(--alerta); color: #fff; }
+.erro { color: var(--alerta); }
+#estado { margin: .75rem 0 0; }
+[hidden] { display: none !important; }
+footer { margin-top: 3rem; color: var(--tinta-2); font-size: .9rem; }

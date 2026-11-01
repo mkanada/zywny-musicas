@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de Privacidade — Zywny Aprendizado</title>
+  <meta name="description" content="Como o app Zywny Aprendizado trata os dados: conta, apelido, minutos de treino, vínculo com o responsável e o que fica só no aparelho. Política de privacidade (LGPD).">
+  <meta name="theme-color" content="#5A1E2B">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    /* A página é autocontida: nenhuma fonte, script ou imagem de terceiro.
+       Uma política de privacidade não deve chamar o Google para mostrar texto. */
+    :root {
+      --tinta: #1C1D20;
+      --tinta-2: #5B5E66;
+      --tinta-3: #9A9CA3;
+      --vinho: #5A1E2B;
+      --azul: #2F5BD3;
+      --azul-escuro: #1F3F9E;
+      --fundo: #FBFAF8;
+      --borda: #E6E3DE;
+      --destaque: #FFF6D8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--fundo);
+      color: var(--tinta);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    main {
+      max-width: 46rem;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    header.capa {
+      border-bottom: 1px solid var(--borda);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .selo {
+      display: inline-block;
+      font-size: .78rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--vinho);
+      border: 1px solid var(--borda);
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      background: #fff;
+    }
+
+    h1 {
+      font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      font-size: 2.3rem;
+      line-height: 1.2;
+      margin: 1rem 0 .4rem;
+      letter-spacing: -.01em;
+    }
+
+    .subtitulo { color: var(--tinta-2); margin: 0 0 .8rem; }
+
+    .meta { color: var(--tinta-3); font-size: .9rem; margin: 0; }
+
+    h2 {
+      font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      font-size: 1.45rem;
+      line-height: 1.3;
+      margin: 2.6rem 0 .6rem;
+      scroll-margin-top: 1rem;
+    }
+
+    h3 { font-size: 1.05rem; margin: 1.6rem 0 .4rem; }
+
+    p { margin: .6rem 0; }
+
+    ul, ol { padding-left: 1.3rem; }
+    li { margin: .3rem 0; }
+
+    a { color: var(--azul); }
+    a:hover { color: var(--azul-escuro); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .88em;
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-radius: 4px;
+      padding: .05em .35em;
+    }
+
+    .resumo {
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-left: 4px solid var(--vinho);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .resumo p:first-child { margin-top: 0; }
+    .resumo p:last-child { margin-bottom: 0; }
+
+    .sumario {
+      background: #fff;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      padding: .5rem 1.25rem 1rem;
+      margin: 0 0 2.5rem;
+      font-size: .95rem;
+    }
+
+    .sumario h2 { margin: .8rem 0 .2rem; font-size: 1.1rem; font-family: inherit; font-weight: 700; }
+    .sumario ol { margin: .2rem 0; }
+
+    .tabela-envolucro { overflow-x: auto; margin: 1rem 0 1.5rem; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .92rem;
+      background: #fff;
+    }
+
+    th, td {
+      border: 1px solid var(--borda);
+      padding: .55rem .7rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #F3F1ED; font-weight: 600; }
+
+    .nota {
+      background: var(--destaque);
+      border: 1px solid #EADFAE;
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      font-size: .95rem;
+      margin: 1rem 0;
+    }
+
+    .nota p:first-child { margin-top: 0; }
+    .nota p:last-child { margin-bottom: 0; }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--borda);
+      color: var(--tinta-2);
+      font-size: .92rem;
+    }
+
+    footer a { color: var(--azul); }
+
+    @media (max-width: 34rem) {
+      body { font-size: 16px; }
+      h1 { font-size: 1.9rem; }
+      main { padding: 1.75rem 1rem 3rem; }
+    }
+
+    @media print {
+      body { background: #fff; font-size: 11pt; }
+      .sumario { display: none; }
+      a { color: inherit; text-decoration: none; }
+      h2 { break-after: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="capa">
+      <span class="selo">Zywny · app de cursos</span>
+      <h1>Política de Privacidade</h1>
+      <p class="subtitulo">
+        Como o Zywny Aprendizado — o app de cursos e treinos de teclado — trata os seus dados.
+      </p>
+      <p class="meta">Última atualização: 31 de outubro de 2026</p>
+    </header>
+
+    <div class="resumo">
+      <p><strong>Em resumo.</strong> O Zywny Aprendizado guarda o mínimo para
+      você estudar: uma conta (login com o Google), um <strong>apelido</strong>
+      e o <strong>tempo de treino</strong> (minutos por dia, meta e constância).
+      Não há anúncios, não há rastreamento de terceiros e nada do que você toca
+      é vendido.</p>
+      <p>Se você ligar um responsável (pai, mãe ou outro adulto), ele vê só
+      <em>se</em> você treinou, os minutos e a meta — nunca o que você pratica
+      nem o que toca. Você pode tirar o acesso dele e apagar a conta quando
+      quiser.</p>
+    </div>
+
+    <nav class="sumario">
+      <h2>Índice</h2>
+      <ol>
+        <li><a href="#controlador">Quem controla os dados</a></li>
+        <li><a href="#dados">O que coletamos, onde fica e para quê</a></li>
+        <li><a href="#nao-coletamos">O que não coletamos</a></li>
+        <li><a href="#compartilhamento">Com quem compartilhamos</a></li>
+        <li><a href="#criancas">Crianças e adolescentes</a></li>
+        <li><a href="#bases">Por que podemos tratar os dados (bases legais)</a></li>
+        <li><a href="#retencao">Onde os dados ficam e por quanto tempo</a></li>
+        <li><a href="#seguranca">Como cuidamos da segurança</a></li>
+        <li><a href="#direitos">Seus direitos e como exercê-los</a></li>
+        <li><a href="#web">Armazenamento local na versão Web</a></li>
+        <li><a href="#alteracoes">Alterações desta política</a></li>
+        <li><a href="#contato">Contato e reclamação à ANPD</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="controlador">1. Quem controla os dados</h2>
+    <p>
+      O <strong>Zywny Aprendizado</strong> é o app de cursos e treinos de
+      teclado (Android, Web, Linux e Windows): lições em pacotes
+      <code>.zywny</code>, leitura de partitura, treino de ouvido e de acordes,
+      tudo com o teclado MIDI. O desenvolvedor do Zywny é o controlador dos
+      dados pessoais tratados neste app, nos termos da Lei nº 13.709/2018
+      (LGPD).
+    </p>
+    <p>
+      A conta é a mesma em todo o ecossistema Zywny: este app, o app de músicas
+      (<em>Zywny</em>) e o app dos responsáveis (<em>Zywny Responsáveis</em>).
+      Entrar numa conta vale para os três, e apagá-la num deles apaga nos
+      outros.
+    </p>
+
+    <h2 id="dados">2. O que coletamos, onde fica e para quê</h2>
+    <p>
+      O app pede uma conta para abrir os cursos. O login é feito com a sua
+      conta Google — o app nunca vê a sua senha.
+    </p>
+
+    <div class="tabela-envolucro">
+      <table>
+        <thead>
+          <tr><th>Dado</th><th>Onde fica</th><th>Para quê</th><th>Quem vê</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Conta</strong>: identificador (<code>uid</code>), e-mail,
+              nome de exibição e foto que o Google informa no login.</td>
+            <td>Firebase Authentication (Google Cloud).</td>
+            <td>Abrir o app e manter a sessão.</td>
+            <td>O desenvolvedor e o Google (que opera a autenticação). O
+              responsável não vê o seu e-mail.</td>
+          </tr>
+          <tr>
+            <td><strong>Apelido</strong> — o nome com que o app te chama.</td>
+            <td>No seu aparelho e no resumo do aluno (Firestore).</td>
+            <td>Identificar você no app e para o responsável ligado.</td>
+            <td>Você e o responsável ligado.</td>
+          </tr>
+          <tr>
+            <td><strong>Tempo de treino</strong>: as sessões (nome do treino e do
+              exercício, plataforma, início, fim, tempo de tela e de toque), os
+              minutos por dia, a meta diária, se a meta foi cumprida, a
+              constância e o fuso horário do aparelho.</td>
+            <td>No seu aparelho; uma cópia vai para o Firestore.</td>
+            <td>Mostrar a meta e a constância, guardá-las entre os seus
+              aparelhos e mostrar o seu dia ao responsável.</td>
+            <td>Você e, do resumo, o responsável ligado.</td>
+          </tr>
+          <tr>
+            <td><strong>Vínculo com o responsável</strong>: o código de seis
+              dígitos que você gera, quem usou o código e a data.</td>
+            <td>Cloud Firestore.</td>
+            <td>Deixar o responsável acompanhar o seu dia. O código vale 24 h e
+              é de uso único.</td>
+            <td>Você e o responsável que usou o código.</td>
+          </tr>
+          <tr>
+            <td><strong>Progresso nos treinos e nos cursos</strong>: níveis,
+              rodadas limpas, o que você já fez, os pacotes que instalou.</td>
+            <td>Só no seu aparelho.</td>
+            <td>Montar a sua escada de treino e retomar de onde parou.</td>
+            <td>Só você.</td>
+          </tr>
+          <tr>
+            <td><strong>Configurações</strong>: som, saída de áudio, tamanho da
+              notação, andamento, tema, horário do aviso de treino.</td>
+            <td>No seu aparelho.</td>
+            <td>Não repetir as perguntas a cada abertura.</td>
+            <td>Só você.</td>
+          </tr>
+          <tr>
+            <td><strong>Registro técnico e relatório de bug</strong>: o app
+              guarda um registro rotativo (toques, telas, erros, notas
+              tocadas); ao escolher “Reportar bug”, junta isso a uma captura de
+              tela e ao texto que você escreve.</td>
+            <td>Só no seu aparelho, até você compartilhar o arquivo.</td>
+            <td>Achar defeitos. O registro não sai sozinho do aparelho.</td>
+            <td>Só você — e quem você escolher mandar o arquivo.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      O que você toca (as notas do teclado) é avaliado <strong>no aparelho</strong>.
+      Gravações e exercícios <strong>não</strong> são enviados a ninguém.
+    </p>
+
+    <h2 id="nao-coletamos">3. O que não coletamos</h2>
+    <ul>
+      <li><strong>Não há publicidade</strong> no app: nem banners, nem anúncios,
+        nem rastreamento de anunciantes.</li>
+      <li><strong>Não há analytics de terceiros</strong>: nem Google Analytics,
+        nem Firebase Analytics, nem crash report de terceiros.</li>
+      <li><strong>Não guardamos o que você toca</strong> nem o que você pratica
+        no servidor: só o tempo de treino.</li>
+      <li><strong>Microfone:</strong> só é usado na tela “Latência do som”, nas
+        Configurações, quando você mesmo inicia a medida. O som não é gravado
+        em arquivo nem enviado — só o instante da batida é medido, no aparelho.</li>
+      <li><strong>Não acessamos</strong> câmera, contatos, agenda, localização,
+        SMS, galeria de fotos ou arquivos do aparelho além do pacote
+        <code>.zywny</code> que você escolher abrir.</li>
+      <li><strong>Não vendemos, alugamos nem trocamos</strong> dados pessoais
+        com terceiros.</li>
+      <li><strong>Não exigimos</strong> nome completo, endereço, telefone,
+        documento ou data de nascimento. O apelido basta.</li>
+    </ul>
+
+    <h2 id="compartilhamento">4. Com quem compartilhamos</h2>
+    <p>Os dados saem do seu aparelho em duas situações:</p>
+    <ul>
+      <li>
+        <strong>Com o Google</strong>, como operador da infraestrutura:
+        Firebase Authentication (login) e Cloud Firestore (resumo do aluno e
+        vínculos). O Google trata os dados em nome do app e só para isso. Ao
+        entrar com a conta Google, ele entrega o e-mail, o nome e a foto.
+      </li>
+      <li>
+        <strong>Com o responsável que você ligou</strong>: se você treinou no
+        dia, os minutos e a meta, a constância, o último treino e o apelido.
+        Ele <strong>não</strong> vê exercícios, gravações, o que você pratica
+        nem o seu e-mail. Você tira o acesso dele quando quiser, no app.
+      </li>
+    </ul>
+    <p>
+      Além disso, só entregamos dados quando a lei exige: por ordem judicial ou
+      de autoridade competente.
+    </p>
+
+    <h2 id="criancas">5. Crianças e adolescentes</h2>
+    <p>
+      O Zywny é usado por crianças e adolescentes, e a LGPD pede mais cuidado
+      nesse caso (art. 14).
+    </p>
+    <ul>
+      <li>O app pede um <strong>apelido</strong>, e não o nome completo. Ele
+        continua sendo dado pessoal (a conta Google liga a pessoa a um
+        e-mail), e por isso vale tudo o que está escrito aqui.</li>
+      <li>Colhemos o <strong>mínimo</strong>: nada de endereço, telefone,
+        documento ou data de nascimento.</li>
+      <li>Quem acompanha o treino de uma criança é um adulto, e é esse adulto
+        que deve autorizar o uso dos dados. O responsável pode pedir, a
+        qualquer momento, a <strong>eliminação dos dados</strong> do menor.</li>
+    </ul>
+    <div class="nota">
+      <p><strong>Nota de honestidade.</strong> Para menores de 12 anos, a lei
+      exige o consentimento específico de um dos pais ou do responsável legal.
+      Esta versão do app ainda <em>não colhe</em> esse consentimento em
+      separado, dentro do app. Até isso entrar, o uso por menores de 12 anos
+      deve ser feito com o acompanhamento e a autorização de um adulto, e o
+      pedido de eliminação pode ser feito pelo e-mail da seção 12.</p>
+    </div>
+
+    <h2 id="bases">6. Por que podemos tratar os dados (bases legais)</h2>
+    <p>Nos termos do art. 7º da LGPD, o tratamento se apoia em:</p>
+    <ul>
+      <li><strong>Consentimento</strong> (inciso I): o aceite desta política e,
+        para menores, o consentimento do responsável.</li>
+      <li><strong>Execução de contrato</strong> (inciso V): entregar o app, o
+        resumo do seu dia e a ligação com o responsável que você escolheu.</li>
+      <li><strong>Legítimo interesse</strong> (inciso IX): segurança da conta,
+        prevenção a abuso e correção de defeitos.</li>
+    </ul>
+
+    <h2 id="retencao">7. Onde os dados ficam e por quanto tempo</h2>
+    <div class="tabela-envolucro">
+      <table>
+        <thead><tr><th>Onde</th><th>Por quanto tempo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>No seu aparelho (progresso, configurações, apelido, registro
+              técnico).</td>
+            <td>Até você apagar a conta ou desinstalar o app. O registro técnico
+              guarda só as duas últimas sessões encerradas e a atual.</td>
+          </tr>
+          <tr>
+            <td>Na conta do Firebase (identificador, e-mail, nome, foto).</td>
+            <td>Até você usar “Apagar conta” no app ou pedir a eliminação pelo
+              e-mail de contato.</td>
+          </tr>
+          <tr>
+            <td>No Firestore: resumo, dias, sessões, convites e vínculos.</td>
+            <td>Enquanto a conta existir. Ao apagar a conta, o próprio app
+              apaga tudo isso antes de apagar o login.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Se a conta for apagada por fora do app (pelo console do Firebase), esses
+      dados do Firestore não são apagados automaticamente. Os registros
+      técnicos de servidor do Google têm prazo próprio e não são apagados pelo
+      app.
+    </p>
+
+    <h2 id="seguranca">8. Como cuidamos da segurança</h2>
+    <ul>
+      <li>Tudo trafega por conexão criptografada (HTTPS/TLS).</li>
+      <li>O login é do Google: o app recebe um token, nunca a sua senha.</li>
+      <li>As regras do Firestore isolam os dados por conta: o aluno grava o seu
+        resumo, mas não o lê de volta; só o responsável com vínculo válido lê
+        o resumo.</li>
+      <li>Os pacotes de curso são assinados, e o app confere a assinatura antes
+        de abrir qualquer conteúdo.</li>
+      <li>O aviso de treino é conferido no aparelho, sem enviar notificação por
+        servidor.</li>
+    </ul>
+    <p>
+      Nenhum sistema é infalível. Se notar uso indevido dos seus dados,
+      escreva para o e-mail de contato.
+    </p>
+
+    <h2 id="direitos">9. Seus direitos e como exercê-los</h2>
+    <p>A LGPD (art. 18) garante a você, titular dos dados, o direito de:</p>
+    <ul>
+      <li>confirmar a existência de tratamento;</li>
+      <li>acessar os dados e receber uma cópia;</li>
+      <li>corrigir dados incompletos, inexatos ou desatualizados;</li>
+      <li>pedir anonimização, bloqueio ou <strong>eliminação</strong> de dados
+        desnecessários ou tratados em desconformidade com a lei;</li>
+      <li>pedir a portabilidade dos dados;</li>
+      <li>saber com quem os dados foram compartilhados;</li>
+      <li>revogar o consentimento;</li>
+      <li>reclamar à ANPD (seção 12).</li>
+    </ul>
+    <p>Você pode exercer esses direitos de duas formas:</p>
+    <ul>
+      <li><strong>No app</strong>: Conta → “Apagar conta”. Isso apaga a conta
+        e os dados dela no servidor. Para tirar o acesso de um responsável,
+        use a lista de quem acompanha, em Configurações.</li>
+      <li><strong>Por e-mail</strong>: escreva para
+        <a href="mailto:zywny.app@gmail.com">zywny.app@gmail.com</a>. O pedido
+        pode ser feito pelo titular ou, no caso de menor, pelo responsável.</li>
+    </ul>
+
+    <h2 id="web">10. Armazenamento local na versão Web</h2>
+    <p>
+      A versão Web guarda no navegador o seu progresso, as suas configurações e
+      a sua sessão, no armazenamento local do próprio navegador
+      (<code>localStorage</code>/IndexedDB) — sem cookie de publicidade e sem
+      rastreador de terceiros. O login abre o Google numa janela separada; o
+      que o Google faz com ele é assunto da política de privacidade do Google.
+    </p>
+
+    <h2 id="alteracoes">11. Alterações desta política</h2>
+    <p>
+      Esta política pode ser atualizada quando o app mudar. A data no topo
+      mostra a última atualização, e mudanças relevantes são avisadas no app.
+    </p>
+
+    <h2 id="contato">12. Contato e reclamação à ANPD</h2>
+    <p>
+      Dúvidas, pedidos de acesso, correção ou apagamento de dados:
+      <a href="mailto:zywny.app@gmail.com">zywny.app@gmail.com</a>.
+    </p>
+    <p>
+      Se a resposta não resolver, você pode reclamar diretamente à Autoridade
+      Nacional de Proteção de Dados (ANPD):
+      <a href="https://www.gov.br/anpd">gov.br/anpd</a>.
+    </p>
+
+    <footer>
+      <p><strong>Zywny Aprendizado.</strong> Política de privacidade (LGPD,
+        Lei nº 13.709/2018) · 31 de outubro de 2026.</p>
+    </footer>
+  </main>
+</body>
+</html>
