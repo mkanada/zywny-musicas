@@ -14,6 +14,8 @@
 #
 # Junto do app vai a política de privacidade (`web/privacidade.html`), que o
 # Play Console pede por URL: https://mkanada.github.io/zywny-musicas/privacidade.html
+# A política do Zywny Aprendizado (web/aprendizado/, o Flutter a copia sozinho)
+# sai em https://mkanada.github.io/zywny-musicas/aprendizado/privacidade.html
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
