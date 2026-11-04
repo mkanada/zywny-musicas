@@ -1,7 +1,16 @@
 # L05 — `PracticeController`: passagem com sumiço e revelação
 
-**Repo:** zywny-musicas · **Depende de:** J04, L02, L03 · **Decisão necessária:**
-nenhuma
+**Repo:** **zywny-comum** (`lib/practice/`) · **Depende de:** J04, L02, L03 ·
+**Decisão necessária:** nenhuma
+
+> **Onde este passo roda (corrigido em 04/11/2026).** O `PracticeController`,
+> o `practice_colors.dart` e o `practice_controller_test.dart` moram no
+> `zywny-comum`, não mais no zywny-musicas; o código e o commit são lá. O
+> `zywny-comum` **não importa** o zywny-musicas: o controlador recebe as colunas
+> escondidas como **ids de nota** (uma lista de ids por coluna), nunca o tipo
+> `MemoColumn` do L01 (que fica em `lib/memo/`, no zywny-musicas). Quem monta a
+> lista é a tela do decorar (L06). Os caminhos abaixo são relativos ao
+> `zywny-comum`, salvo `lib/memo/`.
 
 ## Objetivo
 
@@ -12,13 +21,15 @@ coluna quando ele erra.
 ## Ler antes (só isto)
 
 - [L00](L00-trilha-do-decorar.md): "Durante a passagem", "Aprovação".
-- `lib/practice/practice_controller.dart`: construtor L41-L82, `_onVerdict`
+- `lib/practice/practice_controller.dart` (zywny-comum): construtor L41-L82, `_onVerdict`
   L433-L482, `_nearestEventId` L486, `stop` L282, `dispose` L547, e o
   intervalo de passagem única do J04.
-- `lib/practice/practice_colors.dart`.
-- `lib/memo/memo_columns.dart` (L01).
-- A API de esconder (L02) e o `StandInController` (L03).
-- `test/practice_controller_test.dart`.
+- `lib/practice/practice_colors.dart` (zywny-comum).
+- `lib/memo/memo_columns.dart` (L01, zywny-musicas: só para saber o que a tela
+  passa; o controlador não o importa).
+- A API de esconder (L02) e o `StandInController` (L03), ambos em
+  `zywny-comum/score_bridge`.
+- `test/practice_controller_test.dart` (zywny-comum).
 
 ## Contexto que você precisa
 
@@ -51,9 +62,10 @@ coluna quando ele erra.
   revelação). Nenhuma nota pode ficar escondida depois de sair da etapa —
   é o equivalente visual da "nota presa" (risco 4 do README).
 - A nota fantasma continua como está no tempo real.
-- Cor nova: `kMemoRestColor` em `practice_colors.dart` — distinta de verde,
-  azul (pendente), vermelho, âmbar, cinza e do laranja da fantasma. Um
-  violeta serve; confira o contraste no fundo da página.
+- A cor `kMemoRestColor` **já vem do L03** (`zywny-comum/lib/practice/practice_colors.dart`),
+  para o zywny-aprendizado usá-la sem esperar este passo: distinta de verde,
+  azul (pendente), vermelho, âmbar, cinza e do laranja da fantasma. Aqui só se
+  confere o contraste no fundo da página, com a pausa piscando.
 
 ## O que fazer
 
@@ -64,7 +76,7 @@ coluna quando ele erra.
    limpeza.
 3. `ValueListenable<int>` com o número de colunas reveladas (a faixa do
    L06 mostra "3 reveladas").
-4. Testes em `test/practice_controller_test.dart`, com controladores
+4. Testes em `zywny-comum/test/practice_controller_test.dart`, com controladores
    falsos ou os reais sem página.
 
 ## Fora de escopo

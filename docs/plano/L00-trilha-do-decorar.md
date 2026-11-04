@@ -17,6 +17,23 @@ planejado **no repo do bridge**
 **G07** (visão geral), **G08a–G08c** e **G09**. L02 e L03 são a porta Dart
 do que sai de lá.
 
+**Onde cada passo roda (corrigido em 04/11/2026).** O `score_bridge`, o
+`PracticeController` e as cores de prática moram no **zywny-comum**, que os dois
+apps importam (`../zywny-comum`). Logo:
+
+| Passos | Repo onde se escreve o código e se faz o commit |
+| --- | --- |
+| G08a–G09 | `verovio_flutter_bridge` (o fork do Verovio e a especificação) |
+| L02, L03 | **zywny-comum** (`score_bridge/`; `kMemoRestColor` em `lib/practice/`) |
+| L05 | **zywny-comum** (`lib/practice/practice_controller.dart`) |
+| L01, L04, L06, L07, L08 | zywny-musicas |
+
+O zywny-aprendizado reaproveita o esconder e a pausa substituta (L02 e L03) no
+treino "Notas escondidas" (`docs/plano/T16-notas-escondidas.md`, no repo dele):
+nada específico do decorar pode entrar no `score_bridge`. Os J (trilha de estudo)
+têm os mesmos caminhos antigos (`lib/practice/` e `score_bridge/` como se fossem do
+zywny-musicas) e **não** foram revistos: confira o caminho antes de seguir um deles.
+
 ## Vocabulário
 
 Vale o vocabulário do J00 (caminho, compasso lógico, trecho, etapa, degrau).
@@ -131,13 +148,13 @@ ligado**.
 
 ## Fatos medidos (2026-10-01)
 
-Cena de `score_bridge/test/fixtures/Chopin_Etude_Op10_No9.vsb` e os 600
-hinos de `assets/hinos/` (`grep` no MusicXML):
+Cena de `zywny-comum/score_bridge/test/fixtures/Chopin_Etude_Op10_No9.vsb` e os 600
+hinos de `assets/hinos/` (hoje no pacote `dist/hinos.zywny`, desde o B08) (`grep` no MusicXML):
 
 | Fato | Onde / quanto |
 | --- | --- |
 | O nó `note` (tem `id`) contém `notehead`, `stem`, `accid`, `artic`, `dots` | pintar o id da nota de transparente esconde tudo isso |
-| A letra (`verse`) é filha da nota mas fica fora da troca de cor | `kOverrideExemptClasses` em `score_bridge/lib/src/scene_walk.dart` — a sílaba **não** some com a nota |
+| A letra (`verse`) é filha da nota mas fica fora da troca de cor | `kOverrideExemptClasses` em `zywny-comum/score_bridge/lib/src/scene_walk.dart` — a sílaba **não** some com a nota |
 | A barra de ligação é um caminho solto dentro do grupo `beam` (com `id`), irmão das notas | 340 de 353 notas do estudo estão dentro de `beam`; esconder as notas deixa a barra |
 | Linhas suplementares: grupos `ledgerLines above`/`below`, filhos de `staff`, **sem id**; cada traço é uma forma própria | não dá para escondê-las por id; a regra geométrica é a §11 da spec (G08a/G08c do bridge) |
 | Pausa de verdade: `g class="rest"` com um uso de glifo (`Leipzig:E4E6`) | — |
@@ -146,7 +163,7 @@ hinos de `assets/hinos/` (`grep` no MusicXML):
 | Hinos com duas vozes por pauta, sem `<chord/>` | 598 de 600 — a coluna típica são duas notas em camadas diferentes |
 | Hinos com ponto de aumento / ligadura / quiáltera | 586 / 349 / 52 |
 | Figuras nos hinos | semínima 77 599, mínima 66 762, colcheia 46 982, semibreve 8 960, semicolcheia 7 515, fusa 4 |
-| O `score_bridge` é um `git subtree` dentro do zywny | `pubspec.yaml` L52; a origem é o repo do bridge |
+| O `score_bridge` é um `git subtree` do **zywny-comum** (origem: o repo do bridge); os dois apps o importam de `../zywny-comum/score_bridge` | `pubspec.yaml` do zywny-musicas e do zywny-aprendizado (corrigido em 04/11/2026; em 01/10/2026 ainda morava no zywny) |
 
 ## O que já existe e será reaproveitado
 
@@ -158,16 +175,16 @@ hinos de `assets/hinos/` (`grep` no MusicXML):
 | Passagem única de um intervalo em tempo real | J04 |
 | Faixa, resumo, gaveta de etapas | J05, J06 |
 | Cor por id e destaque | `ScoreController` (`setColors`, `clearColor`, `highlight`) |
-| Camada desenhada por cima da página, com glifos do documento | `GhostController`/`GhostPainter`, `score_bridge/lib/src/ghost_layer.dart` |
-| Vereditos do tempo real e cores | `PracticeController._onVerdict` (`lib/practice/practice_controller.dart` L433), `lib/practice/practice_colors.dart` |
+| Camada desenhada por cima da página, com glifos do documento | `GhostController`/`GhostPainter`, `zywny-comum/score_bridge/lib/src/ghost_layer.dart` |
+| Vereditos do tempo real e cores | `PracticeController._onVerdict` (`zywny-comum/lib/practice/practice_controller.dart` L433), `zywny-comum/lib/practice/practice_colors.dart` |
 
 ## Passos
 
 | Passo | Título | Depende de | Status |
 | --- | --- | --- | --- |
 | [L01](L01-sorteio-do-sumico.md) | Colunas e sorteio do sumiço (Dart puro) | J01 | pendente |
-| [L02](L02-esconder-notas.md) | `score_bridge`: esconder colunas (nota, barra, linha suplementar) | G09 (bridge) | pendente |
-| [L03](L03-pausa-substituta.md) | `score_bridge`: pausa substituta colorida | L02, G09 (bridge) | pendente |
+| [L02](L02-esconder-notas.md) | `score_bridge` (**zywny-comum**): esconder colunas (nota, barra, linha suplementar) | G09 (bridge) | pendente |
+| [L03](L03-pausa-substituta.md) | `score_bridge` (**zywny-comum**): pausa substituta colorida | L02, G09 (bridge) | pendente |
 | [L04](L04-plano-e-progresso-do-decorar.md) | Plano, desbloqueio e progresso do decorar | J03, L01 | pendente |
 | [L05](L05-passagem-com-sumico.md) | `PracticeController`: passagem com sumiço e revelação | J04, L02, L03 | pendente |
 | [L06](L06-tela-do-decorar.md) | Tela: entrar na trilha do decorar e executar etapas | J05, J06, L04, L05 | pendente |

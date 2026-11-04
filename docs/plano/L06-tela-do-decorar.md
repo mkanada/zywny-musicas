@@ -42,7 +42,9 @@ que o decorar é utilizável (sem a prova às cegas — L07).
   (parada), as colunas já estão escondidas e as pausas no lugar, para o
   aluno ver o que o espera. Trocar de etapa ou sair do decorar devolve a
   partitura inteira.
-- O `ScoreView` precisa receber o `StandInController` (parâmetro do L03).
+- O `ScoreView` (zywny-comum/score_bridge) precisa receber o `StandInController`
+  (parâmetro do L03). A tela passa ao `PracticeController` (zywny-comum, L05) as
+  colunas escondidas como ids de nota.
   Com ele `null` fora do decorar, o custo é zero.
 - Resumo: o do J05, com uma linha a mais — "colunas reveladas: 3".
 - Mudança de N (J06): a confirmação passa a dizer que zera **as duas**

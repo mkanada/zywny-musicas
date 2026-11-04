@@ -1,7 +1,21 @@
 # L03 — `score_bridge`: pausa substituta colorida
 
-**Repo:** zywny-musicas (`score_bridge/`) · **Depende de:** L02, G09 do bridge ·
+**Repo:** **zywny-comum** (`score_bridge/`) · **Depende de:** L02, G09 do bridge ·
 **Decisão necessária:** nenhuma
+
+> **Onde este passo roda (corrigido em 04/11/2026).** O `score_bridge` já não
+> mora no zywny-musicas: os dois apps (zywny-musicas e zywny-aprendizado) o
+> importam de `../zywny-comum/score_bridge`. Por isso **o código, os testes e o
+> commit deste passo são no `zywny-comum`** (`main`, sem branch); este arquivo
+> fica aqui porque a fase L nasceu aqui. O zywny-aprendizado usa a **mesma**
+> API no treino "Notas escondidas" (`T16-notas-escondidas.md`, lá): nada
+> específico do decorar entra no `score_bridge`. Os caminhos `zywny-comum/…`
+> abaixo são relativos a `/home/mauricio/IdeaProjects`; os números de linha
+> são de 01/10/2026 e o código andou (T08, T11): reconfira antes de citar.
+> Não há `justfile` no `zywny-comum`: as receitas `just test-comum` e
+> `just analyze-comum` rodam de dentro do zywny-musicas, e a `libverovio` se
+> refaz com `just native` / `just native-android` de qualquer um dos apps
+> (eles chamam `zywny-comum/tool/build_verovio_*.sh`).
 
 ## Objetivo
 
@@ -24,20 +38,20 @@ lá, pare.
 - No bridge: `docs/nota-para-zywny-sumico.md` (G09) e a §11 de
   `docs/formato/especificacao-v1.md`, regras 4–7, mais a §2.8 (`dur`,
   `dots`).
-- `score_bridge/lib/src/ghost.dart` L28-L114 (`GhostGlyph`, `GhostNote`) e
+- `zywny-comum/score_bridge/lib/src/ghost.dart` L28-L114 (`GhostGlyph`, `GhostNote`) e
   L116-L172 (índice por página).
-- `score_bridge/lib/src/ghost_layer.dart` inteiro (268 linhas):
+- `zywny-comum/score_bridge/lib/src/ghost_layer.dart` inteiro (268 linhas):
   `GhostController`, `GhostPainter` — a camada por cima da página é o
   modelo a copiar.
-- `score_bridge/lib/src/model.dart` L279-L312 (`StaffGeometry`) e o modelo
+- `zywny-comum/score_bridge/lib/src/model.dart` L279-L312 (`StaffGeometry`) e o modelo
   de `pitchpos.json`.
-- `score_bridge/test/fixtures/sumico/` (vetores e `.vsb`, copiados em G09).
+- `zywny-comum/score_bridge/test/fixtures/sumico/` (vetores e `.vsb`, copiados em G09).
 
 ## Contexto que você precisa
 
 - **Antes de tudo: bibliotecas novas.** O `.vsb` é gerado no aparelho;
-  sem refazer a `libverovio` (`just native` no Linux **e**
-  `build_android_so.sh` no bridge) os glifos de pausa e o `dur` não
+  sem refazer a `libverovio` (`just native` no Linux **e** `just native-android`,
+  que chamam `zywny-comum/tool/build_verovio_*.sh`) os glifos de pausa e o `dur` não
   existem. `.vsb` sem eles (lib antiga): a coluna some sem pausa, sem
   exceção.
 - **Figura**: `dur` e `dots` da nota mais curta da coluna, lidos do
@@ -50,7 +64,10 @@ lá, pare.
 - **Uma pausa por (pauta de desenho, instante)**, mesmo com duas vozes na
   coluna.
 - **Cor.** A camada tem uma cor de repouso (parâmetro; o app passa
-  `kMemoRestColor`) e aceita um "piscar" por coluna (cor, ataque,
+  `kMemoRestColor`, **definida neste passo** em
+  `zywny-comum/lib/practice/practice_colors.dart`: o treino "Notas escondidas" do
+  zywny-aprendizado, T16, a usa sem esperar o L05; distinta de verde, azul,
+  vermelho, âmbar, cinza e do laranja da fantasma, um violeta serve) e aceita um "piscar" por coluna (cor, ataque,
   sustentação, soltura), nos moldes de `ScoreController.highlight`. Cor e
   piscar são do host: não estão na §11.
 - A camada vive dentro da página, como a das fantasmas: é recortada na
@@ -60,16 +77,18 @@ lá, pare.
 
 1. Parser/modelo: `dur` e `dots` no evento de `pitchpos.json` (ausentes →
    `null`/`0`).
-2. `score_bridge/lib/src/stand_in.dart`: `StandInRest {page, staffId,
+2. `zywny-comum/score_bridge/lib/src/stand_in.dart`: `StandInRest {page, staffId,
    glyphs, x, y}` e `VsbDocument.standInFor(List<String> noteIds)` — a
    pausa de uma coluna (`null` se não der para calcular).
-3. `score_bridge/lib/src/stand_in_layer.dart`: `StandInController`
+3. `zywny-comum/score_bridge/lib/src/stand_in_layer.dart`: `StandInController`
    (`setColumns(Map<chave, List<String> noteIds>)`, `remove(chave)`,
    `flash(chave, cor, …)`, `clear()`) e o painter; parâmetro novo em
    `ScorePageView`/`ScoreView`, `null` por padrão (custo zero, como
    `ghosts`).
-4. Exportar em `score_bridge/lib/score_bridge.dart`.
-5. Testes em `score_bridge/test/`.
+4. Exportar em `zywny-comum/score_bridge/lib/score_bridge.dart`.
+5. `kMemoRestColor` em `zywny-comum/lib/practice/practice_colors.dart` (a cor da
+   pausa, parágrafo "Cor" acima).
+6. Testes em `zywny-comum/score_bridge/test/`.
 
 ## Fora de escopo
 
@@ -95,7 +114,9 @@ lá, pare.
    com captura de tela — é retorno para o bridge.
 7. **(manual, Android)** A lib nova está no APK: a mesma tela no celular
    mostra as pausas.
-8. `cd score_bridge && flutter test`, `just analyze` e `just test` limpos.
+8. `cd zywny-comum/score_bridge && flutter test`, `just analyze-comum` e
+   `just test-comum` (no zywny-musicas) limpos; `just test` do zywny-musicas e do
+   zywny-aprendizado continuam verdes.
 
 ## Notas de execução
 

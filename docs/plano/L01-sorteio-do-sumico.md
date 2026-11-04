@@ -16,7 +16,7 @@ sem UI, sem desenho.
 - `lib/trail/trail_path.dart` (J01: `TrailPath`, `LogicalMeasure`).
 - `lib/music/` — a `PerformanceTrack` (N03): eventos `{id, pitch, onMs,
   offMs, staff, …}`, a marca de ornamento e os ids ligados (`tied`).
-- `test/practice_report_test.dart` (estilo dos testes com dados sintéticos).
+- `zywny-comum/test/practice_report_test.dart` (estilo dos testes com dados sintéticos).
 
 ## Contexto que você precisa
 

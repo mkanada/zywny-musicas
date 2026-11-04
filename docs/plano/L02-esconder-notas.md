@@ -1,7 +1,21 @@
 # L02 — `score_bridge`: esconder colunas (nota, barra, linha suplementar)
 
-**Repo:** zywny-musicas (`score_bridge/`) · **Depende de:** G09 do bridge (regra
+**Repo:** **zywny-comum** (`score_bridge/`) · **Depende de:** G09 do bridge (regra
 normativa e vetores) · **Decisão necessária:** nenhuma
+
+> **Onde este passo roda (corrigido em 04/11/2026).** O `score_bridge` já não
+> mora no zywny-musicas: os dois apps (zywny-musicas e zywny-aprendizado) o
+> importam de `../zywny-comum/score_bridge`. Por isso **o código, os testes e o
+> commit deste passo são no `zywny-comum`** (`main`, sem branch); este arquivo
+> fica aqui porque a fase L nasceu aqui. O zywny-aprendizado usa a **mesma**
+> API no treino "Notas escondidas" (`T16-notas-escondidas.md`, lá): nada
+> específico do decorar entra no `score_bridge`. Os caminhos `zywny-comum/…`
+> abaixo são relativos a `/home/mauricio/IdeaProjects`; os números de linha
+> são de 01/10/2026 e o código andou (T08, T11): reconfira antes de citar.
+> Não há `justfile` no `zywny-comum`: as receitas `just test-comum` e
+> `just analyze-comum` rodam de dentro do zywny-musicas, e a `libverovio` se
+> refaz com `just native` / `just native-android` de qualquer um dos apps
+> (eles chamam `zywny-comum/tool/build_verovio_*.sh`).
 
 ## Objetivo
 
@@ -23,16 +37,16 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 - [L00](L00-trilha-do-decorar.md): "O que some" e "Fatos medidos".
 - No bridge: `docs/nota-para-zywny-sumico.md` (G09) e a §11 de
   `docs/formato/especificacao-v1.md`, regras 1–3.
-- `score_bridge/lib/src/score_controller.dart` L1-L50 (modelo de cor e ids
+- `zywny-comum/score_bridge/lib/src/score_controller.dart` L1-L50 (modelo de cor e ids
   não-animáveis) e L163-L221 (`setColor`, `setColors`, `clearColor`).
-- `score_bridge/lib/src/scene_walk.dart` inteiro (percurso, cor herdada,
+- `zywny-comum/score_bridge/lib/src/scene_walk.dart` inteiro (percurso, cor herdada,
   `kOverrideExemptClasses`).
-- `score_bridge/lib/src/segmentation.dart` (itens estáticos × dinâmicos) e
-  `score_bridge/lib/src/page_layers.dart` (`_pictureAt`, `paint`).
-- `score_bridge/lib/src/ghost.dart` L116-L172 (índice por página: como
+- `zywny-comum/score_bridge/lib/src/segmentation.dart` (itens estáticos × dinâmicos) e
+  `zywny-comum/score_bridge/lib/src/page_layers.dart` (`_pictureAt`, `paint`).
+- `zywny-comum/score_bridge/lib/src/ghost.dart` L116-L172 (índice por página: como
   achar o `staff` e o `notehead` de uma nota — reaproveite).
-- `score_bridge/test/ghost_test.dart` (como os vetores do bridge são lidos
-  num teste) e `score_bridge/test/fixtures/sumico/` (copiados em G09).
+- `zywny-comum/score_bridge/test/ghost_test.dart` (como os vetores do bridge são lidos
+  num teste) e `zywny-comum/score_bridge/test/fixtures/sumico/` (copiados em G09).
 
 ## Contexto que você precisa
 
@@ -65,7 +79,7 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 
 ## O que fazer
 
-1. API pública (exportada em `score_bridge/lib/score_bridge.dart`), no
+1. API pública (exportada em `zywny-comum/score_bridge/lib/score_bridge.dart`), no
    `ScoreController` ou num controlador irmão:
    `setHidden(Set<String> noteIds)`, `reveal(String id)`, `clearHidden()`,
    `isHidden(id)`. Uma notificação por chamada, como o resto do
@@ -100,7 +114,9 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
    o número de recompilações de `Picture` está nas notas.
 7. Teste: `highlight` em nota escondida não a mostra; depois de `reveal`,
    mostra.
-8. `cd score_bridge && flutter test` e `just analyze` limpos.
+8. `cd zywny-comum/score_bridge && flutter test` e `just analyze-comum` (rodado
+   no zywny-musicas) limpos; `just test` do zywny-musicas e do zywny-aprendizado
+   continuam verdes com o `zywny-comum` novo.
 
 ## Notas de execução
 
