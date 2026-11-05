@@ -35,7 +35,7 @@ lá, pare.
 ## Ler antes (só isto)
 
 - [L00](L00-trilha-do-decorar.md): "O que some", "Durante a passagem".
-- No bridge: `docs/nota-para-zywny-sumico.md` (G09) e a §11 de
+- No bridge: `docs/nota-para-zywny-sumico.md` (G09, escrita em 04/11/2026) e a §11 de
   `docs/formato/especificacao-v1.md`, regras 4–7, mais a §2.8 (`dur`,
   `dots`).
 - `zywny-comum/score_bridge/lib/src/ghost.dart` L28-L114 (`GhostGlyph`, `GhostNote`) e
@@ -56,11 +56,15 @@ lá, pare.
   exceção.
 - **Figura**: `dur` e `dots` da nota mais curta da coluna, lidos do
   `pitchpos.json`. Não deduza do timemap. Quiáltera usa a figura escrita.
-- **Glifo**: `E4E3` (semibreve) a `E4E9` (semifusa); ponto `E1E7`. Estão
-  sempre em `VsbDocument.glyphs` (reservados).
+- **Glifo**: `E4E3` (semibreve) a `E4E9` (semifusa). Estão sempre em
+  `VsbDocument.glyphs` (reservados, com `E1E7`, que a pausa **não** usa:
+  o ponto de aumento é um **círculo** `{cx, cy, rx, ry}`, §11).
 - **Posição**: a da regra 6 da §11 — x da cabeça mais à esquerda da
-  coluna; `loc` da linha do meio, +2 para a semibreve; escala `gs` da
-  pauta; pontos pela conta da §11.
+  coluna; `loc` da linha do meio (`n − 1`; menos 1 se for ímpar e `dur ≤ 2`),
+  +2 para a semibreve; escala `gs` da pauta; pontos pela conta da §11, com a
+  largura do glifo da pausa **truncada** (`⌊·⌋`). O `x` não tem oráculo no
+  Verovio (trocar nota por pausa muda o espaçamento): é o da cabeça por
+  definição. Pauta com `n ≠ 5`: `null`.
 - **Uma pausa por (pauta de desenho, instante)**, mesmo com duas vozes na
   coluna.
 - **Cor.** A camada tem uma cor de repouso (parâmetro; o app passa
@@ -99,7 +103,8 @@ lá, pare.
 ## Critérios de aceite
 
 1. Teste: os casos de `fixtures/sumico/vetores.json` — glifo, x, y, escala
-   e pontos de cada pausa, tolerância de 0,5 unidade de viewBox.
+   e pontos de cada pausa (`esperado.standIn`), tolerância de 0,5 unidade de
+   viewBox; inclui a página alternativa (`pagina: "alt0.0"`).
 2. Teste: `pitchpos.json` com e sem `dur`/`dots` é lido sem erro; os
    testes da nota fantasma continuam verdes com as fixtures novas.
 3. Teste: coluna com duas vozes de figuras diferentes → uma pausa, com a

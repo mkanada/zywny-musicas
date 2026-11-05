@@ -158,9 +158,9 @@ hinos de `assets/hinos/` (hoje no pacote `dist/hinos.zywny`, desde o B08) (`grep
 | A barra de ligação é um caminho solto dentro do grupo `beam` (com `id`), irmão das notas | 340 de 353 notas do estudo estão dentro de `beam`; esconder as notas deixa a barra |
 | Linhas suplementares: grupos `ledgerLines above`/`below`, filhos de `staff`, **sem id**; cada traço é uma forma própria | não dá para escondê-las por id; a regra geométrica é a §11 da spec (G08a/G08c do bridge) |
 | Pausa de verdade: `g class="rest"` com um uso de glifo (`Leipzig:E4E6`) | — |
-| A cena **não** traz a figura (duração notada) da nota | virá em `pitchpos.json` (`dur`, `dots`) — decisão D-SUM-FIGURA, G08a/G08b do bridge |
-| `glyphs.json` só tem os glifos usados, mais os reservados | `BridgeDeviceContext::AddReservedGlyphs`, `verovio/src/bridgedevicecontext.cpp` L1254 (hoje: cabeça preta, acidentes, 8va/15ma); as pausas entram em G08b do bridge |
-| Hinos com duas vozes por pauta, sem `<chord/>` | 598 de 600 — a coluna típica são duas notas em camadas diferentes |
+| A cena **não** traz a figura (duração notada) da nota | vem em `pitchpos.json` (`dur`, `dots`) desde G08b (04/11/2026) — decisão D-SUM-FIGURA; ver `docs/nota-para-zywny-sumico.md` do bridge |
+| `glyphs.json` só tem os glifos usados, mais os reservados | `BridgeDeviceContext::AddReservedGlyphs`: desde G08b (04/11/2026) são 16, com as pausas `E4E3`-`E4E9` e o ponto `E1E7` (que a pausa substituta **não** desenha: o ponto é um círculo, §11) |
+| Hinos com duas vozes por pauta, sem `<chord/>` | 598 de 600 — mas **a cena tem nós `chord`**: o importador de MusicXML do Verovio junta numa `chord` as notas de uma mesma voz que começam juntas (medido em G08c: hino 010, 95 `chord` para 425 notas; hino 056, 70 para 356). A haste, o colchete e os pontos dessas notas são filhos do `chord`, não da `note` (§11, regra 1): trocar a cor da `note` não basta |
 | Hinos com ponto de aumento / ligadura / quiáltera | 586 / 349 / 52 |
 | Figuras nos hinos | semínima 77 599, mínima 66 762, colcheia 46 982, semibreve 8 960, semicolcheia 7 515, fusa 4 |
 | O `score_bridge` é um `git subtree` do **zywny-comum** (origem: o repo do bridge); os dois apps o importam de `../zywny-comum/score_bridge` | `pubspec.yaml` do zywny-musicas e do zywny-aprendizado (corrigido em 04/11/2026; em 01/10/2026 ainda morava no zywny) |

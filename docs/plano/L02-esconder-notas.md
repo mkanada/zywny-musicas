@@ -35,8 +35,9 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 ## Ler antes (só isto)
 
 - [L00](L00-trilha-do-decorar.md): "O que some" e "Fatos medidos".
-- No bridge: `docs/nota-para-zywny-sumico.md` (G09) e a §11 de
-  `docs/formato/especificacao-v1.md`, regras 1–3.
+- No bridge: `docs/nota-para-zywny-sumico.md` (G09, escrita em 04/11/2026) e a §11
+  de `docs/formato/especificacao-v1.md`, regras 1–3; a referência executável é
+  `compare/scripts/hide_ref.py` (`hidden_shapes`).
 - `zywny-comum/score_bridge/lib/src/score_controller.dart` L1-L50 (modelo de cor e ids
   não-animáveis) e L163-L221 (`setColor`, `setColors`, `clearColor`).
 - `zywny-comum/score_bridge/lib/src/scene_walk.dart` inteiro (percurso, cor herdada,
@@ -50,11 +51,18 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 
 ## Contexto que você precisa
 
-- Esconder a **nota** já funciona hoje: `setColor(id, transparente)` no id
-  do nó `note` leva junto cabeça, haste, colchete, acidente, articulação e
-  pontos (são filhos). A letra (`verse`) fica, por
-  `kOverrideExemptClasses`. Ids do timemap são animáveis: não há
-  recompilação de `Picture`.
+- Esconder a **nota** solta já funciona hoje: `setColor(id, transparente)` no
+  id do nó `note` leva junto cabeça, haste, colchete, acidente, articulação e
+  pontos (são filhos). A letra (`verse`) fica, por `kOverrideExemptClasses`.
+  Ids do timemap são animáveis: não há recompilação de `Picture`.
+- **Acorde: não basta** (corrigido em G08c/G09, 04/11/2026). Haste, colchete,
+  pontos e articulações de um acorde são filhos do nó `chord`, não de cada
+  `note`. O nó `chord` some quando **toda** `note` descendente dele está
+  escondida (§11, regra 1). Vale para os hinos: o Verovio junta numa `chord` as
+  notas de uma mesma voz que começam juntas (hino 010: 95 `chord` para 425
+  notas), embora o MusicXML não tenha `<chord/>`. Só um acorde cross-staff
+  dividido entre duas pautas pode ficar pela metade (a haste fica; limitação
+  da v1).
 - **Duas pistas sobram**, e este passo existe por causa delas:
   1. **Barra de ligação** (regra 2 da §11): as formas filhas diretas do
      grupo `beam` somem quando toda `note` descendente está escondida.
@@ -64,10 +72,12 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
      própria, sem id, dentro de `ledgerLines above`/`below`, filho de
      `staff`. Um traço pertence às notas da mesma pauta cuja cabeça ele
      cobre em x e cujo `loc` (`pitchpos.json`) alcança a linha dele; some
-     quando todas as donas estão escondidas. O Verovio só funde traços do
-     mesmo acorde (`LedgerLine::AddDash`), e o bridge varreu o corpus para
-     confirmar que as donas de um traço são sempre da mesma coluna — os
-     números estão na nota de G09.
+     quando todas as donas estão escondidas. **A pausa deslocada (de
+     verdade) também é dona** e nunca é escondida: um traço que tem uma
+     pausa entre as donas fica. O bridge varreu 7 381 traços de 36 peças:
+     0 sem dona e 0 com donas de colunas diferentes (D-SUM-NATIVO: sem dado
+     novo na cena) — números na nota de G09. `beamSpan` (barra que
+     atravessa compasso ou sistema) **não** é `beam` e não some.
 - Barra e traços estão em segmentos **estáticos** (`Picture`): apagá-los
   recompila a página, ou exige promovê-los a dinâmicos. Meça
   (`pictureBuilds`) e escolha; o L05 esconde no começo da etapa e revela
@@ -89,7 +99,9 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 3. Destaque sobre nota escondida: `highlight` num id escondido **não**
    pinta a nota (o L05 pisca a pausa, não a nota). Revelar devolve o
    comportamento normal.
-4. Testes contra `fixtures/sumico/vetores.json` e testes de pintura.
+4. Testes contra `fixtures/sumico/vetores.json` (copiado em G09: 11 casos;
+   `esperado.hidden` traz `notes`, `chords`, `beams` e `ledgers`; tolerância
+   0,5) e testes de pintura.
 
 ## Fora de escopo
 
@@ -101,7 +113,8 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 ## Critérios de aceite
 
 1. Teste: os casos de `vetores.json` — para cada conjunto escondido, as
-   notas, formas de barra e traços apagados são os do vetor.
+   notas, os nós `chord`, as formas de barra e os traços apagados são os do
+   vetor.
 2. Teste de pintura: esconder uma nota fora de barra → nenhum pixel da
    nota (cabeça, haste, acidente) na imagem; a letra dela continua.
 3. Teste de pintura: barra com 2 notas, uma escondida → barra visível; as
