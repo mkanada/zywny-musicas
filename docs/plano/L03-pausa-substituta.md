@@ -125,4 +125,40 @@ lá, pare.
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**Executado em 04/11/2026, no `zywny-comum` (`main`), sem commit. Critério 6 conferido; falta o 7 (Android).**
+
+- **Arquivos.** Novos: `score_bridge/lib/src/stand_in.dart` (`StandInRest`, `StandInDot`,
+  `VsbDocument.standInFor`), `stand_in_layer.dart` (`StandInController`, `StandInPainter`),
+  `test/stand_in_test.dart` (11 vetores + 6), `test/stand_in_layer_test.dart` (14),
+  `test/memo_rest_color_test.dart`. Alterados: `score_page_view.dart` e `score_view.dart`
+  (parâmetro `standIns`, `null` por padrão: sem ele a árvore não ganha camada; a das pausas
+  fica por baixo da das fantasmas), `lib/practice/practice_colors.dart` (`kMemoRestColor`,
+  púrpura `0xFF8E24AA`; o violeta azulado de `kPracticeMeterMarkColor` já existia, então o
+  teste exige distância de cor maior que 40 de todas as outras).
+- **API.** `standInFor(noteIds, {page})` devolve `null` sem `pitchpos`, sem `dur`, com `dur` ≥ 128,
+  sem o glifo no dicionário, pauta que não tem 5 linhas, ids fora da página ou de pautas
+  diferentes. `StandInController(restColor:)`: `setColumns(Map<Object, List<String>>)`,
+  `remove(key)`, `flash(key, cor, {attack, hold, release, curve})`, `clear()`, `visible`,
+  `colorOf`, `restOf`.
+- **Critérios 1 a 5.** Os 11 vetores batem (glifo, x, y, escala, `loc`, pontos, tolerância 0,5,
+  inclusive a página alternativa). `pitchpos` com e sem `dur`/`dots` é lido sem erro e a fantasma
+  segue verde. Duas vozes de figuras diferentes dão uma pausa, a da mais curta (vetor 1). Pintura:
+  `flash` troca a cor e volta ao repouso; `remove` apaga só a dela; o ponto de aumento é um
+  círculo na cor da pausa. `.vsb` antigo, sem `dur` ou sem glifos: `null`, nada quebra.
+- **Critério 6 (manual, feito em 04/11/2026).** As bibliotecas foram refeitas no bridge depois
+  do G08b (`6aa532d`, 20:02): Linux 21:35, Android arm64-v8a 21:46, Web 21:58, Android x86_64
+  22:03. Com a `libverovio.so` do Linux renderizei o **hino 1 real**
+  (`Hymn_Grabber/musicxml/001.musicxml`, 2100x2970) pelo mesmo caminho do app
+  (`renderScoreToVsb`): os 217 eventos de `pitchpos.json` saem com `dur`, os 7 glifos de pausa
+  estão no dicionário e as 57 colunas escondidas (metade, alternadas) ganharam pausa. Olhei a
+  página: figuras certas (semínima, mínima, semibreve, pontuada), as pausas não colidem com as
+  notas vizinhas nem com a letra. Repeti com os hinos 010 e 056 das fixtures: no 056, em trechos
+  de semicolcheias, a pausa fica colada na nota visível vizinha (limitação da §11). Não foi na
+  tela do app, porque a tela do decorar (L06) ainda não existe: foi um teste de widget com
+  `ScorePageView`, `ScoreController.setHidden` e `StandInController`.
+- **Critério 7 (Android) — pendente.** As `.so` Android novas estão no bridge
+  (`verovio/bindings/dart/android-libs/`), mas os apps ainda têm as de 22/10 em
+  `android/app/src/main/jniLibs/`: falta `just native-android` em cada app (copia para o
+  `jniLibs`), gerar o APK e ver as pausas no celular. Idem a Web (`tool/build_verovio_web.sh
+  --no-build` copia o `.js`).
+- **Verificação.** Mesma do L02 (365 e 473 testes passando, análise do `zywny-comum` limpa).

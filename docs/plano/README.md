@@ -243,8 +243,8 @@ Os passos do app. Os do núcleo e os do app de cursos não estão aqui (ver
 | [J08](J08-saltos-no-caminho.md) | Trilha: saltos no caminho (casas, vários ritornelos) | J04, J07 | D-SALTO | concluído (critério manual 5 no aparelho, aguardando verificação) |
 | [J09](J09-progresso-na-biblioteca.md) | Trilha: progresso na biblioteca | J03 | — | concluído (critério manual 5 em 360 dp, aguardando verificação) |
 | [L01](L01-sorteio-do-sumico.md) | Decorar: colunas e sorteio do sumiço (Dart puro) | J01 | — | pendente |
-| [L02](L02-esconder-notas.md) | Decorar: esconder colunas no `score_bridge` (nota, barra, linha suplementar) | G09 (bridge) | — | pendente |
-| [L03](L03-pausa-substituta.md) | Decorar: pausa substituta colorida (`score_bridge`) | L02, G09 (bridge) | — | pendente |
+| [L02](L02-esconder-notas.md) | Decorar: esconder colunas no `score_bridge` (nota, barra, linha suplementar) | G09 (bridge) | — | concluído (04/11/2026, sem commit) |
+| [L03](L03-pausa-substituta.md) | Decorar: pausa substituta colorida (`score_bridge`) | L02, G09 (bridge) | — | código e testes prontos (04/11/2026, sem commit); critério 6 conferido no Linux com a lib nova; falta o 7 (Android, no APK e no celular) |
 | [L04](L04-plano-e-progresso-do-decorar.md) | Decorar: plano, desbloqueio e progresso | J03, L01 | — | pendente |
 | [L05](L05-passagem-com-sumico.md) | Decorar: passagem com sumiço e revelação no `PracticeController` | J04, L02, L03 | — | pendente |
 | [L06](L06-tela-do-decorar.md) | Decorar: tela para entrar na trilha e executar etapas | J05, J06, L04, L05 | — | pendente |

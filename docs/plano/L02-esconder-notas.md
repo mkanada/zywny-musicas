@@ -133,4 +133,35 @@ o Verovio e entregue com vetores de teste pelo repo do bridge
 
 ## Notas de execução
 
-_(preencher ao executar)_
+**Executado em 04/11/2026, no `zywny-comum` (`main`), sem commit.**
+
+- **Arquivos.** Novos: `score_bridge/lib/src/hide.dart` (índice da página e regras 1-3),
+  `test/hide_test.dart` (os 11 vetores), `test/hide_controller_test.dart` (contrato do
+  controller, 11 testes), `test/hide_paint_test.dart` (pintura, 9 testes). Alterados:
+  `score_controller.dart` (`setHidden`, `reveal`, `clearHidden`, `isHidden`, `hiddenIds`,
+  `hiddenShapesOf`, `hiddenLeavesOf`), `segmentation.dart` e `page_layers.dart` (parâmetro
+  `skipLeaves`), `score_page_view.dart` (recompila quando o conjunto de folhas muda; toque em
+  nota escondida é ignorado), `model.dart` e `parser.dart` (`PitchEvent.dur`/`dots`, que o L03
+  também usa), `score_bridge.dart` (exportações).
+- **Como funciona.** O controller guarda `H` e deixa transparentes as notas e os nós `chord`
+  cujas notas estão todas em `H` (regra 1; o L02 original esquecia o acorde). A barra e os traços
+  não têm id: saem da segmentação da página (`skipLeaves`, por identidade). Nota escondida vence
+  cor fixa e destaque: `highlight` é ignorado e não há halo; `setColor` só vale ao revelar;
+  `clearAll` não revela (`clearHidden` revela); trocar de documento esquece `H`.
+- **Critério 1.** 11 de 11 vetores batem (notas, `chord`, barras com nº de formas, traços com
+  pauta/lado/ordem/x, tolerância 0,5), inclusive a página alternativa `alt0.0`.
+- **Critério 6 (medido, `test/hide_paint_test.dart`, hino 010, página 0 de 2100x2970).** Uma
+  geração de `Picture` = 139 estáticos (125 depois que os acordes viram dinâmicos). Esconder 50
+  notas de uma vez = **1 geração** (125 `Picture`). Revelar as 50 uma a uma = **16 gerações**
+  (só as revelações que devolvem barra ou traço; nota e acorde não recompilam nada). Custo:
+  116 ms de gravação para 2 299 `Picture` no micro de desenvolvimento, cerca de 7 ms por
+  geração. **Decisão:** recompilar a página, sem promover barra e traço a dinâmicos. Se no
+  aparelho a revelação engasgar, a saída é um segmento dinâmico de "folhas escondíveis".
+- **Desvios.** (1) O acorde, acima. (2) `clearAll` preserva o escondido. (3) O critério 6 diz
+  só "está nas notas": o teste afirma as contagens exatas acima.
+- **Limitações que seguem** (§11): `beamSpan` não some; acorde cross-staff dividido entre duas
+  pautas fica com a haste; ligadura, dedilhado e apojatura ficam.
+- **Verificação.** `cd score_bridge && flutter test`: 365 passam, 7 ignorados, 0 falham.
+  `flutter analyze` no `zywny-comum`: limpo. `flutter test` no `zywny-comum`: 473 passam.
+  Não rodei `just test` dos dois apps; o `flutter analyze` deles tem erros que não vêm daqui
+  (`FakeMidiInput.sustain` com tipo antigo nos testes, `node_modules` do firebase).
