@@ -62,12 +62,12 @@ class _Engine implements SoundEngine {
 
 class _Midi implements MidiInputService {
   final _notes = StreamController<PlayedNote>.broadcast();
-  final _sustain = StreamController<int>.broadcast();
+  final _sustain = StreamController<SustainChange>.broadcast();
   final _held = ValueNotifier<Set<int>>(const {});
   @override
   Stream<PlayedNote> get notes => _notes.stream;
   @override
-  Stream<int> get sustain => _sustain.stream;
+  Stream<SustainChange> get sustain => _sustain.stream;
   @override
   ValueListenable<Set<int>> get held => _held;
   void key(int pitch, {required bool on, required double at}) => _notes.add(

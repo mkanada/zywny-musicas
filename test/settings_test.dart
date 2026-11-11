@@ -20,6 +20,7 @@ import 'package:zywny/app/library_screen.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_comum/practice/hand.dart';
 import 'package:zywny_comum/practice/practice_controller.dart';
+import 'package:zywny_comum/practice/practice_mode.dart';
 import 'package:zywny_comum/settings/app_settings.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
@@ -136,7 +137,7 @@ void main() {
     test('margem do tempo: grava, volta e fica entre os limites', () async {
       final first = AppSettings();
       await first.load();
-      expect(first.rhythmToleranceMs, 75);
+      expect(first.rhythmToleranceMs, kDefaultRhythmToleranceMs);
       first.rhythmToleranceMs = 120;
       await pumpEventQueue();
       final second = AppSettings();
