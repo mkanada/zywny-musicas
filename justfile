@@ -252,3 +252,9 @@ analyze-comum:
 # Atualiza o grafo de contexto do graft/ (ver AGENTS.md).
 graft:
     graft build
+
+# Sai com 0 mesmo quando há alerta: leia a saída. Os limites estão em
+# analysis_options.yaml.
+# Medidas de complexidade e tamanho (dart_code_linter).
+qualidade *ARGS:
+    dart run dart_code_linter:metrics analyze lib --no-fatal-warnings {{ARGS}}
