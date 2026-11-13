@@ -360,7 +360,7 @@ void main() {
   });
 
   testWidgets('o progresso é gravado no tom da partitura', (tester) async {
-    final none = Transposition.toNoAccidentals(-3, lowest: 40, highest: 80)!;
+    final none = Transposition.toNoAccidentals(-3, range: (lowest: 40, highest: 80))!;
     final h = await _Harness.create(
       tester,
       fifths: -3,

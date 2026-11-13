@@ -424,79 +424,68 @@ class _TourCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (total > 1)
-                        Text(
-                          '$position de $total',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: kInkCaption,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      Text(
-                        step.title,
-                        key: kTourTitleKey,
-                        style: serifDisplay(fontSize: 22),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        step.body,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          height: 1.4,
-                          color: kInk,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Flexible(child: SingleChildScrollView(child: _stepText())),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  if (!last)
-                    TextButton(
-                      onPressed: onSkip,
-                      style: TextButton.styleFrom(foregroundColor: kInkCaption),
-                      child: const Text('Pular'),
-                    ),
-                  // Em fonte grande os botões não cabem lado a lado: o
-                  // `Wrap` passa o que sobra para a linha de baixo.
-                  Expanded(
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 4,
-                      children: [
-                        if (!first)
-                          TextButton(
-                            onPressed: onBack,
-                            child: const Text('Voltar'),
-                          ),
-                        FilledButton(
-                          autofocus: true,
-                          onPressed: onNext,
-                          child: Text(
-                            last ? 'Entendi' : (first ? 'Começar' : 'Próximo'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              _actionRow(),
             ],
           ),
         ),
       ),
     );
   }
+
+  /// O texto do passo: a posição (se há mais de um), o título e o corpo.
+  Widget _stepText() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (total > 1)
+        Text(
+          '$position de $total',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: kInkCaption,
+          ),
+        ),
+      const SizedBox(height: 4),
+      Text(step.title, key: kTourTitleKey, style: serifDisplay(fontSize: 22)),
+      const SizedBox(height: 6),
+      Text(
+        step.body,
+        style: const TextStyle(fontSize: 15, height: 1.4, color: kInk),
+      ),
+    ],
+  );
+
+  /// Os botões: "Pular" (se não é o último), "Voltar" (se não é o primeiro) e o
+  /// de avançar. Em fonte grande o `Wrap` passa o que sobra para a linha de
+  /// baixo.
+  Widget _actionRow() => Row(
+    children: [
+      if (!last)
+        TextButton(
+          onPressed: onSkip,
+          style: TextButton.styleFrom(foregroundColor: kInkCaption),
+          child: const Text('Pular'),
+        ),
+      Expanded(
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 4,
+          children: [
+            if (!first)
+              TextButton(onPressed: onBack, child: const Text('Voltar')),
+            FilledButton(
+              autofocus: true,
+              onPressed: onNext,
+              child: Text(last ? 'Entendi' : (first ? 'Começar' : 'Próximo')),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
 }

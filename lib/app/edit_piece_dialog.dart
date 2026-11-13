@@ -35,11 +35,8 @@ Future<EditPieceResult?> showEditPieceDialog(
   bool canDelete = false,
 }) => showDialog<EditPieceResult>(
   context: context,
-  builder: (context) => _EditPieceDialog(
-    base: base,
-    saved: saved,
-    canDelete: canDelete,
-  ),
+  builder: (context) =>
+      _EditPieceDialog(base: base, saved: saved, canDelete: canDelete),
 );
 
 class _EditPieceDialog extends StatefulWidget {
@@ -61,8 +58,7 @@ class _EditPieceDialogState extends State<_EditPieceDialog> {
   Piece get _base => widget.base;
   PieceMetadata? get _saved => widget.saved;
 
-  String _starting(String? edited, String? current) =>
-      edited ?? current ?? '';
+  String _starting(String? edited, String? current) => edited ?? current ?? '';
 
   late final TextEditingController _title = TextEditingController(
     text: _starting(_saved?.title, _base.title),
@@ -156,67 +152,72 @@ class _EditPieceDialogState extends State<_EditPieceDialog> {
               style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _title,
-              autofocus: true,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Nome',
-                errorText: _titleError,
-              ),
-              onChanged: (_) {
-                if (_titleError != null) setState(() => _titleError = null);
-              },
-              onSubmitted: (_) => _save(),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _composer,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Compositor'),
-              onSubmitted: (_) => _save(),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _lyricist,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Letrista'),
-              onSubmitted: (_) => _save(),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _original,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Título original',
-                helperText: 'Nº de catálogo (Op. 100 nº 2), se houver.',
-              ),
-              onSubmitted: (_) => _save(),
-            ),
+            ..._fields(),
           ],
         ),
       ),
-      actions: [
-        if (widget.canDelete)
-          TextButton(
-            onPressed: _delete,
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Apagar'),
-          ),
-        if (_hasSaved)
-          TextButton(
-            onPressed: () => Navigator.pop(
-              context,
-              const EditPieceResult(meta: PieceMetadata()),
-            ),
-            child: const Text('Restaurar'),
-          ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Salvar')),
-      ],
+      actions: _actions(context),
     );
   }
+
+  /// Os quatro campos do formulário, com o espaço entre eles.
+  List<Widget> _fields() => [
+    TextField(
+      controller: _title,
+      autofocus: true,
+      textInputAction: TextInputAction.next,
+      decoration: InputDecoration(labelText: 'Nome', errorText: _titleError),
+      onChanged: (_) {
+        if (_titleError != null) setState(() => _titleError = null);
+      },
+      onSubmitted: (_) => _save(),
+    ),
+    const SizedBox(height: 8),
+    TextField(
+      controller: _composer,
+      textInputAction: TextInputAction.next,
+      decoration: const InputDecoration(labelText: 'Compositor'),
+      onSubmitted: (_) => _save(),
+    ),
+    const SizedBox(height: 8),
+    TextField(
+      controller: _lyricist,
+      textInputAction: TextInputAction.next,
+      decoration: const InputDecoration(labelText: 'Letrista'),
+      onSubmitted: (_) => _save(),
+    ),
+    const SizedBox(height: 8),
+    TextField(
+      controller: _original,
+      textInputAction: TextInputAction.done,
+      decoration: const InputDecoration(
+        labelText: 'Título original',
+        helperText: 'Nº de catálogo (Op. 100 nº 2), se houver.',
+      ),
+      onSubmitted: (_) => _save(),
+    ),
+  ];
+
+  /// Os botões: apagar (se pode), restaurar (se já salvou), cancelar e salvar.
+  List<Widget> _actions(BuildContext context) => [
+    if (widget.canDelete)
+      TextButton(
+        onPressed: _delete,
+        style: TextButton.styleFrom(foregroundColor: Colors.red),
+        child: const Text('Apagar'),
+      ),
+    if (_hasSaved)
+      TextButton(
+        onPressed: () => Navigator.pop(
+          context,
+          const EditPieceResult(meta: PieceMetadata()),
+        ),
+        child: const Text('Restaurar'),
+      ),
+    TextButton(
+      onPressed: () => Navigator.pop(context),
+      child: const Text('Cancelar'),
+    ),
+    FilledButton(onPressed: _save, child: const Text('Salvar')),
+  ];
 }

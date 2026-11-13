@@ -26,38 +26,44 @@ class ScoreTourKeys {
   );
 }
 
-/// O passeio pela tela da partitura.
-List<TourStep> scoreTourSteps(ScoreTourKeys keys, {required LibraryTerm term}) {
+/// O passeio pela tela da partitura, do começo ao fim.
+List<TourStep> scoreTourSteps(
+  ScoreTourKeys keys, {
+  required LibraryTerm term,
+}) => [..._screenSteps(keys, term), ..._railSteps(keys)];
+
+/// A partitura, a volta, a trilha e o som: o que fica no alto da tela.
+List<TourStep> _screenSteps(ScoreTourKeys keys, LibraryTerm term) => [
+  TourStep(
+    targets: [keys.score],
+    title: 'A partitura',
+    body:
+        'É aqui que ${term.o} ${term.singular} aparece. Toque numa nota para '
+        'posicionar a música ali. Com a música parada e mais de uma página, '
+        'os cantos de baixo viram a página.',
+  ),
+  TourStep(targets: [keys.back], title: 'Voltar', body: 'Volta à biblioteca.'),
+  TourStep(
+    targets: [keys.trail],
+    title: 'A trilha',
+    body:
+        'Cada música vira uma trilha: trechos curtos e etapas que se '
+        'liberam como as fases de um jogo, do devagar ao andamento real. '
+        'Toque aqui para ver as etapas.',
+  ),
+  TourStep(
+    targets: [keys.sound],
+    title: 'Som',
+    body:
+        'Liga ou desliga o som do aplicativo. Se a saída for o teclado, '
+        'mostra se ele está conectado.',
+  ),
+];
+
+/// A barra lateral: o treino, o compasso, o andamento, a mão e as opções.
+List<TourStep> _railSteps(ScoreTourKeys keys) {
   final rail = keys.rail;
   return [
-    TourStep(
-      targets: [keys.score],
-      title: 'A partitura',
-      body:
-          'É aqui que ${term.o} ${term.singular} aparece. Toque numa nota para '
-          'posicionar a música ali. Com a música parada e mais de uma página, '
-          'os cantos de baixo viram a página.',
-    ),
-    TourStep(
-      targets: [keys.back],
-      title: 'Voltar',
-      body: 'Volta à biblioteca.',
-    ),
-    TourStep(
-      targets: [keys.trail],
-      title: 'A trilha',
-      body:
-          'Cada música vira uma trilha: trechos curtos e etapas que se '
-          'liberam como as fases de um jogo, do devagar ao andamento real. '
-          'Toque aqui para ver as etapas.',
-    ),
-    TourStep(
-      targets: [keys.sound],
-      title: 'Som',
-      body:
-          'Liga ou desliga o som do aplicativo. Se a saída for o teclado, '
-          'mostra se ele está conectado.',
-    ),
     TourStep(
       targets: [rail.play!, rail.listen!],
       title: 'Treinar',

@@ -204,6 +204,16 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
+/// O que a tela da partitura precisa de um hino aberto: a versão tocada, a
+/// partitura, as configurações e o catálogo (o nome dos termos).
+typedef _OpenRequest = ({
+  Piece base,
+  Piece piece,
+  Uint8List scoreXml,
+  PieceSettings pieceSettings,
+  PieceCatalog catalog,
+});
+
 class _LibraryScreenState extends State<LibraryScreen> {
   late final LibraryStore _libraries = widget.libraryStore ?? LibraryStore();
   late Future<PieceCatalog> _catalog = _loadCatalog();
@@ -404,6 +414,38 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// Escolhe um MusicXML (`.musicxml`, `.mxl`), confere que é uma partitura,
   /// confirma os dados com a pessoa e abre. A importada entra na lista e
   /// fica no aparelho.
+  /// O aviso de que o arquivo escolhido não é uma partitura que se abre.
+  Future<void> _showFormatError(String message) => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Não deu para abrir'),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+
+  /// Guarda a partitura importada. `null` (com um aviso) se ela não se guarda.
+  Future<ImportedScore?> _storeImported(ParsedMusicXml parsed) async {
+    try {
+      return await _imported.add(
+        fileName: parsed.fileName,
+        scoreXml: parsed.scoreXml,
+        fifths: parsed.fifths,
+      );
+    } on Object catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Não deu para guardar: $e')));
+      }
+      return null;
+    }
+  }
+
   Future<void> _importMusicXml() async {
     if (_importing) return;
     _importing = true;
@@ -415,19 +457,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         parsed = parseMusicXml(picked.name, picked.bytes);
       } on MusicXmlFormatException catch (e) {
         if (!mounted) return;
-        await showDialog<void>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Não deu para abrir'),
-            content: Text(e.message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+        await _showFormatError(e.message);
         return;
       }
       // A base sem dados (só o nome do arquivo) e o que veio do arquivo para
@@ -449,19 +479,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
       );
       if (result == null || result.deleted || !mounted) return;
-      final ImportedScore score;
-      try {
-        score = await _imported.add(
-          fileName: parsed.fileName,
-          scoreXml: parsed.scoreXml,
-          fifths: parsed.fifths,
-        );
-      } on Object catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Não deu para guardar: $e')));
-        return;
-      }
+      final score = await _storeImported(parsed);
+      if (score == null) return;
       if (!result.meta.isEmpty) {
         await _metadata.save(kImportedLibraryId, score.id, result.meta);
       }
@@ -632,12 +651,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (!mounted) return;
     final end = await showTour(
       context,
-      libraryTourSteps(
-        _tourKeys,
+      libraryTourSteps(_tourKeys, (
         term: catalog.term,
         numbered: catalog.numbered,
         hasLibrary: catalog.hasLibrary,
-      ),
+      )),
     );
     if (end != null) await store.markSeen(TourId.library);
   }
@@ -655,76 +673,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
           base.hasSimplified &&
           await _pieceSettings.loadSimplified(base.libraryId, base.id);
       final piece = simplified ? base.asSimplified() : base;
-      final Uint8List scoreXml;
-      if (base.libraryId == kImportedLibraryId) {
-        final bytes =
-            await (widget.loadScore?.call(base) ??
-                _imported.loadScore(base.id));
-        if (bytes == null) {
-          throw StateError(
-            'a partitura importada não foi encontrada no aparelho',
-          );
-        }
-        scoreXml = bytes;
-      } else if (simplified) {
-        scoreXml = await catalog.loadScore(base, simplified: true);
-      } else {
-        scoreXml = await (widget.loadScore ?? catalog.loadScore)(base);
-      }
+      final scoreXml = await _loadOpenedScore(base, catalog, simplified);
       final pieceSettings = await _pieceSettings.load(
         piece.libraryId,
         piece.id,
       );
       await _settingsLoaded;
       if (!mounted) return;
-      // A lista e o "Continuar" conhecem a música, não a versão.
-      unawaited(
-        _progress.markOpened(
-          base.id,
-          transpose: simplified
-              ? _progress[base.id]?.transpose
-              : pieceSettings.transpose,
-        ),
+      _markOpened(base, simplified, pieceSettings);
+      final request = (
+        base: base,
+        piece: piece,
+        scoreXml: scoreXml,
+        pieceSettings: pieceSettings,
+        catalog: catalog,
       );
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (context) => widget.scoreBuilder(
             context,
-            OpenedPiece(
-              piece: piece,
-              scoreXml: scoreXml,
-              midiDeviceManager: _midi,
-              onPracticeScore: (score, transposition) => unawaited(
-                _progress.recordScore(
-                  progressIdFor(piece.id, transposition),
-                  score,
-                ),
-              ),
-              appSettings: _settings,
-              pieceSettings: pieceSettings,
-              onPieceSettingsChanged: (changed) {
-                unawaited(
-                  _pieceSettings.save(piece.libraryId, piece.id, changed),
-                );
-                unawaited(_progress.setTranspose(piece.id, changed.transpose));
-              },
-              trailProgress: _trail,
-              term: catalog.term,
-              numbered: catalog.numbered,
-              onChooseVersion: base.hasSimplified
-                  ? (toSimplified) {
-                      reopenSimplified = toSimplified;
-                      unawaited(
-                        _pieceSettings.saveSimplified(
-                          base.libraryId,
-                          base.id,
-                          toSimplified,
-                        ),
-                      );
-                      Navigator.of(context).pop();
-                    }
-                  : null,
-            ),
+            _openedPiece(request, context, (toSimplified) {
+              reopenSimplified = toSimplified;
+            }),
           ),
         ),
       );
@@ -741,6 +711,81 @@ class _LibraryScreenState extends State<LibraryScreen> {
         if (reopenSimplified != null) unawaited(_open(base));
       }
     }
+  }
+
+  /// Marca o hino como aberto. A lista e o "Continuar" conhecem a música, não a
+  /// versão: o tom que vale é o da versão aberta.
+  void _markOpened(Piece base, bool simplified, PieceSettings pieceSettings) {
+    unawaited(
+      _progress.markOpened(
+        base.id,
+        transpose: simplified
+            ? _progress[base.id]?.transpose
+            : pieceSettings.transpose,
+      ),
+    );
+  }
+
+  /// A partitura (o XML) de [base], ou da versão simplificada se [simplified].
+  Future<Uint8List> _loadOpenedScore(
+    Piece base,
+    PieceCatalog catalog,
+    bool simplified,
+  ) async {
+    if (base.libraryId == kImportedLibraryId) {
+      final bytes =
+          await (widget.loadScore?.call(base) ?? _imported.loadScore(base.id));
+      if (bytes == null) {
+        throw StateError(
+          'a partitura importada não foi encontrada no aparelho',
+        );
+      }
+      return bytes;
+    }
+    if (simplified) return catalog.loadScore(base, simplified: true);
+    return (widget.loadScore ?? catalog.loadScore)(base);
+  }
+
+  /// O [OpenedPiece] que a tela da partitura recebe: a versão, a partitura, o
+  /// som e as configurações do hino. [onChoose] recebe a versão escolhida
+  /// pela tela (e fecha a partitura para abrir a outra).
+  OpenedPiece _openedPiece(
+    _OpenRequest request,
+    BuildContext context,
+    void Function(bool toSimplified) onChoose,
+  ) {
+    final piece = request.piece;
+    final base = request.base;
+    return OpenedPiece(
+      piece: piece,
+      scoreXml: request.scoreXml,
+      midiDeviceManager: _midi,
+      onPracticeScore: (score, transposition) => unawaited(
+        _progress.recordScore(progressIdFor(piece.id, transposition), score),
+      ),
+      appSettings: _settings,
+      pieceSettings: request.pieceSettings,
+      onPieceSettingsChanged: (changed) {
+        unawaited(_pieceSettings.save(piece.libraryId, piece.id, changed));
+        unawaited(_progress.setTranspose(piece.id, changed.transpose));
+      },
+      trailProgress: _trail,
+      term: request.catalog.term,
+      numbered: request.catalog.numbered,
+      onChooseVersion: base.hasSimplified
+          ? (toSimplified) {
+              onChoose(toSimplified);
+              unawaited(
+                _pieceSettings.saveSimplified(
+                  base.libraryId,
+                  base.id,
+                  toSimplified,
+                ),
+              );
+              Navigator.of(context).pop();
+            }
+          : null,
+    );
   }
 
   /// Som, teclado MIDI e cores — o que vale para todos os hinos. (O que é
@@ -914,7 +959,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// o topo, então não há como zerá-la.
   Widget _contentSideBySide(AsyncSnapshot<PieceCatalog> snapshot) {
     final catalog = snapshot.data;
-    final catalogError = snapshot.hasError;
     final noLibrary =
         catalog != null && !catalog.hasLibrary && _imported.scores.isEmpty;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -927,70 +971,83 @@ class _LibraryScreenState extends State<LibraryScreen> {
               _kShortcutsMinWidth,
               _kShortcutsMaxWidth,
             ),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.only(bottom: bottomInset),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Da altura da barra da direita: os dois topos alinham.
-                  SizedBox(
-                    height: 48,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: _headerTitle(catalog),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!noLibrary && catalog != null) ...[
-                    if (_continuing(_effectivePieces(catalog))
-                        case final piece?) ...[
-                      _continueCard(piece, catalog.term),
-                      const SizedBox(height: 12),
-                    ] else if (_progressLoaded) ...[
-                      _startCard(catalog.term),
-                      const SizedBox(height: 12),
-                    ],
-                    _sortChips(catalog.numbered, wrapped: true),
-                  ],
-                ],
-              ),
-            ),
+            child: _shortcutsColumn(catalog, noLibrary, bottomInset),
           ),
           const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    if (catalog != null && !noLibrary)
-                      Expanded(child: _searchField(catalog.numbered))
-                    else
-                      const Spacer(),
-                    const SizedBox(width: 4),
-                    ..._headerActions(),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: noLibrary
-                      // No alto, na linha da busca: os 6 dp são a folga a mais
-                      // sob o título, à esquerda.
-                      ? SingleChildScrollView(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: _installCard(),
-                        )
-                      : catalog == null
-                      ? _catalogWaiting(catalogError)
-                      : _list(catalog),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: _listColumn(catalog, noLibrary, snapshot.hasError)),
         ],
       ),
     );
   }
+
+  /// A coluna da esquerda, lado a lado: o título, o "Continuar" (ou o
+  /// "Começe por aqui") e a ordenação. [bottomInset] é a folga do aparelho.
+  Widget _shortcutsColumn(
+    PieceCatalog? catalog,
+    bool noLibrary,
+    double bottomInset,
+  ) => SingleChildScrollView(
+    padding: EdgeInsets.only(bottom: bottomInset),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Da altura da barra da direita: os dois topos alinham.
+        SizedBox(
+          height: 48,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _headerTitle(catalog),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (!noLibrary && catalog != null) ...[
+          if (_continuing(_effectivePieces(catalog)) case final piece?) ...[
+            _continueCard(piece, catalog.term),
+            const SizedBox(height: 12),
+          ] else if (_progressLoaded) ...[
+            _startCard(catalog.term),
+            const SizedBox(height: 12),
+          ],
+          _sortChips(catalog.numbered, wrapped: true),
+        ],
+      ],
+    ),
+  );
+
+  /// A coluna da direita, lado a lado: a busca e as ações, e embaixo a lista
+  /// (ou o cartão de instalar, ou a espera pelo catálogo).
+  Widget _listColumn(
+    PieceCatalog? catalog,
+    bool noLibrary,
+    bool catalogError,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        children: [
+          if (catalog != null && !noLibrary)
+            Expanded(child: _searchField(catalog.numbered))
+          else
+            const Spacer(),
+          const SizedBox(width: 4),
+          ..._headerActions(),
+        ],
+      ),
+      const SizedBox(height: 6),
+      Expanded(
+        child: noLibrary
+            // No alto, na linha da busca: os 6 dp são a folga a mais
+            // sob o título, à esquerda.
+            ? SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 6),
+                child: _installCard(),
+              )
+            : catalog == null
+            ? _catalogWaiting(catalogError)
+            : _list(catalog),
+      ),
+    ],
+  );
 
   /// O catálogo ainda abre (roda) ou não abriu (erro).
   Widget _catalogWaiting(bool error) {
@@ -1203,84 +1260,88 @@ class _LibraryScreenState extends State<LibraryScreen> {
         children: [
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'CONTINUAR',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.7,
-                        color: kAccent,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      piece.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kInk,
-                      ),
-                    ),
-                    if (stage != null)
-                      Text(
-                        stage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: kInk),
-                      ),
-                    Text(
-                      details,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: kInkCaption),
-                    ),
-                  ],
-                ),
-              ),
+              Expanded(child: _continueTexts(piece, stage, details)),
               const SizedBox(width: 16),
-              Tooltip(
-                message: 'Continuar estudo',
-                child: Material(
-                  color: kAccent,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: () => unawaited(_open(piece)),
-                    child: const SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              _continueButton(piece),
             ],
           ),
           // O progresso do hino na base do cartão.
           if (started) ...[
             const SizedBox(height: 10),
-            TrailProgressBar(
-              done: trail.finalApproved ? trail.total : trail.done,
-              skipped: trail.finalApproved ? 0 : trail.skipped,
-              total: trail.total,
-              height: 5,
-            ),
+            _continueProgress(trail),
           ],
         ],
       ),
     );
   }
+
+  /// As linhas do cartão "Continuar": o rótulo, o título, a etapa (se há uma)
+  /// e os detalhes.
+  Widget _continueTexts(Piece piece, String? stage, String details) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Text(
+        'CONTINUAR',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.7,
+          color: kAccent,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        piece.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: kInk,
+        ),
+      ),
+      if (stage != null)
+        Text(
+          stage,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13, color: kInk),
+        ),
+      Text(
+        details,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 12, color: kInkCaption),
+      ),
+    ],
+  );
+
+  /// O botão redondo que abre o hino onde ele parou.
+  Widget _continueButton(Piece piece) => Tooltip(
+    message: 'Continuar estudo',
+    child: Material(
+      color: kAccent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () => unawaited(_open(piece)),
+        child: const SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(Icons.play_arrow, color: Colors.white, size: 24),
+        ),
+      ),
+    ),
+  );
+
+  /// A barra do progresso da trilha do hino (o que já passou e o pulado).
+  Widget _continueProgress(TrailProgress trail) => TrailProgressBar(
+    done: trail.finalApproved ? trail.total : trail.done,
+    skipped: trail.finalApproved ? 0 : trail.skipped,
+    total: trail.total,
+    height: 5,
+  );
 
   void _updateMoreChips(ScrollMetrics metrics) {
     final more = metrics.extentAfter > 1;
@@ -1326,34 +1387,38 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ListenableBuilder(
-                listenable: _midi.connected,
-                builder: (context, _) => _midi.connected.value != null
-                    ? const Text(
-                        'Teclado conectado ✓',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: kGoodColor,
-                        ),
-                      )
-                    : OutlinedButton(
-                        onPressed: () =>
-                            unawaited(showMidiDevicePicker(context, _midi)),
-                        child: const Text('Conectar teclado'),
-                      ),
-              ),
-            ],
-          ),
+          _keyboardStatus(),
         ],
       ),
     );
   }
+
+  /// O teclado no cartão de começo: "Teclado conectado ✓", ou o botão para
+  /// conectar um.
+  Widget _keyboardStatus() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    crossAxisAlignment: WrapCrossAlignment.center,
+    children: [
+      ListenableBuilder(
+        listenable: _midi.connected,
+        builder: (context, _) => _midi.connected.value != null
+            ? const Text(
+                'Teclado conectado ✓',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: kGoodColor,
+                ),
+              )
+            : OutlinedButton(
+                onPressed: () =>
+                    unawaited(showMidiDevicePicker(context, _midi)),
+                child: const Text('Conectar teclado'),
+              ),
+      ),
+    ],
+  );
 
   /// As pastilhas de ordenação. [wrapped] (duas colunas, celular deitado):
   /// as seis à vista, quebrando em linhas, sem rolagem nem esmaecido.
@@ -1388,43 +1453,49 @@ class _LibraryScreenState extends State<LibraryScreen> {
             children: [for (final key in keys) chipFor(key)],
           )
         else
-          SizedBox(
-            height: 36,
-            child: NotificationListener<ScrollMetricsNotification>(
-              onNotification: (n) {
-                _updateMoreChips(n.metrics);
-                return false;
-              },
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (n) {
-                  _updateMoreChips(n.metrics);
-                  return false;
-                },
-                // Um esmaecido na borda direita enquanto houver pastilhas
-                // fora da tela: "Recentes" e "Pontuação" têm pista.
-                child: ShaderMask(
-                  blendMode: BlendMode.dstIn,
-                  shaderCallback: (rect) => LinearGradient(
-                    colors: [
-                      Colors.black,
-                      Colors.black,
-                      _moreChips ? Colors.transparent : Colors.black,
-                    ],
-                    stops: const [0, 0.88, 1],
-                  ).createShader(rect),
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: keys.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) => chipFor(keys[i]),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _sortScroller(keys, chipFor),
       ],
     );
   }
+
+  /// As pastilhas de ordenação numa faixa que rola na horizontal. Enquanto
+  /// houver pastilhas fora da tela, a borda direita fica esmaecida: "Recentes"
+  /// e "Pontuação" têm pista.
+  Widget _sortScroller(
+    List<SortKey> keys,
+    _SortChip Function(SortKey) chipFor,
+  ) => SizedBox(
+    height: 36,
+    child: NotificationListener<ScrollMetricsNotification>(
+      onNotification: (n) {
+        _updateMoreChips(n.metrics);
+        return false;
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          _updateMoreChips(n.metrics);
+          return false;
+        },
+        child: ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (rect) => LinearGradient(
+            colors: [
+              Colors.black,
+              Colors.black,
+              _moreChips ? Colors.transparent : Colors.black,
+            ],
+            stops: const [0, 0.88, 1],
+          ).createShader(rect),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: keys.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, i) => chipFor(keys[i]),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Widget _list(PieceCatalog catalog) {
     final pieces = filterPieces(
@@ -1436,29 +1507,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       _query,
     );
-    if (pieces.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _query.trim().isEmpty
-                  ? '${catalog.term.nenhumCapitalized} '
-                        '${catalog.term.singular} ${catalog.term.encontrado}'
-                  : '${catalog.term.nenhumCapitalized} '
-                        '${catalog.term.singular} com “${_query.trim()}”.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: kInkCaption),
-            ),
-            if (_query.isNotEmpty)
-              TextButton(
-                onPressed: _clearSearch,
-                child: const Text('Limpar a busca'),
-              ),
-          ],
-        ),
-      );
-    }
+    if (pieces.isEmpty) return _emptyList(catalog);
     final now = DateTime.now();
     return ListView.builder(
       // Girar o aparelho muda a lista de lugar na árvore (uma coluna ou o
@@ -1487,6 +1536,30 @@ class _LibraryScreenState extends State<LibraryScreen> {
       },
     );
   }
+
+  /// A lista sem nenhum hino: "Nenhum hino encontrado", com o botão de limpar a
+  /// busca quando há uma.
+  Widget _emptyList(PieceCatalog catalog) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          _query.trim().isEmpty
+              ? '${catalog.term.nenhumCapitalized} '
+                    '${catalog.term.singular} ${catalog.term.encontrado}'
+              : '${catalog.term.nenhumCapitalized} '
+                    '${catalog.term.singular} com “${_query.trim()}”.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: kInkCaption),
+        ),
+        if (_query.isNotEmpty)
+          TextButton(
+            onPressed: _clearSearch,
+            child: const Text('Limpar a busca'),
+          ),
+      ],
+    ),
+  );
 }
 
 class _PieceRow extends StatelessWidget {
@@ -1580,7 +1653,6 @@ class _PieceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = progress?.bestScore;
     final started = trail.total > 0;
-    final imported = piece.libraryId == kImportedLibraryId;
     final edit = onEdit;
     // O que vem depois da armadura (ou da autoria que casou na busca), sem
     // reticências: é o começo quem cede.
@@ -1603,72 +1675,15 @@ class _PieceRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // O número do hinário, na coluna da esquerda: é por ele que se
-            // acha um hino. Algarismos de largura fixa para alinhar. Sem
-            // numeração (clássicos), a coluna não existe; a importada mostra
-            // uma pauta no lugar do número.
+            // Sem numeração (clássicos), a coluna do número não existe.
             if (numbered) ...[
-              SizedBox(
-                width: 38,
-                child: piece.number == null
-                    ? Icon(
-                        imported ? Icons.audio_file_outlined : Icons.remove,
-                        size: 18,
-                        color: kInkCaption,
-                        semanticLabel: imported ? 'importada' : null,
-                      )
-                    : Text(
-                        '${piece.number}',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: kInkCaption,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-              ),
+              _numberCell(),
               const SizedBox(width: 6),
             ] else
               const SizedBox(width: 2),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text.rich(
-                    _highlighted(
-                      piece.title,
-                      match?.title ?? const [],
-                      const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w600,
-                        color: kInk,
-                      ),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  _SubtitleLine(lead: lead, rest: rest),
-                ],
-              ),
-            ),
+            Expanded(child: _titleColumn(lead, rest)),
             const SizedBox(width: 12),
-            // Corrigir os dados da música (nome, compositor…), em qualquer
-            // biblioteca — e apagar a importada, no diálogo.
-            if (edit != null)
-              IconButton(
-                tooltip: 'Editar dados da música',
-                onPressed: edit,
-                iconSize: 20,
-                color: kIconQuiet,
-                style: IconButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(36, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                icon: const Icon(Icons.edit_outlined),
-              ),
+            if (edit != null) _editButton(edit),
             // Só quem começou a trilha tem progresso à direita; sem ela, a
             // coluna fica vazia (nada de "—" em 600 linhas).
             if (started) _TrailCell(trail: trail),
@@ -1677,6 +1692,70 @@ class _PieceRow extends StatelessWidget {
       ),
     );
   }
+
+  /// O número do hinário, na coluna da esquerda: é por ele que se acha um
+  /// hino. Algarismos de largura fixa para alinhar. Sem número, um ícone; a
+  /// importada mostra uma pauta no lugar do número.
+  Widget _numberCell() {
+    final imported = piece.libraryId == kImportedLibraryId;
+    return SizedBox(
+      width: 38,
+      child: piece.number == null
+          ? Icon(
+              imported ? Icons.audio_file_outlined : Icons.remove,
+              size: 18,
+              color: kInkCaption,
+              semanticLabel: imported ? 'importada' : null,
+            )
+          : Text(
+              '${piece.number}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: kInkCaption,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+    );
+  }
+
+  /// O título (com o que a busca casou em destaque) e a linha de baixo.
+  Widget _titleColumn(TextSpan lead, String rest) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text.rich(
+        _highlighted(
+          piece.title,
+          match?.title ?? const [],
+          const TextStyle(
+            fontSize: 15.5,
+            fontWeight: FontWeight.w600,
+            color: kInk,
+          ),
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      const SizedBox(height: 1),
+      _SubtitleLine(lead: lead, rest: rest),
+    ],
+  );
+
+  /// Corrigir os dados da música (nome, compositor…), em qualquer biblioteca;
+  /// apagar a importada fica no diálogo.
+  Widget _editButton(VoidCallback edit) => IconButton(
+    tooltip: 'Editar dados da música',
+    onPressed: edit,
+    iconSize: 20,
+    color: kIconQuiet,
+    style: IconButton.styleFrom(
+      padding: EdgeInsets.zero,
+      minimumSize: const Size(36, 36),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
+    icon: const Icon(Icons.edit_outlined),
+  );
 }
 
 /// [text] com os trechos [ranges] em negrito e na cor de destaque.

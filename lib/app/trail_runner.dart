@@ -58,6 +58,25 @@ typedef StageSummaryDialog = Future<StageSummaryAction?> Function({
 });
 
 /// O que o runner pede à tela: os diálogos e a volta à biblioteca.
+/// O começo de uma passada da trilha: a etapa, a trilha, o agendador, a faixa
+/// e o player que ela usa.
+typedef _PassStart = ({
+  TrailController trail,
+  TrailStage stage,
+  ScoreAudioScheduler scheduler,
+  PerformanceTrack track,
+  ScorePlayer player,
+});
+
+/// O fim de uma passada da trilha: a etapa, o que o aluno fez nela e as marcas
+/// de erro que ela deixou.
+typedef _StageEnd = ({
+  TrailController trail,
+  TrailStage stage,
+  StageResult result,
+  List<WrongMark> wrongMarks,
+});
+
 class TrailRunnerHost {
   const TrailRunnerHost({
     required this.stageSummary,
@@ -302,16 +321,7 @@ class TrailRunner extends ChangeNotifier {
       piece: _pieceN,
     );
     final path = TrailPath.fromTimeline(player.timeline);
-    _planPhases = _settings.trailPlanPhases;
-    _planSpeeds = _settings.trailSpeeds;
-    final plan = TrailPlan.build(
-      path,
-      track,
-      n: n,
-      includeFinal: true,
-      phases: _planPhases,
-      speeds: _planSpeeds,
-    );
+    final plan = _planOf(path, track, n);
     if (plan.isEmpty) {
       _unavailable =
           'Trilha indisponível ${_term.neste} ${_term.singular} — treino '
@@ -323,19 +333,8 @@ class TrailRunner extends ChangeNotifier {
     if (_disposed || !identical(_session.document, document)) return;
     // O N efetivo mudou desde o guardado (pelo geral): a trilha antiga é
     // de outro corte e é descartada ao abrir (J06).
-    if (progress.total > 0 && progress.n != n) {
-      await _store.reset(pieceId);
-      progress = TrailProgress(n: n, total: plan.stages.length);
-    } else if (progress.total > 0 && progress.total != plan.stages.length) {
-      // Outras etapas escolhidas nas configurações: o mesmo progresso, com
-      // o total do plano de agora (para a biblioteca).
-      progress = TrailProgress(
-        n: progress.n,
-        total: plan.stages.length,
-        records: progress.records,
-        resume: progress.resume,
-      );
-    }
+    if (progress.total > 0 && progress.n != n) await _store.reset(pieceId);
+    progress = _fittedProgress(progress, n, plan.stages.length);
     final trail = TrailController(
       path: path,
       plan: plan,
@@ -348,6 +347,37 @@ class TrailRunner extends ChangeNotifier {
     _trail = trail;
     _changed();
     _armStage();
+  }
+
+  /// O plano de etapas de [path], com as fases e os andamentos de agora (que
+  /// ficam guardados em `_planPhases` e `_planSpeeds`).
+  TrailPlan _planOf(TrailPath path, PerformanceTrack track, int n) {
+    _planPhases = _settings.trailPlanPhases;
+    _planSpeeds = _settings.trailSpeeds;
+    return TrailPlan.build(path, track, n: n, options: TrailPlanOptions(includeFinal: true, phases: _planPhases, speeds: _planSpeeds));
+  }
+
+  /// O progresso guardado, no corte [n] e com o total de etapas de agora
+  /// ([total]). A trilha de outro corte já foi apagada pelo chamador; com outras
+  /// etapas escolhidas nas configurações, o mesmo progresso fica com o total do
+  /// plano de agora (para a biblioteca).
+  static TrailProgress _fittedProgress(
+    TrailProgress progress,
+    int n,
+    int total,
+  ) {
+    if (progress.total > 0 && progress.n != n) {
+      return TrailProgress(n: n, total: total);
+    }
+    if (progress.total > 0 && progress.total != total) {
+      return TrailProgress(
+        n: progress.n,
+        total: total,
+        records: progress.records,
+        resume: progress.resume,
+      );
+    }
+    return progress;
   }
 
   /// Lê os outros tons em que este hino tem trilha ([alsoStudied]).
@@ -542,12 +572,37 @@ class TrailRunner extends ChangeNotifier {
     await loadInputLatency();
     if (_disposed) return;
     final timed = stage.speed != null;
-    final gaps = trailStageGaps(trail.path, stage);
     shiftDetector.rearm();
-    final practice = PracticeController(
-      midiInput: _midiInput,
-      track: track,
+    final practice = _practiceOf((
+      trail: trail,
+      stage: stage,
       scheduler: scheduler,
+      track: track,
+      player: player,
+    ));
+    if (timed) scheduler.metronomeOn = true;
+    practice.start(countIn: timed);
+    _playback.playPlayerAfterCount(stage.startMs);
+    // No treino, o "esperado agora" acende na cor própria, como no modo
+    // livre.
+    player.highlightColor = _settings.practicePendingColor;
+    trail.setRunning(true);
+    trail.clearResult();
+    _sound.markSoundOn();
+    _practice = practice;
+    _changed();
+    _playback.setPlaying(true);
+  }
+
+  /// O controlador de avaliação da passada [pass]: o que ela toca e confere, e
+  /// o que acontece nas bordas dela (o fim do trecho, os saltos e a espera).
+  PracticeController _practiceOf(_PassStart pass) {
+    final stage = pass.stage;
+    final player = pass.player;
+    return PracticeController(
+      midiInput: _midiInput,
+      track: pass.track,
+      scheduler: pass.scheduler,
       controller: scores,
       hand: stage.phase.hand,
       ghosts: ghosts,
@@ -559,7 +614,7 @@ class TrailRunner extends ChangeNotifier {
       measureIndexAt: player.timeline.measureIndexAt,
       passOf: (i) => player.measures[i].pass,
       range: (startMs: stage.startMs, endMs: stage.endMs),
-      rangeJumps: gaps,
+      rangeJumps: trailStageGaps(pass.trail.path, stage),
       // No modo espera o aviso chega de dentro da notificação do passo
       // (`WaitModeSession.current`), e encerrar a etapa descarta esse mesmo
       // notificador: descartá-lo ali estoura (asserção no debug, RangeError
@@ -576,18 +631,6 @@ class TrailRunner extends ChangeNotifier {
       pendingColor: _settings.practicePendingColor,
       rhythmToleranceMs: _settings.rhythmToleranceMs,
     );
-    if (timed) scheduler.metronomeOn = true;
-    practice.start(countIn: timed);
-    _playback.playPlayerAfterCount(stage.startMs);
-    // No treino, o "esperado agora" acende na cor própria, como no modo
-    // livre.
-    player.highlightColor = _settings.practicePendingColor;
-    trail.setRunning(true);
-    trail.clearResult();
-    _sound.markSoundOn();
-    _practice = practice;
-    _changed();
-    _playback.setPlaying(true);
   }
 
   /// Ouvir o trecho da etapa (U03): as duas mãos, com som, no andamento da
@@ -667,82 +710,110 @@ class TrailRunner extends ChangeNotifier {
     final wrongMarks = practice.wrongMarks;
     _endRun();
     if (trail == null || result == null || _disposed) return;
+    final end = (
+      trail: trail,
+      stage: stage,
+      result: result,
+      wrongMarks: wrongMarks,
+    );
     final blockIndex = trail.blockIndexOf(stage);
     unawaited(() async {
       if (blockIndex != null) {
-        await _onBlockDone(trail, blockIndex, stage, result, wrongMarks);
+        await _onBlockDone(end, blockIndex);
         return;
       }
-      await trail.recordDone(result);
-      if (_disposed) return;
-      markErrors(result.badMeasures);
-      _keepWrongMarks(wrongMarks);
-      // Aprovou a final.100: concluiu a trilha (tela própria, J07).
-      if (result.passed && stage.id == 'final.100') {
-        final action = await host.conclusion();
-        if (_disposed) return;
-        switch (action) {
-          case TrailConclusionAction.library:
-            host.backToLibrary();
-          case TrailConclusionAction.free:
-            trail.setFreeMode(true);
-          case null:
-            break;
-        }
-        return;
-      }
-      // Reprovou a final com reforço útil: treinar os blocos em vez de
-      // tentar de novo.
-      int? blocks;
-      if (!result.passed &&
-          stage.segment == null &&
-          trail.startReinforcement(result)) {
-        blocks = trail.blockViews.length;
-      }
-      final action = await host.stageSummary(
-        stageRef: trailStripTextFor(
-          trail.plan.segmentCount,
-          stage.segment,
-          stage.label,
-        ),
-        result: result,
-        badLogical: _badLogical(trail, result),
-        isLast: trail.progress.current(trail.plan) == null,
-        blockCount: blocks,
-      );
-      if (_disposed) return;
-      switch (action) {
-        case StageSummaryAction.next:
-          trail.next();
-        case StageSummaryAction.retry:
-          trail.repeat(stage);
-          unawaited(startStage());
-        case StageSummaryAction.skip:
-          await trail.skipSelected();
-          trail.next();
-        case StageSummaryAction.train:
-          trail.next();
-        // A revisão fica na etapa: quem a abre é a tela (vai à página).
-        case StageSummaryAction.review:
-        case null:
-          break;
-      }
+      await _onStageEnd(end);
     }());
+  }
+
+  /// Fim de uma etapa que não é de bloco: grava, limpa as marcas e mostra o
+  /// resumo. A final aprovada conclui a trilha; a final reprovada com reforço
+  /// útil treina os blocos.
+  Future<void> _onStageEnd(_StageEnd end) async {
+    final trail = end.trail;
+    final stage = end.stage;
+    final result = end.result;
+    await trail.recordDone(result);
+    if (_disposed) return;
+    markErrors(result.badMeasures);
+    _keepWrongMarks(end.wrongMarks);
+    // Aprovou a final.100: concluiu a trilha (tela própria, J07).
+    if (result.passed && stage.id == 'final.100') {
+      await _onTrailConcluded(trail);
+      return;
+    }
+    // Reprovou a final com reforço útil: treinar os blocos em vez de
+    // tentar de novo.
+    int? blocks;
+    if (!result.passed &&
+        stage.segment == null &&
+        trail.startReinforcement(result)) {
+      blocks = trail.blockViews.length;
+    }
+    final action = await host.stageSummary(
+      stageRef: trailStripTextFor(
+        trail.plan.segmentCount,
+        stage.segment,
+        stage.label,
+      ),
+      result: result,
+      badLogical: _badLogical(trail, result),
+      isLast: trail.progress.current(trail.plan) == null,
+      blockCount: blocks,
+    );
+    if (_disposed) return;
+    await _applyStageAction(trail, stage, action);
+  }
+
+  /// A trilha foi concluída pela final: a tela de conclusão decide (biblioteca
+  /// ou modo livre).
+  Future<void> _onTrailConcluded(TrailController trail) async {
+    final action = await host.conclusion();
+    if (_disposed) return;
+    switch (action) {
+      case TrailConclusionAction.library:
+        host.backToLibrary();
+      case TrailConclusionAction.free:
+        trail.setFreeMode(true);
+      case null:
+        break;
+    }
+  }
+
+  /// O que o resumo da etapa pediu, numa etapa que não é de bloco.
+  Future<void> _applyStageAction(
+    TrailController trail,
+    TrailStage stage,
+    StageSummaryAction? action,
+  ) async {
+    switch (action) {
+      case StageSummaryAction.next:
+        trail.next();
+      case StageSummaryAction.retry:
+        trail.repeat(stage);
+        unawaited(startStage());
+      case StageSummaryAction.skip:
+        await trail.skipSelected();
+        trail.next();
+      case StageSummaryAction.train:
+        trail.next();
+      // A revisão fica na etapa: quem a abre é a tela (vai à página).
+      case StageSummaryAction.review:
+      case null:
+        break;
+    }
   }
 
   /// Resultado de um bloco de reforço: guarda (sem tocar no plano) e mostra
   /// o resumo do bloco.
-  Future<void> _onBlockDone(
-    TrailController trail,
-    int blockIndex,
-    TrailStage stage,
-    StageResult result,
-    List<WrongMark> wrongMarks,
-  ) async {
+  Future<void> _onBlockDone(_StageEnd end, int blockIndex) async {
+    final trail = end.trail;
+    final stage = end.stage;
+    final result = end.result;
     trail.recordBlockDone(blockIndex, result);
     if (_disposed) return;
     markErrors(result.badMeasures);
-    _keepWrongMarks(wrongMarks);
+    _keepWrongMarks(end.wrongMarks);
     final action = await host.stageSummary(
       stageRef: stage.label,
       result: result,

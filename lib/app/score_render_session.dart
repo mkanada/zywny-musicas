@@ -164,13 +164,11 @@ class ScoreRenderSession extends ChangeNotifier {
 
   /// A transposição que [choice] daria a este hino.
   Transposition? transpositionFor(String? choice) {
-    final range = _originalRange;
     return effectiveTransposition(
       _piece,
       PieceSettings(transpose: choice),
       _settings,
-      lowest: range?.lowest ?? kCatalogLowestMidi,
-      highest: range?.highest ?? kCatalogHighestMidi,
+      range: _originalRange,
     );
   }
 
@@ -179,11 +177,7 @@ class ScoreRenderSession extends ChangeNotifier {
     final fifths = _piece.fifths;
     if (fifths == null) return null;
     final range = _originalRange;
-    return Transposition.toNoAccidentals(
-      fifths,
-      lowest: range?.lowest ?? kCatalogLowestMidi,
-      highest: range?.highest ?? kCatalogHighestMidi,
-    );
+    return Transposition.toNoAccidentals(fifths, range: (lowest: range?.lowest ?? kCatalogLowestMidi, highest: range?.highest ?? kCatalogHighestMidi));
   }
 
   /// Paper size, in tenths of a millimetre, that makes one device pixel one
@@ -371,38 +365,57 @@ class ScoreRenderSession extends ChangeNotifier {
       if (document.pages.isEmpty) {
         throw StateError('a gravura veio sem páginas');
       }
-      // Com a faixa real da música, a direção da transposição pode mudar (o
-      // hino passaria do teclado): nesse caso grava de novo, no fim.
-      _originalRange = _rangeOf(document, transposition) ?? _originalRange;
-      wrongDirection = this.transposition != transposition;
       final track = PerformanceTrack.fromDocument(document);
-      _document = document;
-      _track = track;
-      _renderedTransposition = transposition;
-      // New options reflow the score: the page we were on may not exist
-      // any more.
-      _pageIndex = _pageIndex.clamp(0, document.pages.length - 1);
-      _status = document.pages.length > 1
-          ? 'página ${_pageIndex + 1} de ${document.pages.length}'
-          : 'carregada ✓';
-      if (rendered.debugCopyPath case final path?) {
-        _status = '$_status — .vsb salvo em $path';
-      }
+      wrongDirection = _adopt(rendered, track, transposition);
       _busy = false;
       onDocument?.call(document, track);
       notifyListeners();
     } catch (e) {
-      if (_disposed) return;
-      _status = 'erro: $e';
-      _error = '$e';
-      _busy = false;
-      notifyListeners();
+      _failRender(e);
     }
 
     if (!_disposed && (_renderQueued || wrongDirection)) {
       _renderQueued = false;
       unawaited(render());
     }
+  }
+
+  /// Põe a gravura [rendered], com a faixa [track] e a [transposition] com que
+  /// foi feita, no lugar da anterior. Devolve `true` se a direção da
+  /// transposição mudou enquanto ela gravava (a faixa real pede outra).
+  bool _adopt(
+    RenderedScore rendered,
+    PerformanceTrack track,
+    Transposition? transposition,
+  ) {
+    final document = rendered.document;
+    // Com a faixa real da música, a direção da transposição pode mudar (o
+    // hino passaria do teclado): nesse caso grava de novo, no fim.
+    _originalRange = _rangeOf(document, transposition) ?? _originalRange;
+    final wrongDirection = this.transposition != transposition;
+    _document = document;
+    _track = track;
+    _renderedTransposition = transposition;
+    // New options reflow the score: the page we were on may not exist
+    // any more.
+    _pageIndex = _pageIndex.clamp(0, document.pages.length - 1);
+    _status = document.pages.length > 1
+        ? 'página ${_pageIndex + 1} de ${document.pages.length}'
+        : 'carregada ✓';
+    if (rendered.debugCopyPath case final path?) {
+      _status = '$_status — .vsb salvo em $path';
+    }
+    return wrongDirection;
+  }
+
+  /// A gravura de [error] falhou: a página anterior fica na tela, com o erro
+  /// na barra de status.
+  void _failRender(Object error) {
+    if (_disposed) return;
+    _status = 'erro: $error';
+    _error = '$error';
+    _busy = false;
+    notifyListeners();
   }
 
   /// A nota mais grave e a mais aguda da música **original** em [document],

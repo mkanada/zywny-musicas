@@ -19,19 +19,17 @@ class LibraryTourKeys {
   final settings = GlobalKey(debugLabel: 'tour-settings');
 }
 
-/// O passeio pela biblioteca. [numbered] diz se as músicas têm número (muda
-/// o que a busca aceita); [hasLibrary], se há biblioteca instalada.
-List<TourStep> libraryTourSteps(
-  LibraryTourKeys keys, {
-  required LibraryTerm term,
-  required bool numbered,
-  required bool hasLibrary,
-}) {
-  final openIt = term.feminine ? 'abri-la' : 'abri-lo';
-  // Sem biblioteca o app ainda não sabe como chamar as músicas ("hinos",
-  // "peças"…): fala em "músicas", como o título da tela.
-  final plural = hasLibrary ? term.plural : 'músicas';
-  final os = hasLibrary ? term.os : 'as';
+/// O que o passeio da biblioteca precisa saber: o termo das músicas, se elas
+/// têm número (muda o que a busca aceita) e se há biblioteca instalada.
+typedef LibraryTourState = ({LibraryTerm term, bool numbered, bool hasLibrary});
+
+/// O passeio pela biblioteca, do bem-vindo ao fim.
+List<TourStep> libraryTourSteps(LibraryTourKeys keys, LibraryTourState state) =>
+    [..._introSteps(keys, state), ..._listSteps(keys, state)];
+
+/// Do bem-vindo à ordenação: as partes da tela que vêm antes da lista.
+List<TourStep> _introSteps(LibraryTourKeys keys, LibraryTourState state) {
+  final term = state.term;
   return [
     const TourStep(
       title: 'Bem-vindo ao Zywny',
@@ -52,7 +50,7 @@ List<TourStep> libraryTourSteps(
     TourStep(
       targets: [keys.search],
       title: 'Busca',
-      body: numbered
+      body: state.numbered
           ? 'Procure pelo número, pelo título ou pelo autor.'
           : 'Procure pelo título ou pelo autor.',
     ),
@@ -71,6 +69,20 @@ List<TourStep> libraryTourSteps(
           'Toque numa pastilha para ordenar a lista (por nome, acidentes, '
           'recentes, pontuação…). Toque de novo para inverter.',
     ),
+  ];
+}
+
+/// A lista e o que vem depois dela: a primeira linha, o teclado, as
+/// configurações e o fecho.
+List<TourStep> _listSteps(LibraryTourKeys keys, LibraryTourState state) {
+  final term = state.term;
+  final hasLibrary = state.hasLibrary;
+  final openIt = term.feminine ? 'abri-la' : 'abri-lo';
+  // Sem biblioteca o app ainda não sabe como chamar as músicas ("hinos",
+  // "peças"…): fala em "músicas", como o título da tela.
+  final plural = hasLibrary ? term.plural : 'músicas';
+  final os = hasLibrary ? term.os : 'as';
+  return [
     TourStep(
       targets: [keys.firstRow],
       title: 'A lista',
