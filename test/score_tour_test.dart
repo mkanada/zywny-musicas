@@ -259,6 +259,16 @@ void main() {
       300,
       scrollable: _panelScrollable(),
     );
+    // `scrollUntilVisible` para quando o item é construído (a área de cache da
+    // lista), não quando ele entra na tela: num celular deitado (390 dp) o
+    // toque caía logo abaixo da lista. Rola até o item estar inteiro nela.
+    var guard = 0;
+    while (guard++ < 10 &&
+        tester.getRect(find.text('Rever o tutorial')).bottom >
+            tester.getRect(_panelScrollable()).bottom) {
+      await tester.drag(_panelScrollable(), const Offset(0, -100));
+      await tester.pump();
+    }
     await tester.tap(find.text('Rever o tutorial'));
     await settle(tester);
 
