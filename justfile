@@ -258,3 +258,10 @@ graft:
 # Medidas de complexidade e tamanho (dart_code_linter).
 qualidade *ARGS:
     dart run dart_code_linter:metrics analyze lib --no-fatal-warnings {{ARGS}}
+    {{comum}}/tool/catraca_bloc.sh .
+
+# Catraca do BLoC (BL01) deste repositório: `just catraca` confere o registro
+# (sai com 1 se um arquivo passou dele ou caiu abaixo); `just catraca --gravar`
+# reescreve tool/catraca_bloc.txt com os números atuais.
+catraca *ARGS:
+    {{comum}}/tool/catraca_bloc.sh . {{ARGS}}
