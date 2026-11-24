@@ -9,8 +9,10 @@
 
 import 'package:flutter/material.dart';
 
+import 'package:zywny_bloc/zywny_bloc.dart';
 import 'package:zywny_library/piece.dart';
 
+import 'edit_piece_cubit.dart';
 import 'piece_metadata.dart';
 
 /// O que a pessoa decidiu no diálogo: `null` é "cancelou".
@@ -35,10 +37,14 @@ Future<EditPieceResult?> showEditPieceDialog(
   bool canDelete = false,
 }) => showDialog<EditPieceResult>(
   context: context,
-  builder: (context) =>
-      _EditPieceDialog(base: base, saved: saved, canDelete: canDelete),
+  builder: (context) => BlocProvider(
+    create: (_) => EditPieceCubit(),
+    child: _EditPieceDialog(base: base, saved: saved, canDelete: canDelete),
+  ),
 );
 
+// Fica StatefulWidget por causa dos quatro TextEditingController (objetos do
+// framework). O erro do nome está no EditPieceCubit, acima dele.
 class _EditPieceDialog extends StatefulWidget {
   const _EditPieceDialog({
     required this.base,
@@ -72,8 +78,6 @@ class _EditPieceDialogState extends State<_EditPieceDialog> {
   late final TextEditingController _original = TextEditingController(
     text: _starting(_saved?.originalTitle, _base.originalTitle),
   );
-  String? _titleError;
-
   @override
   void dispose() {
     _title.dispose();
@@ -103,7 +107,7 @@ class _EditPieceDialogState extends State<_EditPieceDialog> {
 
   void _save() {
     if (_title.text.trim().isEmpty) {
-      setState(() => _titleError = 'Dê um nome à música.');
+      context.read<EditPieceCubit>().exigirNome();
       return;
     }
     Navigator.pop(context, EditPieceResult(meta: _diff));
@@ -162,15 +166,19 @@ class _EditPieceDialogState extends State<_EditPieceDialog> {
 
   /// Os quatro campos do formulário, com o espaço entre eles.
   List<Widget> _fields() => [
-    TextField(
-      controller: _title,
-      autofocus: true,
-      textInputAction: TextInputAction.next,
-      decoration: InputDecoration(labelText: 'Nome', errorText: _titleError),
-      onChanged: (_) {
-        if (_titleError != null) setState(() => _titleError = null);
-      },
-      onSubmitted: (_) => _save(),
+    BlocSelector<EditPieceCubit, EditPieceState, bool>(
+      selector: (state) => state.nomeVazio,
+      builder: (context, nomeVazio) => TextField(
+        controller: _title,
+        autofocus: true,
+        textInputAction: TextInputAction.next,
+        decoration: InputDecoration(
+          labelText: 'Nome',
+          errorText: nomeVazio ? 'Dê um nome à música.' : null,
+        ),
+        onChanged: (_) => context.read<EditPieceCubit>().limparErroNome(),
+        onSubmitted: (_) => _save(),
+      ),
     ),
     const SizedBox(height: 8),
     TextField(

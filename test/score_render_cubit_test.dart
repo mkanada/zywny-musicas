@@ -119,4 +119,17 @@ void main() {
     await c.close();
     expect(c.isClosed, isTrue);
   });
+
+  test('boxSeen avisa os ouvintes sem mudar nenhum campo (BL14b)', () async {
+    final c = _gravura();
+    final avisos = <ScoreRenderState>[];
+    final sub = c.stream.listen(avisos.add);
+    c.boxSeen();
+    await Future<void>.delayed(Duration.zero);
+    expect(avisos, hasLength(1));
+    expect(avisos.single.serial, 1);
+    expect(avisos.single.document, c.state.document);
+    await sub.cancel();
+    await c.close();
+  });
 }

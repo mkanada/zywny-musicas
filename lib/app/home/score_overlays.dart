@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:score_bridge/score_bridge.dart';
 import 'package:zywny/app/trail_runner_cubit.dart';
+import 'package:zywny_comum/practice/practice_colors.dart';
+import 'package:zywny_comum/settings/settings_state.dart';
+import 'package:zywny_comum/ui/practice_legend.dart';
 import 'package:zywny_comum/ui/theme.dart';
+
+/// A legenda das cores do treino, com as do aluno (U08): a da gaveta da
+/// trilha e a do resumo.
+Widget practiceLegendOf(SettingsState settings) => PracticeLegend(
+  pending: settings.practicePendingColor,
+  correct: settings.highlightColor,
+  offBeat: kPracticeOffBeatColor,
+  wrong: settings.practiceWrongColor,
+  missed: kPracticeMissedColor,
+);
 
 /// Todos os compassos da música, para o véu dos que não são do trecho.
 Iterable<String> allMeasureIds(ScorePlayer player) => {

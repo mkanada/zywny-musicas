@@ -16,6 +16,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_comum/ui/theme.dart';
 
@@ -72,8 +73,111 @@ Future<TourEnd?> showTour(BuildContext context, List<TourStep> steps) async {
   return end ?? TourEnd.skipped;
 }
 
+/// O que o passeio mostra agora: o passo (pelo índice) e o recorte medido na
+/// tela. Quem guarda isso é o [TourCubit]; a view só desenha e mede.
+class TourState extends Equatable {
+  const TourState({required this.index, this.hole});
+
+  /// O passo atual, na lista de passos.
+  final int index;
+
+  /// O retângulo do alvo do passo, medido na tela; `null` não recorta nada.
+  final Rect? hole;
+
+  @override
+  List<Object?> get props => [index, hole];
+}
+
+/// Os passos do passeio e onde o aluno está neles. Os métodos são síncronos:
+/// o passo que aparece e para onde se anda saem do estado na hora.
+class TourCubit extends Cubit<TourState> {
+  TourCubit({
+    required this.steps,
+    Duration remeasureEvery = const Duration(milliseconds: 250),
+  }) : _remedicao = remeasureEvery,
+       super(TourState(index: _nextFrom(steps, -1, 1)));
+
+  final List<TourStep> steps;
+
+  /// De quanto em quanto tempo a tela de baixo é conferida (o Timer é daqui).
+  final Duration _remedicao;
+
+  Timer? _relogio;
+
+  /// Começa a remedir o recorte de [_remedicao] em [_remedicao]: a tela de
+  /// baixo pode se mexer. [remedir] mede e manda o resultado por [medir].
+  void comecarRemedicao(void Function() remedir) {
+    _relogio?.cancel();
+    _relogio = Timer.periodic(_remedicao, (_) => remedir());
+  }
+
+  @override
+  Future<void> close() {
+    _relogio?.cancel();
+    return super.close();
+  }
+
+  TourStep get step => steps[state.index];
+
+  /// Não há passo com alvo depois do atual.
+  bool get last => _lastAvailableAfter(state.index);
+
+  /// Não há passo com alvo antes do atual.
+  bool get first => _nextFrom(steps, state.index, -1) < 0;
+
+  /// Anda para o passo com alvo na direção [delta]. `false` se não há nenhum
+  /// (é o fim do passeio, e quem chamou decide o que fazer).
+  bool ir(int delta) {
+    final next = _nextFrom(steps, state.index, delta);
+    if (next < 0) return false;
+    emit(TourState(index: next));
+    return true;
+  }
+
+  /// Guarda o recorte medido. Igual ao anterior, não emite (a tela não refaz).
+  void medir(Rect? hole) {
+    if (_sameRect(hole, state.hole)) return;
+    emit(TourState(index: state.index, hole: hole));
+  }
+
+  /// Quantos passos o aluno vai ver, para o "3 de 9" (os pulados não contam).
+  ({int position, int total}) get progress {
+    var total = 0;
+    var position = 0;
+    for (var i = 0; i < steps.length; i++) {
+      if (!steps[i].available) continue;
+      total++;
+      if (i <= state.index) position = total;
+    }
+    return (position: position, total: total);
+  }
+
+  bool _lastAvailableAfter(int index) {
+    for (var i = index + 1; i < steps.length; i++) {
+      if (steps[i].available) return false;
+    }
+    return true;
+  }
+
+  /// O próximo passo na direção [delta] que ainda tem alvo na tela, ou `-1`.
+  static int _nextFrom(List<TourStep> steps, int from, int delta) {
+    for (var i = from + delta; i >= 0 && i < steps.length; i += delta) {
+      if (steps[i].available) return i;
+    }
+    return -1;
+  }
+
+  static bool _sameRect(Rect? a, Rect? b) {
+    if (a == null || b == null) return a == b;
+    return (a.left - b.left).abs() < 0.5 &&
+        (a.top - b.top).abs() < 0.5 &&
+        (a.right - b.right).abs() < 0.5 &&
+        (a.bottom - b.bottom).abs() < 0.5;
+  }
+}
+
 /// A película, o recorte e o cartão. Público para os testes.
-class TourOverlay extends StatefulWidget {
+class TourOverlay extends StatelessWidget {
   const TourOverlay({
     super.key,
     required this.steps,
@@ -87,28 +191,35 @@ class TourOverlay extends StatefulWidget {
   final Duration remeasureEvery;
 
   @override
-  State<TourOverlay> createState() => _TourOverlayState();
+  Widget build(BuildContext context) => BlocProvider(
+    create: (_) => TourCubit(steps: steps, remeasureEvery: remeasureEvery),
+    child: const _TourView(),
+  );
 }
 
-class _TourOverlayState extends State<TourOverlay> with WidgetsBindingObserver {
-  late int _index = _neighbourFrom(-1, 1);
-  Rect? _hole;
-  Timer? _timer;
+/// O passeio em si. É StatefulWidget só por causa do WidgetsBindingObserver (a
+/// tela muda de tamanho). O passo, o recorte e o Timer de remedição estão no
+/// [TourCubit], acima dele.
+class _TourView extends StatefulWidget {
+  const _TourView();
 
-  TourStep get _step => widget.steps[_index];
-  bool get _last => _lastAvailableAfter(_index);
+  @override
+  State<_TourView> createState() => _TourViewState();
+}
+
+class _TourViewState extends State<_TourView> with WidgetsBindingObserver {
+  TourCubit get _tour => context.read<TourCubit>();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(widget.remeasureEvery, (_) => _measure());
+    _tour.comecarRemedicao(_measure);
     _enter();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -119,7 +230,7 @@ class _TourOverlayState extends State<TourOverlay> with WidgetsBindingObserver {
   /// Chegou a um passo: traz o alvo para a vista (rola a lista, se for o
   /// caso) e mede onde ele ficou.
   void _enter() {
-    for (final key in _step.targets) {
+    for (final key in _tour.step.targets) {
       final target = key.currentContext;
       if (target != null && target.mounted) {
         unawaited(
@@ -144,118 +255,77 @@ class _TourOverlayState extends State<TourOverlay> with WidgetsBindingObserver {
     final overlay = context.findRenderObject();
     if (overlay is! RenderBox || !overlay.attached || !overlay.hasSize) return;
     Rect? hole;
-    for (final key in _step.targets) {
+    for (final key in _tour.step.targets) {
       final box = key.currentContext?.findRenderObject();
       if (box is! RenderBox || !box.attached || !box.hasSize) continue;
       final rect = box.localToGlobal(Offset.zero, ancestor: overlay) & box.size;
       hole = hole == null ? rect : hole.expandToInclude(rect);
     }
-    if (_sameRect(hole, _hole)) return;
-    setState(() => _hole = hole);
-  }
-
-  static bool _sameRect(Rect? a, Rect? b) {
-    if (a == null || b == null) return a == b;
-    return (a.left - b.left).abs() < 0.5 &&
-        (a.top - b.top).abs() < 0.5 &&
-        (a.right - b.right).abs() < 0.5 &&
-        (a.bottom - b.bottom).abs() < 0.5;
-  }
-
-  bool _lastAvailableAfter(int index) {
-    for (var i = index + 1; i < widget.steps.length; i++) {
-      if (widget.steps[i].available) return false;
-    }
-    return true;
-  }
-
-  /// O próximo passo na direção [delta] que ainda tem alvo na tela, ou `-1`.
-  int _neighbour(int delta) => _neighbourFrom(_index, delta);
-
-  int _neighbourFrom(int from, int delta) {
-    for (var i = from + delta; i >= 0 && i < widget.steps.length; i += delta) {
-      if (widget.steps[i].available) return i;
-    }
-    return -1;
+    _tour.medir(hole);
   }
 
   void _go(int delta) {
-    final next = _neighbour(delta);
-    if (next < 0) {
-      if (delta > 0) _close(TourEnd.finished);
+    if (_tour.ir(delta)) {
+      _enter();
       return;
     }
-    setState(() {
-      _index = next;
-      _hole = null;
-    });
-    _enter();
+    if (delta > 0) _close(TourEnd.finished);
   }
 
   void _close(TourEnd end) =>
       Navigator.of(context, rootNavigator: true).pop(end);
 
-  /// Quantos passos o aluno vai ver, para o "3 de 9" (os pulados não contam).
-  ({int position, int total}) get _progress {
-    var total = 0;
-    var position = 0;
-    for (var i = 0; i < widget.steps.length; i++) {
-      if (!widget.steps[i].available) continue;
-      total++;
-      if (i <= _index) position = total;
-    }
-    return (position: position, total: total);
-  }
-
   @override
-  Widget build(BuildContext context) {
-    final step = _step;
-    final progress = _progress;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () =>
-            _close(TourEnd.skipped),
-        const SingleActivator(LogicalKeyboardKey.arrowRight): () => _go(1),
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): () => _go(-1),
-      },
-      child: Focus(
-        autofocus: true,
-        child: Material(
-          type: MaterialType.transparency,
-          child: Stack(
-            children: [
-              // A película come os toques: o aluno só mexe no cartão.
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {},
-                  child: CustomPaint(
-                    key: kTourScrimKey,
-                    painter: TourScrimPainter(hole: _hole),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: CustomSingleChildLayout(
-                  delegate: TourCardLayout(
-                    hole: _hole,
-                    insets: MediaQuery.paddingOf(context),
-                  ),
-                  child: _TourCard(
-                    key: ValueKey(_index),
-                    step: step,
-                    position: progress.position,
-                    total: progress.total,
-                    first: _neighbour(-1) < 0,
-                    last: _last,
-                    onNext: () => _go(1),
-                    onBack: () => _go(-1),
-                    onSkip: () => _close(TourEnd.skipped),
-                  ),
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context) =>
+      BlocBuilder<TourCubit, TourState>(builder: _scene);
+
+  Widget _scene(BuildContext context, TourState state) => CallbackShortcuts(
+    bindings: {
+      const SingleActivator(LogicalKeyboardKey.escape): () =>
+          _close(TourEnd.skipped),
+      const SingleActivator(LogicalKeyboardKey.arrowRight): () => _go(1),
+      const SingleActivator(LogicalKeyboardKey.arrowLeft): () => _go(-1),
+    },
+    child: Focus(
+      autofocus: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(children: [_pelicula(state), _cartao(context, state)]),
+      ),
+    ),
+  );
+
+  /// A película come os toques: o aluno só mexe no cartão.
+  Widget _pelicula(TourState state) => Positioned.fill(
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {},
+      child: CustomPaint(
+        key: kTourScrimKey,
+        painter: TourScrimPainter(hole: state.hole),
+      ),
+    ),
+  );
+
+  Widget _cartao(BuildContext context, TourState state) {
+    final tour = context.read<TourCubit>();
+    final progress = tour.progress;
+    return Positioned.fill(
+      child: CustomSingleChildLayout(
+        delegate: TourCardLayout(
+          hole: state.hole,
+          insets: MediaQuery.paddingOf(context),
+        ),
+        child: _TourCard(
+          key: ValueKey(state.index),
+          step: tour.step,
+          position: progress.position,
+          total: progress.total,
+          first: tour.first,
+          last: tour.last,
+          onNext: () => _go(1),
+          onBack: () => _go(-1),
+          onSkip: () => _close(TourEnd.skipped),
         ),
       ),
     );

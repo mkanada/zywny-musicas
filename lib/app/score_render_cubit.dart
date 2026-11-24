@@ -58,6 +58,7 @@ class ScoreRenderState extends Equatable {
     this.transposeChoice,
     this.layoutOverrides = const {},
     this.pageFitsBox = true,
+    this.serial = 0,
   });
 
   /// A gravura na tela; `null` até a primeira.
@@ -94,6 +95,10 @@ class ScoreRenderState extends Equatable {
   /// Se a página sai da caixa da partitura ou de `pageWidth`/`pageHeight`.
   final bool pageFitsBox;
 
+  /// Sobe a cada [ScoreRenderCubit.boxSeen]: o aviso da primeira caixa é
+  /// uma renotificação do mesmo valor, e o Cubit só avisa se algo muda.
+  final int serial;
+
   ScoreRenderState copyWith({
     VsbDocument? document,
     PerformanceTrack? track,
@@ -106,6 +111,7 @@ class ScoreRenderState extends Equatable {
     String? transposeChoice,
     Map<String, Object>? layoutOverrides,
     bool? pageFitsBox,
+    int? serial,
   }) => ScoreRenderState(
     document: document ?? this.document,
     track: track ?? this.track,
@@ -120,6 +126,7 @@ class ScoreRenderState extends Equatable {
     transposeChoice: transposeChoice ?? this.transposeChoice,
     layoutOverrides: layoutOverrides ?? this.layoutOverrides,
     pageFitsBox: pageFitsBox ?? this.pageFitsBox,
+    serial: serial ?? this.serial,
   );
 
   @override
@@ -135,6 +142,7 @@ class ScoreRenderState extends Equatable {
     transposeChoice,
     layoutOverrides,
     pageFitsBox,
+    serial,
   ];
 }
 
@@ -378,6 +386,10 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
   }
 
   void setPageFitsBox(bool value) => emit(state.copyWith(pageFitsBox: value));
+
+  /// A primeira caixa foi medida e o painel do layout precisa mostrar o
+  /// tamanho da página: avisa os ouvintes mesmo sem mudança de campo.
+  void boxSeen() => emit(state.copyWith(serial: state.serial + 1));
 
   /// Guarda o layout e a página para todos os hinos. Quem chama grava a
   /// partitura de novo ([render]) logo depois.

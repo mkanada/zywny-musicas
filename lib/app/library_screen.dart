@@ -31,6 +31,7 @@ import 'package:zywny_comum/ui/orientation.dart';
 import 'package:zywny/app/package_install.dart';
 import 'package:zywny/app/edit_piece_dialog.dart';
 import 'package:zywny/app/imported_scores.dart';
+import 'package:zywny/app/library_screen_cubit.dart';
 import 'package:zywny/app/musicxml_import.dart';
 import 'package:zywny/app/piece_metadata.dart';
 import 'package:zywny/app/web_drop.dart';
@@ -43,8 +44,7 @@ import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny_library/library_keys.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
-import 'package:zywny_library/library_package.dart'
-    show LibraryPackage, LibraryTerm;
+import 'package:zywny_library/library_package.dart' show LibraryTerm;
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/library_sort.dart';
 
@@ -218,7 +218,6 @@ typedef _OpenRequest = ({
 
 class _LibraryScreenState extends State<LibraryScreen> {
   late final LibraryCubit _libraries = widget.libraryStore ?? LibraryCubit();
-  late Future<PieceCatalog> _catalog = _loadCatalog();
   late final PieceProgressCubit _progress =
       widget.progress ?? PieceProgressCubit();
   final MidiDeviceManager _midi = MidiDeviceManager(
@@ -238,41 +237,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
   late final TrailProgressCubit _trail =
       widget.trailProgress ?? TrailProgressCubit();
 
-  /// Os botões que o tutorial aponta, e se ele já foi decidido nesta
-  /// abertura (começa sozinho no máximo uma vez por abertura do app).
+  /// Os botões que o tutorial aponta (as chaves dos widgets).
   final LibraryTourKeys _tourKeys = LibraryTourKeys();
-  bool _tourChecked = false;
 
-  /// A espera da abertura (`tourDelay`) já passou: o passeio que recomeça
-  /// depois de uma instalação não espera de novo.
-  bool _splashWaited = false;
+  /// O estado da tela e os fluxos (abrir, importar, a fila dos `.zywny`, o
+  /// passeio): ver [LibraryScreenCubit]. O catálogo é carregado por ele, a
+  /// partir da biblioteca em uso; nos testes, do `loadCatalog`.
+  late final LibraryScreenCubit _screen = LibraryScreenCubit(
+    libraries: _libraries,
+    loadCatalog: widget.loadCatalog,
+    aceitaEmbutida: widget.libraryStore == null,
+  );
 
-  /// Os `.zywny` recebidos do sistema, à espera da vez de instalar (um por
-  /// vez: os diálogos de cada instalação não se misturam).
-  final List<IncomingPackage> _incomingQueue = [];
-  bool _drainingIncoming = false;
-  bool _incomingReady = false;
-
-  SortState _sort = const SortState();
-  String _query = '';
+  // Objetos do framework: é por eles que esta classe continua StatefulWidget.
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _listScroll = ScrollController();
   final GlobalKey _listKey = GlobalKey(debugLabel: 'library-list');
-
-  /// O histórico já foi lido: antes disso não se sabe se é o primeiro uso, e
-  /// o cartão de começo não pode piscar para quem já estudou (U16).
-  bool _progressLoaded = false;
-  bool _opening = false;
-  bool _importing = false;
-
-  /// Há pastilhas de ordenação fora da tela, à direita (o esmaecido na borda
-  /// avisa; some ao rolar até o fim — U14).
-  bool _moreChips = true;
 
   @override
   void initState() {
     super.initState();
     _followDevice();
+    _screen.carregarCatalogo();
     unawaited(_loadProgress());
     unawaited(_settingsLoaded);
     widget.incoming?.attach(_onIncoming);
@@ -283,6 +269,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     widget.incoming?.detach(_onIncoming);
     _listScroll.dispose();
     _searchController.dispose();
+    unawaited(_screen.close());
     _midi.dispose();
     if (widget.progress == null) unawaited(_progress.close());
     if (widget.libraryStore == null) unawaited(_libraries.close());
@@ -300,52 +287,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     unawaited(SystemChrome.setPreferredOrientations(kFollowDeviceOrientations));
     // A biblioteca mostra a barra de status (a partitura a esconde, U10).
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
-  }
-
-  /// O catálogo da biblioteca em uso. Sem nenhuma instalada: instala e abre a
-  /// biblioteca embutida de clássicos (`assets/classicos.zywny`) quando o app
-  /// roda de verdade; nos testes (ou se o pacote não estiver disponível), cai
-  /// em [PieceCatalog.none]. Erro ao abrir o pacote sai como exceção.
-  Future<PieceCatalog> _loadCatalog() async {
-    final custom = widget.loadCatalog;
-    if (custom != null) return custom();
-    await _libraries.load();
-    final id = _libraries.state.activeId;
-    if (id != null) {
-      final package = await _libraries.open(id);
-      if (package != null) {
-        _shownLibrary = _librarySignature();
-        return PieceCatalog.fromPackage(package);
-      }
-    }
-    if (widget.libraryStore == null) {
-      final seeded = await _seedBundledLibrary();
-      if (seeded != null) {
-        _shownLibrary = _librarySignature();
-        return PieceCatalog.fromPackage(seeded);
-      }
-    }
-    _shownLibrary = _librarySignature();
-    return const PieceCatalog.none();
-  }
-
-  Future<LibraryPackage?> _seedBundledLibrary() async {
-    final key = _libraries.publicKey;
-    if (key == null) return null;
-    try {
-      final data = await rootBundle.load('assets/classicos.zywny');
-      final bytes = Uint8List.sublistView(data);
-      final package = await _libraries.inspect(bytes);
-      try {
-        await _libraries.install(bytes, inspected: package);
-      } on Object {
-        // Se não puder persistir no disco agora, ainda mostra o catálogo aberto.
-      }
-      return package;
-    } on Object {
-      // Sem o asset ou sem chave compatível: abre vazio em vez de quebrar.
-      return null;
-    }
   }
 
   /// Gerencia as bibliotecas (a lista, com remover): a seleção da em uso só
@@ -372,7 +313,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     // A troca (ou remoção) feita no diálogo reflete ao fechar; a instalação
     // já recarregou por conta própria.
-    if (mounted && _shownLibrary != _librarySignature()) _reloadCatalog();
+    if (mounted && _screen.bibliotecaMudou()) _reloadCatalog();
   }
 
   /// Os arquivos soltos na página (só Web): entram na mesma fila dos que o
@@ -380,11 +321,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
   void _onWebFiles(List<({String name, Uint8List bytes})> files) {
     for (final file in files) {
       final bytes = file.bytes;
-      _incomingQueue.add(
+      _screen.enfileirarPacote(
         IncomingPackage(name: file.name, read: () async => bytes),
       );
     }
-    if (!_drainingIncoming) unawaited(_drainIncoming());
+    if (!_screen.drenando) unawaited(_drainIncoming());
   }
 
   /// Corrige os dados de [piece] (nome, compositor, letrista, título
@@ -450,8 +391,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _importMusicXml() async {
-    if (_importing) return;
-    _importing = true;
+    if (!_screen.iniciarImportacao()) return;
     try {
       final picked = await widget.pickMusicXml();
       if (picked == null || !mounted) return;
@@ -490,44 +430,46 @@ class _LibraryScreenState extends State<LibraryScreen> {
       if (!mounted) return;
       await _open(score.toPiece(_metadata.get(kImportedLibraryId, score.id)));
     } finally {
-      _importing = false;
+      _screen.terminarImportacao();
     }
   }
 
   void _onIncoming(IncomingPackage package) {
-    _incomingQueue.add(package);
-    if (!_drainingIncoming) unawaited(_drainIncoming());
+    _screen.enfileirarPacote(package);
+    if (!_screen.drenando) unawaited(_drainIncoming());
   }
 
   /// B11: instala, um a um, os `.zywny` que o sistema entregou. Se deu certo,
   /// volta à biblioteca (fecha a partitura ou as configurações que estiverem
   /// por cima): é lá que o resultado aparece.
   Future<void> _drainIncoming() async {
-    _drainingIncoming = true;
+    _screen.iniciarDrenagem();
     try {
       // O store precisa ter lido o que já está instalado, senão um pacote
       // que já existe seria gravado sem perguntar se substitui.
       await WidgetsBinding.instance.endOfFrame;
-      await _catalog.then<void>((_) {}, onError: (Object _) {});
-      if (!_incomingReady) {
-        _incomingReady = true;
-        if (widget.incomingDelay > Duration.zero) {
-          await Future<void>.delayed(widget.incomingDelay);
-        }
+      await _screen.aguardarCatalogo().then<void>(
+        (_) {},
+        onError: (Object _) {},
+      );
+      // Só na primeira vez: a fila começa depois da espera da abertura.
+      if (_screen.marcarPacotePronto() &&
+          widget.incomingDelay > Duration.zero) {
+        await Future<void>.delayed(widget.incomingDelay);
       }
-      while (_incomingQueue.isNotEmpty) {
+      while (!_screen.filaVazia) {
         if (!mounted) return;
         final installed = await installIncomingPackage(
           context,
           _libraries,
-          _incomingQueue.removeAt(0),
+          _screen.proximoPacote(),
         );
         if (installed == null || !mounted) continue;
         _reloadCatalog();
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } finally {
-      _drainingIncoming = false;
+      _screen.terminarDrenagem();
     }
     if (mounted) unawaited(_maybeStartTour());
   }
@@ -563,7 +505,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// a música foi aberta noutro tom) — só as que ainda não foram lidas.
   Future<void> _syncTrails() async {
     try {
-      final catalog = await _catalog;
+      final catalog = await _screen.aguardarCatalogo();
       final pieces = _effectivePieces(catalog);
       await _trail.loadMissing([
         for (final p in pieces) progressIdFor(p.id, _toneInUse(p)),
@@ -579,12 +521,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
       // As importadas vivem fora das bibliotecas: entram na lista antes das
       // correções serem lidas.
       await _imported.load();
-      final catalog = await _catalog;
+      final catalog = await _screen.aguardarCatalogo();
       // Uma ordem que a biblioteca nova não tem (o número, nos clássicos)
       // cai na padrão dela.
-      if (!catalog.numbered && _sort.key == SortKey.number) {
-        _sort = const SortState(key: SortKey.title);
-      }
+      if (mounted && !catalog.numbered) _screen.tirarOrdemPorNumero();
       await _metadata.load(catalog.libraryId ?? '', [
         for (final p in catalog.pieces) p.id,
       ]);
@@ -604,47 +544,45 @@ class _LibraryScreenState extends State<LibraryScreen> {
     } on Object {
       // Catálogo com erro: a tela já mostra o erro.
     }
-    if (mounted) setState(() => _progressLoaded = true);
+    if (mounted) _screen.marcarProgressoCarregado();
     unawaited(_maybeStartTour());
   }
 
   /// Primeiro uso: com a lista e os cursos na tela, mostra o passeio, uma vez.
   Future<void> _maybeStartTour() async {
     final store = widget.tourStore;
-    if (store == null || _tourChecked) return;
-    if (_incomingBusy) return;
-    _tourChecked = true;
+    // Um arquivo recebido na fila ou sendo instalado: os diálogos dele não
+    // dividem a tela com o passeio.
+    if (store == null || _screen.passeioVerificado) return;
+    if (_screen.ocupadoComPacote) return;
+    _screen.marcarPasseioVerificado();
     try {
-      await _catalog;
+      await _screen.aguardarCatalogo();
     } on Object {
       return; // Sem catálogo não há o que mostrar: a tela já diz o erro.
     }
     if (await store.seen(TourId.library)) return;
-    if (!_splashWaited && widget.tourDelay > Duration.zero) {
+    if (!_screen.esperouSplash && widget.tourDelay > Duration.zero) {
       await Future<void>.delayed(widget.tourDelay);
     }
-    _splashWaited = true;
+    _screen.marcarEsperouSplash();
     if (!mounted) return;
     // O arquivo recebido pode ter chegado durante a espera (o Android copia o
     // conteúdo antes de avisar): o passeio cede a vez e recomeça quando a fila
     // esvazia, em [_drainIncoming].
-    if (_incomingBusy) {
-      _tourChecked = false;
+    if (_screen.ocupadoComPacote) {
+      _screen.desmarcarPasseioVerificado();
       return;
     }
     await _runTour();
   }
-
-  /// Um arquivo recebido está na fila ou sendo instalado: os diálogos dele não
-  /// dividem a tela com o passeio.
-  bool get _incomingBusy => _drainingIncoming || _incomingQueue.isNotEmpty;
 
   /// O passeio pela biblioteca, sob demanda ("Rever o tutorial") ou no
   /// primeiro uso. Marca como visto ao fim, de qualquer jeito que termine.
   Future<void> _runTour() async {
     final store = widget.tourStore;
     if (store == null || ModalRoute.of(context)?.isCurrent != true) return;
-    final catalog = await _catalog.then<PieceCatalog?>(
+    final catalog = await _screen.aguardarCatalogo().then<PieceCatalog?>(
       (c) => c,
       onError: (Object _) => null,
     );
@@ -667,11 +605,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// escolheu). Trocar de versão na partitura volta aqui já na outra. As
   /// importadas abrem do aparelho, fora das bibliotecas.
   Future<void> _open(Piece base) async {
-    if (_opening) return;
-    _opening = true;
+    if (!_screen.iniciarAbertura()) return;
     bool? reopenSimplified;
     try {
-      final catalog = await _catalog;
+      final catalog = await _screen.aguardarCatalogo();
       final simplified =
           base.hasSimplified &&
           await _pieceSettings.loadSimplified(base.libraryId, base.id);
@@ -707,7 +644,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         SnackBar(content: Text('Não deu para abrir "${base.title}": $e')),
       );
     } finally {
-      _opening = false;
+      _screen.terminarAbertura();
       if (mounted) {
         _followDevice();
         unawaited(_syncTrails());
@@ -795,8 +732,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// de um hino só é mexido com ele aberto.)
   Future<void> _openSettings() async {
     await _libraries.load();
-    _shownLibrary ??= _librarySignature();
-    final term = await _catalog.then(
+    _screen.garantirBibliotecaMostrada();
+    final term = await _screen.aguardarCatalogo().then(
       (c) => c.term,
       onError: (Object _) => LibraryTerm.hymn,
     );
@@ -822,7 +759,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
     // Ao fechar o painel, a lista acompanha a biblioteca que ficou em uso
     // (trocada, substituída, instalada ou removida).
-    if (mounted && _shownLibrary != _librarySignature()) {
+    if (mounted && _screen.bibliotecaMudou()) {
       _reloadCatalog();
     } else if (mounted) {
       // A chave "abrir já sem acidentes" pode ter mudado o tom em uso.
@@ -831,17 +768,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (mounted && replayTour) await _runTour();
   }
 
-  /// Qual biblioteca (e versão) a lista mostra: muda quando a em uso troca,
-  /// é substituída ou some.
-  String _librarySignature() =>
-      '${_libraries.state.activeId}/${_libraries.state.active?.version}';
-  String? _shownLibrary;
-
+  /// Pede o catálogo de novo (troca ou instalação de biblioteca) e relê o
+  /// progresso dele.
   void _reloadCatalog() {
-    setState(() {
-      _progressLoaded = false;
-      _catalog = _loadCatalog();
-    });
+    _screen.carregarCatalogo();
     unawaited(_loadProgress());
   }
 
@@ -857,7 +787,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
         value: SystemUiOverlayStyle.dark,
         // Na Web, soltar um `.zywny` na página instala (fora dela, o seletor
         // do botão "Instalar biblioteca" e o "Abrir com…" do sistema).
-        child: WebDropZone(onFiles: _onWebFiles, child: _body()),
+        child: WebDropZone(
+          onFiles: _onWebFiles,
+          // A tela se refaz quando muda a ordem, a busca, as pastilhas ou o
+          // catálogo pedido de novo.
+          child: BlocBuilder<LibraryScreenCubit, LibraryScreenState>(
+            bloc: _screen,
+            builder: (context, _) => _body(),
+          ),
+        ),
       ),
     );
   }
@@ -889,10 +827,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: FutureBuilder<PieceCatalog>(
-                future: _catalog,
-                builder: (context, snapshot) => _listas(snapshot, sideBySide),
-              ),
+              child: _listas(_screen.state.catalogo, sideBySide),
             ),
           ),
         ),
@@ -904,7 +839,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// bibliotecas, progresso, metadados, partituras importadas e trilha). Cada
   /// um é um `BlocBuilder` aninhado: o corpo não lê nenhum deles direto.
   Widget _listas(
-    AsyncSnapshot<PieceCatalog> snapshot,
+    CatalogoEstado catalogo,
     bool sideBySide,
   ) => BlocBuilder<SettingsCubit, SettingsState>(
     bloc: _settings,
@@ -923,8 +858,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             BlocBuilder<TrailProgressCubit, TrailProgressState>(
                               bloc: _trail,
                               builder: (context, _) => sideBySide
-                                  ? _contentSideBySide(snapshot)
-                                  : _content(snapshot),
+                                  ? _contentSideBySide(catalogo)
+                                  : _content(catalogo),
                             ),
                       ),
                 ),
@@ -932,9 +867,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     ),
   );
 
-  Widget _content(AsyncSnapshot<PieceCatalog> snapshot) {
-    final catalog = snapshot.data;
-    final catalogError = snapshot.hasError;
+  Widget _content(CatalogoEstado catalogo) {
+    final catalog = catalogo.pronto;
+    final catalogError = catalogo.falhou;
     // Sem biblioteca, só o cartão de instalar — a menos que já haja
     // importadas para mostrar.
     final noLibrary =
@@ -959,7 +894,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           case final piece?) ...[
                         _continueCard(piece, catalog.term),
                         const SizedBox(height: 14),
-                      ] else if (_progressLoaded) ...[
+                      ] else if (_screen.state.progressoCarregado) ...[
                         // Primeiro uso: o mesmo lugar do "Continuar" diz por onde começar.
                         _startCard(catalog.term),
                         const SizedBox(height: 14),
@@ -980,8 +915,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// rolam se a fonte for grande; à direita a busca, com engrenagem e teclado
   /// no canto, e a lista na altura inteira. A lista nunca divide a altura com
   /// o topo, então não há como zerá-la.
-  Widget _contentSideBySide(AsyncSnapshot<PieceCatalog> snapshot) {
-    final catalog = snapshot.data;
+  Widget _contentSideBySide(CatalogoEstado catalogo) {
+    final catalog = catalogo.pronto;
     final noLibrary =
         catalog != null && !catalog.hasLibrary && _imported.scores.isEmpty;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -997,7 +932,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             child: _shortcutsColumn(catalog, noLibrary, bottomInset),
           ),
           const SizedBox(width: 20),
-          Expanded(child: _listColumn(catalog, noLibrary, snapshot.hasError)),
+          Expanded(child: _listColumn(catalog, noLibrary, catalogo.falhou)),
         ],
       ),
     );
@@ -1027,7 +962,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           if (_continuing(_effectivePieces(catalog)) case final piece?) ...[
             _continueCard(piece, catalog.term),
             const SizedBox(height: 12),
-          ] else if (_progressLoaded) ...[
+          ] else if (_screen.state.progressoCarregado) ...[
             _startCard(catalog.term),
             const SizedBox(height: 12),
           ],
@@ -1219,7 +1154,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       height: 44,
       child: TextField(
         controller: _searchController,
-        onChanged: (v) => setState(() => _query = v),
+        onChanged: _screen.mudarBusca,
         textInputAction: TextInputAction.search,
         style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
@@ -1229,7 +1164,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               : 'Buscar título ou autor',
           hintStyle: const TextStyle(color: kInkCaption),
           prefixIcon: const Icon(Icons.search, color: kInkCaption, size: 20),
-          suffixIcon: _query.isEmpty
+          suffixIcon: _screen.state.busca.isEmpty
               ? null
               : IconButton(
                   tooltip: 'Limpar a busca',
@@ -1251,7 +1186,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   void _clearSearch() {
     _searchController.clear();
-    setState(() => _query = '');
+    _screen.limparBusca();
   }
 
   Widget _continueCard(Piece piece, LibraryTerm term) {
@@ -1368,10 +1303,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   void _updateMoreChips(ScrollMetrics metrics) {
     final more = metrics.extentAfter > 1;
-    if (more == _moreChips) return;
+    if (more == _screen.state.pastilhasAlem) return;
     // As notificações chegam durante o layout: o redesenho espera o quadro.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && more != _moreChips) setState(() => _moreChips = more);
+      if (mounted && more != _screen.state.pastilhasAlem) {
+        _screen.definirPastilhasAlem(more);
+      }
     });
   }
 
@@ -1450,10 +1387,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
       for (final k in SortKey.values)
         if (numbered || k != SortKey.number) k,
     ];
+    final ordem = _screen.state.ordem;
     _SortChip chipFor(SortKey key) => _SortChip(
-      label: '${labelFor(key)}${_sort.arrowFor(key)}',
-      selected: _sort.key == key,
-      onTap: () => setState(() => _sort = _sort.toggled(key)),
+      label: '${labelFor(key)}${ordem.arrowFor(key)}',
+      selected: ordem.key == key,
+      onTap: () => _screen.mudarOrdem(key),
     );
     return Column(
       key: _tourKeys.sort,
@@ -1487,48 +1425,51 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _sortScroller(
     List<SortKey> keys,
     _SortChip Function(SortKey) chipFor,
-  ) => SizedBox(
-    height: 36,
-    child: NotificationListener<ScrollMetricsNotification>(
-      onNotification: (n) {
-        _updateMoreChips(n.metrics);
-        return false;
-      },
-      child: NotificationListener<ScrollNotification>(
+  ) {
+    final mais = _screen.state.pastilhasAlem;
+    return SizedBox(
+      height: 36,
+      child: NotificationListener<ScrollMetricsNotification>(
         onNotification: (n) {
           _updateMoreChips(n.metrics);
           return false;
         },
-        child: ShaderMask(
-          blendMode: BlendMode.dstIn,
-          shaderCallback: (rect) => LinearGradient(
-            colors: [
-              Colors.black,
-              Colors.black,
-              _moreChips ? Colors.transparent : Colors.black,
-            ],
-            stops: const [0, 0.88, 1],
-          ).createShader(rect),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: keys.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, i) => chipFor(keys[i]),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (n) {
+            _updateMoreChips(n.metrics);
+            return false;
+          },
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (rect) => LinearGradient(
+              colors: [
+                Colors.black,
+                Colors.black,
+                mais ? Colors.transparent : Colors.black,
+              ],
+              stops: const [0, 0.88, 1],
+            ).createShader(rect),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: keys.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, i) => chipFor(keys[i]),
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _list(PieceCatalog catalog) {
     final pieces = filterPieces(
       sortedPieces(
         _effectivePieces(catalog),
-        _sort,
+        _screen.state.ordem,
         _progress.state,
         progressOf: _progressOf,
       ),
-      _query,
+      _screen.state.busca,
     );
     if (pieces.isEmpty) return _emptyList(catalog);
     final now = DateTime.now();
@@ -1549,7 +1490,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           trail: _trailOf(piece),
           tone: _toneInUse(piece),
           now: now,
-          match: pieceMatch(piece, _query),
+          match: pieceMatch(piece, _screen.state.busca),
           numbered: catalog.numbered,
           onTap: () => unawaited(_open(piece)),
           onEdit: () => unawaited(_editPiece(piece)),
@@ -1567,15 +1508,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          _query.trim().isEmpty
+          _screen.state.busca.trim().isEmpty
               ? '${catalog.term.nenhumCapitalized} '
                     '${catalog.term.singular} ${catalog.term.encontrado}'
               : '${catalog.term.nenhumCapitalized} '
-                    '${catalog.term.singular} com “${_query.trim()}”.',
+                    '${catalog.term.singular} com “${_screen.state.busca.trim()}”.',
           textAlign: TextAlign.center,
           style: const TextStyle(color: kInkCaption),
         ),
-        if (_query.isNotEmpty)
+        if (_screen.state.busca.isNotEmpty)
           TextButton(
             onPressed: _clearSearch,
             child: const Text('Limpar a busca'),

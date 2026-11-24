@@ -8,29 +8,40 @@ import 'dart:js_interop';
 import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
+import 'package:zywny_bloc/zywny_bloc.dart';
 
+import 'web_drop_cubit.dart';
 import 'web_drop_stub.dart' show OnWebFiles;
 
-/// Recebe os arquivos soltos na página; o destaque mostra onde soltar.
-class WebDropZone extends StatefulWidget {
-  const WebDropZone({
-    super.key,
-    required this.child,
-    required this.onFiles,
-  });
+/// Recebe os arquivos soltos na página; o destaque mostra onde soltar. O
+/// contador do destaque é o [WebDropCubit], que fica acima dos ouvintes.
+class WebDropZone extends StatelessWidget {
+  const WebDropZone({super.key, required this.child, required this.onFiles});
 
   final Widget child;
   final OnWebFiles onFiles;
 
   @override
-  State<WebDropZone> createState() => _WebDropZoneState();
+  Widget build(BuildContext context) => BlocProvider(
+    create: (_) => WebDropCubit(),
+    child: _WebDropListeners(onFiles: onFiles, child: child),
+  );
 }
 
-class _WebDropZoneState extends State<WebDropZone> {
-  /// `dragenter`/`dragleave` disparam nos filhos também: só sem ninguém por
-  /// cima o destaque apaga.
-  int _depth = 0;
+/// Os ouvintes de `dragenter`, `dragover`, `dragleave` e `drop` no documento.
+/// É StatefulWidget só por eles: o registro no DOM se desfaz no dispose (como
+/// o WidgetsBindingObserver). Não guarda estado: o destaque é do WebDropCubit.
+class _WebDropListeners extends StatefulWidget {
+  const _WebDropListeners({required this.child, required this.onFiles});
 
+  final Widget child;
+  final OnWebFiles onFiles;
+
+  @override
+  State<_WebDropListeners> createState() => _WebDropListenersState();
+}
+
+class _WebDropListenersState extends State<_WebDropListeners> {
   static bool _hasFiles(web.DragEvent event) =>
       event.dataTransfer?.types.toDart.any((type) => type.toDart == 'Files') ??
       false;
@@ -38,7 +49,7 @@ class _WebDropZoneState extends State<WebDropZone> {
   late final JSFunction _onDragEnter = ((web.Event event) {
     if (_hasFiles(event as web.DragEvent)) {
       event.preventDefault();
-      setState(() => _depth++);
+      context.read<WebDropCubit>().entrou();
     }
   }).toJS;
 
@@ -48,13 +59,15 @@ class _WebDropZoneState extends State<WebDropZone> {
     if (transfer != null) transfer.dropEffect = 'copy';
   }).toJS;
 
+  // `dragenter`/`dragleave` disparam nos filhos também: só sem ninguém por
+  // cima o destaque apaga (o WebDropCubit conta).
   late final JSFunction _onDragLeave = ((web.Event event) {
-    if (mounted) setState(() => _depth = (_depth - 1).clamp(0, 1 << 30));
+    if (mounted) context.read<WebDropCubit>().saiu();
   }).toJS;
 
   late final JSFunction _onDrop = ((web.Event event) {
     event.preventDefault();
-    if (mounted) setState(() => _depth = 0);
+    if (mounted) context.read<WebDropCubit>().soltou();
     final files = (event as web.DragEvent).dataTransfer?.files;
     if (files == null || files.length == 0) return;
     unawaited(_readAll(files));
@@ -99,29 +112,32 @@ class _WebDropZoneState extends State<WebDropZone> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
-        if (_depth > 0)
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Color(0x99000000),
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Colors.white, width: 3),
+    return BlocSelector<WebDropCubit, WebDropState, bool>(
+      selector: (state) => state.arrastando,
+      builder: (context, arrastando) => Stack(
+        children: [
+          widget.child,
+          if (arrastando)
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Color(0x99000000),
+                    border: Border.fromBorderSide(
+                      BorderSide(color: Colors.white, width: 3),
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Text(
-                    'Solte para instalar a biblioteca',
-                    style: TextStyle(color: Colors.white, fontSize: 17),
+                  child: Center(
+                    child: Text(
+                      'Solte para instalar a biblioteca',
+                      style: TextStyle(color: Colors.white, fontSize: 17),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
