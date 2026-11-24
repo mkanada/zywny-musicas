@@ -4,7 +4,7 @@
 // Usado na lista da biblioteca (qualquer música) e na confirmação da
 // importação de MusicXML (pré-preenchido com o que veio do arquivo). O diálogo
 // é puro: mostra os valores de partida, valida e devolve só o que mudou em
-// relação a [base]; quem chamou guarda no [PieceMetadataStore] (e apaga a
+// relação a [base]; quem chamou guarda no [PieceMetadataCubit] (e apaga a
 // importada, quando for o caso).
 
 import 'package:flutter/material.dart';

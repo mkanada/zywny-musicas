@@ -69,8 +69,8 @@ void main() {
               PieceCatalog(pieces ?? [_piece(1, 'Hino Um')]),
           loadScore: (piece) async => Uint8List(0),
           progress: PieceProgressCubit(),
-          metadata: PieceMetadataStore(),
-          imported: ImportedScoresStore(blobs: MemoryLibraryBlobStore()),
+          metadata: PieceMetadataCubit(),
+          imported: ImportedScoresCubit(blobs: MemoryLibraryBlobStore()),
           pickMusicXml: pickMusicXml ?? (() async => null),
           scoreBuilder: (context, o) =>
               const Scaffold(body: Text('partitura')),
@@ -116,13 +116,13 @@ void main() {
     await tester.enterText(dialogFields().first, 'Hino Novo');
     await saveDialog(tester);
 
-    final store = PieceMetadataStore();
+    final store = PieceMetadataCubit();
     await store.load('hinos', ['001']);
     expect(store.get('hinos', '001')?.title, 'Hino Novo');
   });
 
   testWidgets('restaurar volta aos dados do pacote', (tester) async {
-    final setup = PieceMetadataStore();
+    final setup = PieceMetadataCubit();
     await setup.save('hinos', '001', const PieceMetadata(title: 'Mudado'));
     await pumpLibrary(tester);
     expect(find.text('Mudado'), findsOneWidget);

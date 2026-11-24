@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_library/piece.dart';
 
@@ -70,9 +71,7 @@ class PieceMetadata {
     if (isEmpty) return piece;
     final rawTitle = this.title?.trim();
     final rawComposer = this.composer?.trim();
-    final title = rawTitle == null || rawTitle.isEmpty
-        ? piece.title
-        : rawTitle;
+    final title = rawTitle == null || rawTitle.isEmpty ? piece.title : rawTitle;
     final composer = rawComposer == null || rawComposer.isEmpty
         ? piece.composer
         : rawComposer;
@@ -124,64 +123,92 @@ class PieceMetadata {
   }
 }
 
+/// As correções de todas as bibliotecas (a em uso mais a das importadas), por
+/// chave ([pieceMetaKeyFor]). Imutável: o mapa é outro a cada mudança.
+class PieceMetadataState extends Equatable {
+  const PieceMetadataState({this.byKey = const {}});
+
+  /// Chave (`piece_meta_<biblioteca>_<id>`) → a correção.
+  final Map<String, PieceMetadata> byKey;
+
+  @override
+  List<Object?> get props => [byKey];
+}
+
 /// As correções de várias bibliotecas ao mesmo tempo (a em uso mais a das
 /// importadas): cada biblioteca tem a sua chave, então [load] só atualiza as
-/// músicas pedidas, sem apagar as outras. Avisa quem escuta a cada mudança —
-/// a lista refaz os títulos na hora.
-class PieceMetadataStore extends ChangeNotifier {
-  PieceMetadataStore({SharedPreferencesAsync? prefs})
-    : _prefs = prefs ?? SharedPreferencesAsync();
+/// músicas pedidas, sem apagar as outras. Avisa quem escuta (`stream`) a cada
+/// mudança — a lista refaz os títulos na hora.
+///
+/// BL12: `PieceMetadataStore` (um `ChangeNotifier`) virou este Cubit. Quem
+/// muda emite antes de gravar: a correção já vale na tela, e o `Future` de
+/// [save] e [clear] só fica pronto depois da gravação.
+class PieceMetadataCubit extends Cubit<PieceMetadataState> {
+  PieceMetadataCubit({SharedPreferencesAsync? prefs})
+    : _prefs = prefs ?? SharedPreferencesAsync(),
+      super(const PieceMetadataState());
 
   final SharedPreferencesAsync _prefs;
-  final Map<String, PieceMetadata> _byKey = {};
 
   /// A correção de [pieceId] em [libraryId], ou `null` sem nenhuma.
   PieceMetadata? get(String libraryId, String pieceId) =>
-      _byKey[pieceMetaKeyFor(libraryId, pieceId)];
+      state.byKey[pieceMetaKeyFor(libraryId, pieceId)];
 
   /// Lê as correções de [pieceIds] em [libraryId] (as que já estavam na
   /// memória para outras bibliotecas ficam).
   Future<void> load(String libraryId, Iterable<String> pieceIds) async {
-    var changed = false;
+    final lidas = <String, PieceMetadata?>{};
     for (final id in pieceIds) {
       final key = pieceMetaKeyFor(libraryId, id);
       PieceMetadata? meta;
       try {
         final text = await _prefs.getString(key);
         if (text != null) {
-          meta = PieceMetadata.fromJson(jsonDecode(text) as Map<String, dynamic>);
+          meta = PieceMetadata.fromJson(
+            jsonDecode(text) as Map<String, dynamic>,
+          );
         }
       } on Object {
         meta = null;
       }
-      if (meta == null || meta.isEmpty) {
-        changed = _byKey.remove(key) != null || changed;
-      } else if (_byKey[key] != meta) {
-        _byKey[key] = meta;
-        changed = true;
-      }
+      lidas[key] = meta == null || meta.isEmpty ? null : meta;
     }
-    if (changed) notifyListeners();
+    if (isClosed) return;
+    final novo = {...state.byKey};
+    lidas.forEach((key, meta) {
+      if (meta == null) {
+        novo.remove(key);
+      } else {
+        novo[key] = meta;
+      }
+    });
+    _emitir(novo);
   }
 
-  /// Guarda a correção (vazia é o mesmo que [clear]). Devolve o que ficou.
-  Future<void> save(String libraryId, String pieceId, PieceMetadata meta) async {
-    final key = pieceMetaKeyFor(libraryId, pieceId);
+  /// Guarda a correção (vazia é o mesmo que [clear]). Emite antes de gravar.
+  Future<void> save(String libraryId, String pieceId, PieceMetadata meta) {
     if (meta.isEmpty) return clear(libraryId, pieceId);
-    await _prefs.setString(key, jsonEncode(meta.toJson()));
-    _byKey[key] = meta;
-    notifyListeners();
+    final key = pieceMetaKeyFor(libraryId, pieceId);
+    _emitir({...state.byKey, key: meta});
+    return _prefs.setString(key, jsonEncode(meta.toJson()));
   }
 
-  /// Volta a música aos dados do pacote.
-  Future<void> clear(String libraryId, String pieceId) async {
+  /// Volta a música aos dados do pacote. Emite antes de gravar.
+  Future<void> clear(String libraryId, String pieceId) {
     final key = pieceMetaKeyFor(libraryId, pieceId);
-    await _prefs.remove(key);
-    if (_byKey.remove(key) != null) notifyListeners();
+    if (state.byKey.containsKey(key)) {
+      _emitir({...state.byKey}..remove(key));
+    }
+    return _prefs.remove(key);
   }
 
   /// As [pieces] de [libraryId] com as correções aplicadas.
   List<Piece> applyAll(String libraryId, Iterable<Piece> pieces) => [
     for (final p in pieces) get(libraryId, p.id)?.applyTo(p) ?? p,
   ];
+
+  void _emitir(Map<String, PieceMetadata> byKey) {
+    if (isClosed) return;
+    emit(PieceMetadataState(byKey: Map.unmodifiable(byKey)));
+  }
 }

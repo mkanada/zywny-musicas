@@ -2,7 +2,7 @@
 // arquivo, validar que é uma partitura e extrair os dados (título,
 // compositor) para a confirmação antes de abrir.
 //
-// Só lê — nada de disco, disco ou rede: quem guarda é o [ImportedScoresStore]
+// Só lê — nada de disco, disco ou rede: quem guarda é o [ImportedScoresCubit]
 // e quem abre é a biblioteca. O `.mxl` é descompactado aqui, então o resto do
 // app só lida com XML puro (o Verovio recebe sempre `.musicxml`).
 

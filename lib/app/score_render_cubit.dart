@@ -1,8 +1,15 @@
 // R09: a gravura da partitura aberta — pedir o render, a fila de renders,
 // a transposição com que foi gravada, o tamanho da caixa e o layout do
-// hino. Saiu de `_ScoreHomePageState` (achado 5 da revisão); a tela ouve a
-// sessão e, a cada documento novo ([ScoreRenderSession.onDocument]), monta
-// o que toca.
+// hino. Saiu de `_ScoreHomePageState` (achado 5 da revisão); a tela ouve o
+// Cubit e, a cada documento novo ([ScoreRenderCubit.onDocument]), monta o
+// que toca.
+//
+// BL13: é um Cubit. A gravura, a página, o tom, o layout e o andamento do
+// render estão no estado; a caixa (`_box`) e a fila de renders ficam fora
+// dele de propósito: [setBox] é chamado do `build` e não avisa a tela.
+
+// Os parâmetros são públicos e os campos, privados (como no R09).
+// ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -10,6 +17,7 @@ import 'dart:ui' show Size;
 
 import 'package:flutter/foundation.dart';
 import 'package:score_bridge/score_bridge.dart' show VsbDocument;
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_library/piece.dart';
 
@@ -24,7 +32,7 @@ import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 
-/// Uma gravura nova chegou: [document] e a [track] tocável dela. A sessão
+/// Uma gravura nova chegou: [document] e a [track] tocável dela. O Cubit
 /// já trocou o seu estado (documento, transposição, página) quando chama.
 typedef ScoreDocumentCallback = void Function(
   VsbDocument document,
@@ -32,8 +40,103 @@ typedef ScoreDocumentCallback = void Function(
 );
 
 /// Quanto o celular espera a caixa deitada antes de gravar a partitura na
-/// caixa em pé (ver `ScoreRenderSession.setBox`).
+/// caixa em pé (ver `ScoreRenderCubit.setBox`).
 const kRotationGrace = Duration(milliseconds: 1200);
+
+/// O que a gravura mostra e o que a pessoa mudou nela (o tamanho da página, o
+/// layout deste hino e o tom, fase Q).
+class ScoreRenderState extends Equatable {
+  const ScoreRenderState({
+    this.document,
+    this.track,
+    this.pageIndex = 0,
+    this.status = 'nenhuma partitura',
+    this.error,
+    this.busy = false,
+    this.renderedTransposition,
+    this.originalRange,
+    this.transposeChoice,
+    this.layoutOverrides = const {},
+    this.pageFitsBox = true,
+  });
+
+  /// A gravura na tela; `null` até a primeira.
+  final VsbDocument? document;
+
+  /// As notas tocáveis de [document].
+  final PerformanceTrack? track;
+
+  final int pageIndex;
+  final String status;
+
+  /// A última gravação falhou — o celular não tem linha de status, então o
+  /// motivo aparece no lugar da partitura.
+  final String? error;
+
+  /// Um render em curso.
+  final bool busy;
+
+  /// A transposição com que [document] foi gravado (`null` = no tom
+  /// original).
+  final Transposition? renderedTransposition;
+
+  /// A faixa da música **original** lida do `midi.json` da última gravura.
+  final ({int lowest, int highest})? originalRange;
+
+  /// A escolha de transposição deste hino: `null` = a pessoa não escolheu,
+  /// [kTransposeNone] = "Não", ou um intervalo.
+  final String? transposeChoice;
+
+  /// Só o que a pessoa mudou: é isto que [ScoreRenderCubit.saveLayout] guarda
+  /// para todos os hinos. O resto é o padrão do aparelho.
+  final Map<String, Object> layoutOverrides;
+
+  /// Se a página sai da caixa da partitura ou de `pageWidth`/`pageHeight`.
+  final bool pageFitsBox;
+
+  ScoreRenderState copyWith({
+    VsbDocument? document,
+    PerformanceTrack? track,
+    int? pageIndex,
+    String? status,
+    String? Function()? error,
+    bool? busy,
+    Transposition? Function()? renderedTransposition,
+    ({int lowest, int highest})? originalRange,
+    String? transposeChoice,
+    Map<String, Object>? layoutOverrides,
+    bool? pageFitsBox,
+  }) => ScoreRenderState(
+    document: document ?? this.document,
+    track: track ?? this.track,
+    pageIndex: pageIndex ?? this.pageIndex,
+    status: status ?? this.status,
+    error: error == null ? this.error : error(),
+    busy: busy ?? this.busy,
+    renderedTransposition: renderedTransposition == null
+        ? this.renderedTransposition
+        : renderedTransposition(),
+    originalRange: originalRange ?? this.originalRange,
+    transposeChoice: transposeChoice ?? this.transposeChoice,
+    layoutOverrides: layoutOverrides ?? this.layoutOverrides,
+    pageFitsBox: pageFitsBox ?? this.pageFitsBox,
+  );
+
+  @override
+  List<Object?> get props => [
+    document,
+    track,
+    pageIndex,
+    status,
+    error,
+    busy,
+    renderedTransposition,
+    originalRange,
+    transposeChoice,
+    layoutOverrides,
+    pageFitsBox,
+  ];
+}
 
 /// A gravura da partitura aberta e o que muda nela: o tamanho da caixa
 /// ([setBox]), o layout deste hino e o tom (fase Q).
@@ -41,8 +144,8 @@ const kRotationGrace = Duration(milliseconds: 1200);
 /// Um render por vez: o que for pedido durante um fica na fila e sai, um
 /// só, quando ele acaba, com as opções da hora. A página anterior continua
 /// na tela enquanto isso.
-class ScoreRenderSession extends ChangeNotifier {
-  ScoreRenderSession({
+class ScoreRenderCubit extends Cubit<ScoreRenderState> {
+  ScoreRenderCubit({
     required ScoreRenderer renderer,
     required Uint8List scoreXml,
     required Piece piece,
@@ -55,13 +158,17 @@ class ScoreRenderSession extends ChangeNotifier {
     this.onDocument,
     this.resizeDebounce = const Duration(milliseconds: 400),
     this.rotationGrace = kRotationGrace,
-  }) : _renderer = renderer, // ignore: prefer_initializing_formals
-       _scoreXml = scoreXml, // ignore: prefer_initializing_formals
-       _piece = piece, // ignore: prefer_initializing_formals
-       _settings = settings, // ignore: prefer_initializing_formals
-       _transposeChoice = stored.transpose,
-       _layoutOverrides = layoutOverridesFrom(settings.state.scoreLayout),
-       _pageFitsBox = settings.state.scorePageFitsBox {
+  }) : _renderer = renderer,
+       _scoreXml = scoreXml,
+       _piece = piece,
+       _settings = settings,
+       super(
+         ScoreRenderState(
+           transposeChoice: stored.transpose,
+           layoutOverrides: layoutOverridesFrom(settings.state.scoreLayout),
+           pageFitsBox: settings.state.scorePageFitsBox,
+         ),
+       ) {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
@@ -97,57 +204,46 @@ class ScoreRenderSession extends ChangeNotifier {
 
   bool _disposed = false;
 
-  VsbDocument? _document;
-  PerformanceTrack? _track;
-  int _pageIndex = 0;
-  String _status = 'nenhuma partitura';
-  String? _error;
-  bool _busy = false;
-  bool _renderQueued = false;
-  Transposition? _renderedTransposition;
-  ({int lowest, int highest})? _originalRange;
+  /// A caixa da partitura (pixels do aparelho). Fica fora do estado: a tela a
+  /// informa no `build`, e isso não pode avisar a tela de novo.
   Size? _box;
   Timer? _resizeTimer;
-  String? _transposeChoice;
 
-  /// Só o que a pessoa mudou: é isto que [saveLayout] guarda para todos os
-  /// hinos. O resto é o padrão do aparelho ([layoutDefaults]).
-  Map<String, Object> _layoutOverrides;
-  bool _pageFitsBox;
+  /// Um pedido chegou durante um render: sai quando ele acabar.
+  bool _renderQueued = false;
 
-  /// A gravura na tela; `null` até a primeira.
-  VsbDocument? get document => _document;
+  VsbDocument? get document => state.document;
 
   /// As notas tocáveis de [document].
-  PerformanceTrack? get track => _track;
+  PerformanceTrack? get track => state.track;
 
-  int get pageIndex => _pageIndex;
-  int get pageCount => _document?.pages.length ?? 0;
-  String get status => _status;
+  int get pageIndex => state.pageIndex;
+  int get pageCount => state.document?.pages.length ?? 0;
+  String get status => state.status;
 
   /// A última gravação falhou — o celular não tem linha de status, então
   /// o motivo aparece no lugar da partitura.
-  String? get error => _error;
+  String? get error => state.error;
 
   /// Um render em curso.
-  bool get busy => _busy;
+  bool get busy => state.busy;
 
   /// A transposição com que [document] foi gravado (`null` = no tom
   /// original).
-  Transposition? get renderedTransposition => _renderedTransposition;
+  Transposition? get renderedTransposition => state.renderedTransposition;
 
   /// A faixa da música **original** lida do `midi.json` da última gravura,
   /// em MIDI. Antes da primeira gravura é `null` e vale a do catálogo; com
   /// ela, a direção da transposição é conferida contra o teclado (Q03).
-  ({int lowest, int highest})? get originalRange => _originalRange;
+  ({int lowest, int highest})? get originalRange => state.originalRange;
 
   /// A escolha de transposição deste hino: `null` = a pessoa não escolheu
   /// (vale a chave geral), [kTransposeNone] = "Não", ou um intervalo.
-  String? get transposeChoice => _transposeChoice;
+  String? get transposeChoice => state.transposeChoice;
 
   /// Opções do Verovio, por nome (ver `layout_options.dart`): as que a pessoa
   /// mudou, para todos os hinos, sobre o padrão do aparelho.
-  Map<String, Object> get layout => {...layoutDefaults, ..._layoutOverrides};
+  Map<String, Object> get layout => {...layoutDefaults, ...state.layoutOverrides};
 
   /// O layout deste aparelho sem nenhuma mudança da pessoa.
   Map<String, Object> get layoutDefaults => initialLayoutValues(
@@ -157,11 +253,11 @@ class ScoreRenderSession extends ChangeNotifier {
   );
 
   /// Se a página sai da caixa da partitura ou de `pageWidth`/`pageHeight`.
-  bool get pageFitsBox => _pageFitsBox;
+  bool get pageFitsBox => state.pageFitsBox;
 
   /// A transposição com que este hino abre agora: a escolha dele, ou a
   /// chave geral. `null` = o tom original.
-  Transposition? get transposition => transpositionFor(_transposeChoice);
+  Transposition? get transposition => transpositionFor(state.transposeChoice);
 
   /// A transposição que [choice] daria a este hino.
   Transposition? transpositionFor(String? choice) {
@@ -169,7 +265,7 @@ class ScoreRenderSession extends ChangeNotifier {
       _piece,
       PieceSettings(transpose: choice),
       _settings,
-      range: _originalRange,
+      range: state.originalRange,
     );
   }
 
@@ -177,7 +273,7 @@ class ScoreRenderSession extends ChangeNotifier {
   Transposition? get noAccidentals {
     final fifths = _piece.fifths;
     if (fifths == null) return null;
-    final range = _originalRange;
+    final range = state.originalRange;
     return Transposition.toNoAccidentals(fifths, range: (lowest: range?.lowest ?? kCatalogLowestMidi, highest: range?.highest ?? kCatalogHighestMidi));
   }
 
@@ -202,10 +298,10 @@ class ScoreRenderSession extends ChangeNotifier {
   }
 
   int get _pageWidth =>
-      _pageFitsBox ? fittedPage!.width.round() : layout['pageWidth'] as int;
+      state.pageFitsBox ? fittedPage!.width.round() : layout['pageWidth'] as int;
 
   int get _pageHeight =>
-      _pageFitsBox ? fittedPage!.height.round() : layout['pageHeight'] as int;
+      state.pageFitsBox ? fittedPage!.height.round() : layout['pageHeight'] as int;
 
   /// Every option that reaches Verovio for the current state: the page size
   /// plus whatever differs from Verovio's defaults.
@@ -238,13 +334,13 @@ class ScoreRenderSession extends ChangeNotifier {
     // Com a partitura já gravada deitada, uma caixa em pé é o aparelho
     // voltando à biblioteca: nada a gravar, como sempre.
     if (kind == DeviceKind.phone && devicePx.height > devicePx.width) {
-      if (_document == null && !_busy) {
+      if (state.document == null && !state.busy) {
         _resizeTimer?.cancel();
         _resizeTimer = Timer(rotationGrace, render);
       }
       return previous == null;
     }
-    if (_document == null && !_busy) {
+    if (state.document == null && !state.busy) {
       // Nada gravado ainda: a primeira gravura sai assim que há caixa.
       _resizeTimer?.cancel();
       _resizeTimer = Timer(Duration.zero, render);
@@ -252,7 +348,7 @@ class ScoreRenderSession extends ChangeNotifier {
     }
     // A fixed page size does not depend on the box, so a resize has nothing
     // to re-engrave.
-    if (previous == null || !_pageFitsBox) return previous == null;
+    if (previous == null || !state.pageFitsBox) return previous == null;
     // 2% of slack: a one-pixel wobble is not worth re-engraving the piece.
     final changed =
         (previous.width - devicePx.width).abs() / previous.width > 0.02 ||
@@ -266,56 +362,53 @@ class ScoreRenderSession extends ChangeNotifier {
   /// A página que a vista mostra mudou.
   void setPage(int target) {
     if (pageCount == 0) return;
-    _pageIndex = target;
-    _status = pageCount > 1 ? 'página ${target + 1} de $pageCount' : 'pronto ✓';
-    notifyListeners();
+    emit(
+      state.copyWith(
+        pageIndex: target,
+        status: pageCount > 1 ? 'página ${target + 1} de $pageCount' : 'pronto ✓',
+      ),
+    );
   }
 
   /// Uma opção de layout mudou (o slider andando): só o valor; a partitura
   /// é gravada de novo em [render], quando a mudança assenta, e o valor vai
   /// para todos os hinos em [saveLayout].
   void setLayoutValue(String key, Object value) {
-    _layoutOverrides = {..._layoutOverrides, key: value};
-    notifyListeners();
+    emit(state.copyWith(layoutOverrides: {...state.layoutOverrides, key: value}));
   }
 
-  void setPageFitsBox(bool value) {
-    _pageFitsBox = value;
-    notifyListeners();
-  }
+  void setPageFitsBox(bool value) => emit(state.copyWith(pageFitsBox: value));
 
   /// Guarda o layout e a página para todos os hinos. Quem chama grava a
   /// partitura de novo ([render]) logo depois.
   void saveLayout() {
     _settings
-      ..setScoreLayout(_layoutOverrides)
-      ..setScorePageFitsBox(_pageFitsBox);
+      ..setScoreLayout(state.layoutOverrides)
+      ..setScorePageFitsBox(state.pageFitsBox);
   }
 
   /// Volta ao layout padrão do app, para todos os hinos. Não guarda nem grava
   /// de novo: quem chama faz isso ([saveLayout] e [render]).
   void resetLayout() {
-    _layoutOverrides = const {};
-    _pageFitsBox = true;
-    notifyListeners();
+    emit(state.copyWith(layoutOverrides: const {}, pageFitsBox: true));
   }
 
   /// Guarda a escolha de tom ([transposeChoice]) e grava a partitura de
   /// novo se o tom mudou. Devolve `false` se a escolha já era essa.
   bool chooseTranspose(String choice) {
-    if (choice == _transposeChoice) return false;
-    _transposeChoice = choice;
-    notifyListeners();
+    if (choice == state.transposeChoice) return false;
+    emit(state.copyWith(transposeChoice: choice));
     // Mesmo tom (ex.: "Não" quando a chave geral já está desligada): só
     // guarda a escolha, a partitura é a mesma.
-    if (transposition != _renderedTransposition) unawaited(render());
+    if (transposition != state.renderedTransposition) unawaited(render());
     return true;
   }
 
   /// "Abrir as músicas já sem acidentes" mudou e este hino não tem escolha
   /// própria: a partitura é gravada de novo no outro tom.
   void _onSettingsChanged() {
-    if (_document != null && transposition != _renderedTransposition) {
+    if (_disposed) return;
+    if (state.document != null && transposition != state.renderedTransposition) {
       unawaited(render());
     }
   }
@@ -325,7 +418,7 @@ class ScoreRenderSession extends ChangeNotifier {
   /// mesmo zoom. Com um render em curso, entra na fila.
   Future<void> render() async {
     if (_box == null || _disposed) return;
-    if (_busy) {
+    if (state.busy) {
       _renderQueued = true;
       return;
     }
@@ -338,10 +431,13 @@ class ScoreRenderSession extends ChangeNotifier {
       ..remove('pageWidth')
       ..remove('pageHeight');
 
-    _busy = true;
-    _error = null;
-    _status = 'renderizando $name ($pageWidth×$pageHeight)…';
-    notifyListeners();
+    emit(
+      state.copyWith(
+        busy: true,
+        error: () => null,
+        status: 'renderizando $name ($pageWidth×$pageHeight)…',
+      ),
+    );
 
     var wrongDirection = false;
     try {
@@ -357,20 +453,18 @@ class ScoreRenderSession extends ChangeNotifier {
       );
       final document = rendered.document;
       debugPrint(
-        'ScoreRenderSession: render($name) levou '
+        'ScoreRenderCubit: render($name) levou '
         '${watch.elapsedMilliseconds}ms',
       );
       if (_disposed) return;
-      // Recusa antes de trocar o player: daqui em diante o estado é trocado
-      // aos pedaços e precisa de ao menos uma página.
+      // Recusa antes de trocar o estado: daqui em diante ele é trocado de uma
+      // vez e precisa de ao menos uma página.
       if (document.pages.isEmpty) {
         throw StateError('a gravura veio sem páginas');
       }
       final track = PerformanceTrack.fromDocument(document);
       wrongDirection = _adopt(rendered, track, transposition);
-      _busy = false;
       onDocument?.call(document, track);
-      notifyListeners();
     } catch (e) {
       _failRender(e);
     }
@@ -391,21 +485,30 @@ class ScoreRenderSession extends ChangeNotifier {
   ) {
     final document = rendered.document;
     // Com a faixa real da música, a direção da transposição pode mudar (o
-    // hino passaria do teclado): nesse caso grava de novo, no fim.
-    _originalRange = _rangeOf(document, transposition) ?? _originalRange;
+    // hino passaria do teclado): nesse caso grava de novo, no fim. A faixa
+    // vai ao estado antes da conta, que a lê.
+    final range = _rangeOf(document, transposition) ?? state.originalRange;
+    emit(state.copyWith(originalRange: range));
     final wrongDirection = this.transposition != transposition;
-    _document = document;
-    _track = track;
-    _renderedTransposition = transposition;
     // New options reflow the score: the page we were on may not exist
     // any more.
-    _pageIndex = _pageIndex.clamp(0, document.pages.length - 1);
-    _status = document.pages.length > 1
-        ? 'página ${_pageIndex + 1} de ${document.pages.length}'
+    final page = state.pageIndex.clamp(0, document.pages.length - 1);
+    var status = document.pages.length > 1
+        ? 'página ${page + 1} de ${document.pages.length}'
         : 'carregada ✓';
     if (rendered.debugCopyPath case final path?) {
-      _status = '$_status — .vsb salvo em $path';
+      status = '$status — .vsb salvo em $path';
     }
+    emit(
+      state.copyWith(
+        document: document,
+        track: track,
+        busy: false,
+        renderedTransposition: () => transposition,
+        pageIndex: page,
+        status: status,
+      ),
+    );
     return wrongDirection;
   }
 
@@ -413,10 +516,13 @@ class ScoreRenderSession extends ChangeNotifier {
   /// na barra de status.
   void _failRender(Object error) {
     if (_disposed) return;
-    _status = 'erro: $error';
-    _error = '$error';
-    _busy = false;
-    notifyListeners();
+    emit(
+      state.copyWith(
+        status: 'erro: $error',
+        error: () => '$error',
+        busy: false,
+      ),
+    );
   }
 
   /// A nota mais grave e a mais aguda da música **original** em [document],
@@ -436,10 +542,10 @@ class ScoreRenderSession extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
+  Future<void> close() {
     _disposed = true;
     _resizeTimer?.cancel();
     unawaited(_settingsSub.cancel());
-    super.dispose();
+    return super.close();
   }
 }

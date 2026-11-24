@@ -5,14 +5,18 @@
 // mesmo lugar das bibliotecas: arquivo no aparelho, IndexedDB na Web) mais
 // uma linha no índice (`imported_scores_v1`, nas preferências) com o nome do
 // arquivo e a armadura. Título, compositor e o resto ficam no
-// [PieceMetadataStore] (`importado/<id>`), então a edição é a mesma das
+// [PieceMetadataCubit] (`importado/<id>`), então a edição é a mesma das
 // músicas de biblioteca. O progresso e os ajustes usam as mesmas chaves das
 // outras músicas — valem enquanto a biblioteca em uso não troca.
+//
+// BL12: `ImportedScoresStore` (um `ChangeNotifier`) virou [ImportedScoresCubit]:
+// a lista das importadas é o [ImportedScoresState].
 
 import 'dart:convert';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny_library/piece.dart';
@@ -23,13 +27,8 @@ import 'piece_metadata.dart';
 const kImportedLibraryId = 'importado';
 
 /// Uma partitura importada, como guardada no índice.
-@immutable
-class ImportedScore {
-  const ImportedScore({
-    required this.id,
-    required this.fileName,
-    this.fifths,
-  });
+class ImportedScore extends Equatable {
+  const ImportedScore({required this.id, required this.fileName, this.fifths});
 
   factory ImportedScore.fromJson(Map<String, dynamic> json) => ImportedScore(
     id: json['id'] as String,
@@ -45,11 +44,7 @@ class ImportedScore {
   /// Armadura do início, como no MusicXML (`null` sem ela no arquivo).
   final int? fifths;
 
-  Map<String, Object> toJson() => {
-    'id': id,
-    'arquivo': fileName,
-    'a': ?fifths,
-  };
+  Map<String, Object> toJson() => {'id': id, 'arquivo': fileName, 'a': ?fifths};
 
   /// A peça para a lista e a partitura: os dados do [override] (a edição da
   /// pessoa) valem; sem ele, o nome do arquivo.
@@ -88,44 +83,65 @@ class ImportedScore {
     final trimmed = text?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
+
+  @override
+  List<Object?> get props => [id, fileName, fifths];
+}
+
+/// As importadas guardadas, na ordem do índice. Imutável: a lista é outra a
+/// cada mudança.
+class ImportedScoresState extends Equatable {
+  const ImportedScoresState({this.scores = const []});
+
+  /// As importadas (lista só de leitura).
+  final List<ImportedScore> scores;
+
+  @override
+  List<Object?> get props => [scores];
 }
 
 /// As importadas guardadas: índice nas preferências, XML no [LibraryBlobStore].
-/// Avisa quem escuta a cada mudança — a biblioteca mostra a importada na hora.
-class ImportedScoresStore extends ChangeNotifier {
-  ImportedScoresStore({SharedPreferencesAsync? prefs, LibraryBlobStore? blobs})
+/// Avisa quem escuta (`stream`) a cada mudança — a biblioteca mostra a
+/// importada na hora.
+class ImportedScoresCubit extends Cubit<ImportedScoresState> {
+  ImportedScoresCubit({SharedPreferencesAsync? prefs, LibraryBlobStore? blobs})
     : _prefs = prefs ?? SharedPreferencesAsync(),
-      _blobs = blobs ?? createLibraryBlobStore();
+      _blobs = blobs ?? createLibraryBlobStore(),
+      super(const ImportedScoresState());
 
   static const indexKey = 'imported_scores_v1';
 
   final SharedPreferencesAsync _prefs;
   final LibraryBlobStore _blobs;
-  final List<ImportedScore> _scores = [];
 
-  List<ImportedScore> get scores => List.unmodifiable(_scores);
+  /// As importadas, na ordem do índice (o que está no [state]).
+  List<ImportedScore> get scores => state.scores;
 
   static String _blobKey(String id) => 'importada-$id';
 
   /// Lê o índice (o XML fica onde está, só é lido ao abrir a partitura).
   Future<void> load() async {
-    _scores.clear();
+    var lidas = <ImportedScore>[];
     try {
       final text = await _prefs.getString(indexKey);
       if (text != null) {
-        for (final entry in jsonDecode(text) as List<dynamic>) {
-          _scores.add(ImportedScore.fromJson(entry as Map<String, dynamic>));
-        }
+        lidas = [
+          for (final entry in jsonDecode(text) as List<dynamic>)
+            ImportedScore.fromJson(entry as Map<String, dynamic>),
+        ];
       }
     } on Object {
       // Índice estragado: começa vazio em vez de travar a biblioteca.
-      _scores.clear();
+      lidas = [];
     }
-    notifyListeners();
+    _emitir(lidas);
   }
 
   /// Guarda [scoreXml] (XML puro) e entra no índice. O [id] sai do nome do
   /// arquivo, com sufixo quando já existe.
+  ///
+  /// O XML é gravado antes de a entrada aparecer: a lista só mostra o que tem
+  /// arquivo. O índice é gravado depois da emissão.
   Future<ImportedScore> add({
     required String fileName,
     required Uint8List scoreXml,
@@ -134,31 +150,41 @@ class ImportedScoresStore extends ChangeNotifier {
     final id = _uniqueId(_slugOf(fileName));
     final score = ImportedScore(id: id, fileName: fileName, fifths: fifths);
     await _blobs.put(_blobKey(id), scoreXml);
-    _scores.add(score);
-    await _saveIndex();
-    notifyListeners();
+    final novas = [...state.scores, score];
+    _emitir(novas);
+    await _gravarIndice(novas);
     return score;
   }
 
   /// O XML guardado, ou `null` se o arquivo sumiu do aparelho.
   Future<Uint8List?> loadScore(String id) => _blobs.get(_blobKey(id));
 
-  /// Apaga a importada (índice e XML). A edição dela ([PieceMetadataStore]) é
+  /// Apaga a importada (índice e XML). A edição dela ([PieceMetadataCubit]) é
   /// quem chama quem apaga junto — aqui some só a partitura.
   Future<void> remove(String id) async {
-    _scores.removeWhere((s) => s.id == id);
+    final restantes = [
+      for (final s in state.scores)
+        if (s.id != id) s,
+    ];
+    _emitir(restantes);
     await _blobs.delete(_blobKey(id));
-    await _saveIndex();
-    notifyListeners();
+    await _gravarIndice(restantes);
   }
 
-  Future<void> _saveIndex() => _prefs.setString(
+  /// Emite a lista nova (síncrono, antes de qualquer gravação). Depois de
+  /// [close] não emite.
+  void _emitir(List<ImportedScore> lista) {
+    if (isClosed) return;
+    emit(ImportedScoresState(scores: List.unmodifiable(lista)));
+  }
+
+  Future<void> _gravarIndice(List<ImportedScore> lista) => _prefs.setString(
     indexKey,
-    jsonEncode([for (final s in _scores) s.toJson()]),
+    jsonEncode([for (final s in lista) s.toJson()]),
   );
 
   String _uniqueId(String slug) {
-    final taken = {for (final s in _scores) s.id};
+    final taken = {for (final s in state.scores) s.id};
     var id = slug;
     var n = 2;
     while (taken.contains(id)) {

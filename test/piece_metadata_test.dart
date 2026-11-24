@@ -97,9 +97,9 @@ void main() {
     });
   });
 
-  group('PieceMetadataStore', () {
+  group('PieceMetadataCubit', () {
     test('guarda e lê por biblioteca e música', () async {
-      final store = PieceMetadataStore();
+      final store = PieceMetadataCubit();
       await store.save(
         'hinos',
         '001',
@@ -111,11 +111,11 @@ void main() {
     });
 
     test('load traz do disco sem apagar outras bibliotecas', () async {
-      final first = PieceMetadataStore();
+      final first = PieceMetadataCubit();
       await first.save('hinos', '001', const PieceMetadata(title: 'A'));
       await first.save('classicos', 'x', const PieceMetadata(title: 'B'));
 
-      final store = PieceMetadataStore();
+      final store = PieceMetadataCubit();
       await store.load('hinos', ['001']);
       expect(store.get('hinos', '001')?.title, 'A');
       expect(store.get('classicos', 'x'), isNull);
@@ -125,7 +125,7 @@ void main() {
     });
 
     test('salvar vazio limpa, e clear restaura', () async {
-      final store = PieceMetadataStore();
+      final store = PieceMetadataCubit();
       await store.save('hinos', '001', const PieceMetadata(title: 'A'));
       await store.save('hinos', '001', const PieceMetadata());
       expect(store.get('hinos', '001'), isNull);
@@ -136,15 +136,18 @@ void main() {
     });
 
     test('avisa quem escuta', () async {
-      final store = PieceMetadataStore();
-      var calls = 0;
-      store.addListener(() => calls++);
+      final store = PieceMetadataCubit();
+      final estados = <PieceMetadataState>[];
+      final sub = store.stream.listen(estados.add);
       await store.save('hinos', '001', const PieceMetadata(title: 'A'));
-      expect(calls, 1);
+      await pumpEventQueue();
+      expect(estados, hasLength(1));
+      expect(estados.single.byKey.values.single.title, 'A');
+      await sub.cancel();
     });
 
     test('applyAll mantém quem não tem correção', () async {
-      final store = PieceMetadataStore();
+      final store = PieceMetadataCubit();
       await store.save('hinos', '001', const PieceMetadata(title: 'Novo'));
       final other = Piece(
         libraryId: 'hinos',
@@ -162,13 +165,13 @@ void main() {
     });
 
     test('o "limpar" sobrevive à volta do disco', () async {
-      final first = PieceMetadataStore();
+      final first = PieceMetadataCubit();
       await first.save(
         'hinos',
         '001',
         const PieceMetadata(lyricist: ''),
       );
-      final store = PieceMetadataStore();
+      final store = PieceMetadataCubit();
       await store.load('hinos', ['001']);
       final edited = store.get('hinos', '001')!.applyTo(_piece());
       expect(edited.lyricist, isNull);

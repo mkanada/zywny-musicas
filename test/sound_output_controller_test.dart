@@ -60,7 +60,7 @@ void main() {
   late List<_Sender> senders;
   late int attached;
   late int detached;
-  late SoundOutputController sound;
+  late SoundOutputCubit sound;
   late bool soundDisposed;
 
   setUp(() async {
@@ -79,7 +79,7 @@ void main() {
     attached = 0;
     detached = 0;
     soundDisposed = false;
-    sound = SoundOutputController(
+    sound = SoundOutputCubit(
       settings: settings,
       devices: devices,
       input: input,
@@ -103,8 +103,8 @@ void main() {
     );
   });
 
-  tearDown(() {
-    if (!soundDisposed) sound.dispose();
+  tearDown(() async {
+    if (!soundDisposed) await sound.close();
     input.dispose();
     devices.dispose();
     settings.close();
@@ -201,7 +201,7 @@ void main() {
     await sound.ensureEngine();
     expect(senders, hasLength(1));
 
-    sound.dispose();
+    await sound.close();
     soundDisposed = true;
     await pumpEventQueue();
     expect(appEngines.single.disposed, isTrue);

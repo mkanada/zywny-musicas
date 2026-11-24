@@ -22,10 +22,10 @@ import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 
 import 'package:zywny/app/library_screen.dart';
-import 'package:zywny/app/playback_controller.dart';
-import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/playback_cubit.dart';
+import 'package:zywny/app/score_render_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
-import 'package:zywny/app/trail_runner.dart';
+import 'package:zywny/app/trail_runner_cubit.dart';
 
 import 'package:zywny_library/library_term_scope.dart';
 
@@ -256,7 +256,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// A gravura (R09): render, fila, caixa, layout e tom deste hino. A cada
   /// documento novo chama [_onDocument], que monta o player.
-  late final ScoreRenderSession _session;
+  late final ScoreRenderCubit _session;
+  late final StreamSubscription<ScoreRenderState> _sessionSub;
 
   /// Configurações gerais (som, MIDI, cores…): as da biblioteca, já lidas
   /// por ela. Ver [_onSettingsChanged].
@@ -294,15 +295,18 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// Por onde sai o som (R08): os dois motores, a saída em uso, o `.sf2` e
   /// o monitor MIDI. Sobrevive a novas gravuras (só o agendador é
   /// recriado, um por `.vsb`).
-  late final SoundOutputController _sound;
+  late final SoundOutputCubit _sound;
+  late final StreamSubscription<SoundOutputState> _soundSub;
 
   /// Tocar a partitura (R10): player, agendador, contagem, loop, metrônomo
   /// e andamento. Um player por gravura ([_onDocument]).
-  late final PlaybackController _playback;
+  late final PlaybackCubit _playback;
+  late final StreamSubscription<PlaybackState> _playbackSub;
 
   /// A trilha de estudo (fase J) e o treino em curso (R11): a etapa, o
   /// ouvir, o treino livre e as marcas na pauta.
-  late final TrailRunner _runner;
+  late final TrailRunnerCubit _runner;
+  late final StreamSubscription<TrailRunnerState> _runnerSub;
 
   /// Modo treino (T02): armado pelo usuário, só passa a valer no Play
   /// ("Praticar") quando também há um teclado MIDI conectado — ver
@@ -386,7 +390,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         'metronomo': _playback.metronomeOn,
       },
     );
-    _session = ScoreRenderSession(
+    _session = ScoreRenderCubit(
       renderer: widget.renderer ?? createScoreRenderer(),
       scoreXml: widget.opened.scoreXml,
       piece: _piece,
@@ -397,10 +401,14 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       pixelRatio: currentPixelRatio,
       debugMode: widget.debugMode,
       onDocument: _onDocument,
-    )..addListener(_onSessionChanged);
-    _sound = _newSoundOutput()..addListener(_onSoundChanged);
-    _playback = _newPlayback()..addListener(_onPlaybackChanged);
-    _runner = _newTrailRunner()..addListener(_onRunnerChanged);
+    );
+    _sessionSub = _session.stream.listen((_) => _onSessionChanged());
+    _sound = _newSoundOutput();
+    _soundSub = _sound.stream.listen((_) => _onSoundChanged());
+    _playback = _newPlayback();
+    _playbackSub = _playback.stream.listen((_) => _onPlaybackChanged());
+    _runner = _newTrailRunner();
+    _runnerSub = _runner.stream.listen((_) => _onRunnerChanged());
     _midiDeviceManager.connected.addListener(_maybeCheckTranspose);
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
     _applyOrientation();
@@ -408,7 +416,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// A saída de som desta tela: o motor, o monitor do MIDI e o que o player
   /// precisa dele.
-  SoundOutputController _newSoundOutput() => SoundOutputController(
+  SoundOutputCubit _newSoundOutput() => SoundOutputCubit(
     settings: _settings,
     devices: _midiDeviceManager,
     input: _midiInput,
@@ -425,7 +433,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   );
 
   /// A reprodução da partitura, com o som desta tela e o zoom dela.
-  PlaybackController _newPlayback() => PlaybackController(
+  PlaybackCubit _newPlayback() => PlaybackCubit(
     sound: _sound,
     settings: _settings,
     controller: _controller,
@@ -441,7 +449,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// O treino da trilha deste hino, com a sessão, o som e a reprodução desta
   /// tela.
-  TrailRunner _newTrailRunner() => TrailRunner(
+  TrailRunnerCubit _newTrailRunner() => TrailRunnerCubit(
     store: _trailStore,
     playback: _playback,
     session: _session,
@@ -580,22 +588,18 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     if (_kind != DeviceKind.desktop) {
       unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     }
-    _session
-      ..removeListener(_onSessionChanged)
-      ..dispose();
+    unawaited(_sessionSub.cancel());
+    unawaited(_session.close());
     _flushPieceSettings();
     unawaited(_settingsSub.cancel());
     _shiftNotice.dispose();
-    _runner
-      ..removeListener(_onRunnerChanged)
-      ..dispose();
+    unawaited(_runnerSub.cancel());
+    unawaited(_runner.close());
     _midiDeviceManager.connected.removeListener(_maybeCheckTranspose);
-    _playback
-      ..removeListener(_onPlaybackChanged)
-      ..dispose();
-    _sound
-      ..removeListener(_onSoundChanged)
-      ..dispose();
+    unawaited(_playbackSub.cancel());
+    unawaited(_playback.close());
+    unawaited(_soundSub.cancel());
+    unawaited(_sound.close());
     _midiInput.dispose();
     _viewController.dispose();
     _controller.dispose();
@@ -753,7 +757,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     return (w) => _pitchFrame.engineFromWritten(w, midiKeyboard: midiKeyboard);
   }
 
-  /// Uma gravura nova ([ScoreRenderSession.onDocument]): os ids (e talvez as
+  /// Uma gravura nova ([ScoreRenderCubit.onDocument]): os ids (e talvez as
   /// páginas) mudaram, então o que tocava a anterior é desmontado e montado
   /// de novo sobre ela.
   void _onDocument(VsbDocument document, PerformanceTrack track) {

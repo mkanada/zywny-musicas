@@ -1,4 +1,4 @@
-// R11: a trilha (lib/app/trail_runner.dart) sem a tela. A partitura é a
+// R11: a trilha (lib/app/trail_runner_cubit.dart) sem a tela. A partitura é a
 // Gymnopédie pronta (sem Verovio), o som é um [FakeSoundEngine] com o
 // relógio andado pelo teste, e o aluno toca pelo [FakeMidiInput] — a
 // primeira etapa é "notas da direita", no modo espera.
@@ -16,10 +16,10 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:score_bridge/score_bridge.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny/app/playback_controller.dart';
-import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/playback_cubit.dart';
+import 'package:zywny/app/score_render_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
-import 'package:zywny/app/trail_runner.dart';
+import 'package:zywny/app/trail_runner_cubit.dart';
 import 'package:zywny_library/library_keys.dart' show progressIdFor;
 import 'package:zywny_library/library_package.dart' show LibraryTerm;
 import 'package:zywny_midi/midi_device_manager.dart';
@@ -61,10 +61,10 @@ class _Harness {
   final ScoreController scores = ScoreController();
   final GhostController ghosts = GhostController();
   late final TrailProgressCubit store;
-  late final ScoreRenderSession session;
-  late final SoundOutputController sound;
-  late final PlaybackController playback;
-  late final TrailRunner runner;
+  late final ScoreRenderCubit session;
+  late final SoundOutputCubit sound;
+  late final PlaybackCubit playback;
+  late final TrailRunnerCubit runner;
   final List<FakeSoundEngine> engines = [];
   final List<_Summary> summaries = [];
   final RecordingRenderer renderer = RecordingRenderer();
@@ -92,7 +92,7 @@ class _Harness {
       true,
     );
     final piece = fakePiece(fifths: fifths);
-    h.session = ScoreRenderSession(
+    h.session = ScoreRenderCubit(
       renderer: h.renderer,
       scoreXml: Uint8List(1),
       piece: piece,
@@ -100,7 +100,7 @@ class _Harness {
       stored: PieceSettings(transpose: transpose),
       name: 'Hino',
     );
-    h.sound = SoundOutputController(
+    h.sound = SoundOutputCubit(
       settings: h.settings,
       devices: h.devices,
       input: h.input,
@@ -118,14 +118,14 @@ class _Harness {
         return engine;
       },
     );
-    h.playback = PlaybackController(
+    h.playback = PlaybackCubit(
       sound: h.sound,
       settings: h.settings,
       controller: h.scores,
       onEnded: () => h.runner.endPractice(),
       wakelock: (_) {},
     );
-    h.runner = TrailRunner(
+    h.runner = TrailRunnerCubit(
       store: h.store,
       playback: h.playback,
       session: h.session,
@@ -219,10 +219,10 @@ class _Harness {
   }
 
   void dispose() {
-    runner.dispose();
-    playback.dispose();
-    sound.dispose();
-    session.dispose();
+    runner.close();
+    playback.close();
+    sound.close();
+    session.close();
     scores.dispose();
     ghosts.dispose();
     input.dispose();

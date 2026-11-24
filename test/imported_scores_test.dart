@@ -19,10 +19,10 @@ void main() {
         InMemorySharedPreferencesAsync.empty();
   });
 
-  ImportedScoresStore makeStore() =>
-      ImportedScoresStore(blobs: MemoryLibraryBlobStore());
+  ImportedScoresCubit makeStore() =>
+      ImportedScoresCubit(blobs: MemoryLibraryBlobStore());
 
-  group('ImportedScoresStore', () {
+  group('ImportedScoresCubit', () {
     test('entra no índice e o XML volta ao abrir', () async {
       final store = makeStore();
       await store.load();
@@ -69,7 +69,7 @@ void main() {
 
     test('índice estragado começa vazio', () async {
       final prefs = SharedPreferencesAsync();
-      await prefs.setString(ImportedScoresStore.indexKey, 'lixo');
+      await prefs.setString(ImportedScoresCubit.indexKey, 'lixo');
       final store = makeStore();
       await store.load();
       expect(store.scores, isEmpty);

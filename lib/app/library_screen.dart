@@ -172,10 +172,10 @@ class LibraryScreen extends StatefulWidget {
 
   /// As correções dos dados das músicas (qualquer biblioteca, mais as
   /// importadas); os testes injetam com dados.
-  final PieceMetadataStore? metadata;
+  final PieceMetadataCubit? metadata;
 
   /// As partituras importadas, fora das bibliotecas; os testes injetam.
-  final ImportedScoresStore? imported;
+  final ImportedScoresCubit? imported;
 
   /// Resumos da trilha por hino (J09); os testes injetam com dados.
   final TrailProgressCubit? trailProgress;
@@ -231,10 +231,10 @@ class _LibraryScreenState extends State<LibraryScreen> {
   late final Future<void> _settingsLoaded = _settings.load();
   late final PieceSettingsStore _pieceSettings =
       widget.pieceSettings ?? PieceSettingsStore();
-  late final PieceMetadataStore _metadata =
-      widget.metadata ?? PieceMetadataStore();
-  late final ImportedScoresStore _imported =
-      widget.imported ?? ImportedScoresStore();
+  late final PieceMetadataCubit _metadata =
+      widget.metadata ?? PieceMetadataCubit();
+  late final ImportedScoresCubit _imported =
+      widget.imported ?? ImportedScoresCubit();
   late final TrailProgressCubit _trail =
       widget.trailProgress ?? TrailProgressCubit();
 
@@ -287,8 +287,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (widget.progress == null) unawaited(_progress.close());
     if (widget.libraryStore == null) unawaited(_libraries.close());
     if (widget.trailProgress == null) unawaited(_trail.close());
-    if (widget.metadata == null) _metadata.dispose();
-    if (widget.imported == null) _imported.dispose();
+    if (widget.metadata == null) unawaited(_metadata.close());
+    if (widget.imported == null) unawaited(_imported.close());
     if (widget.appSettings == null) _settings.close();
     super.dispose();
   }
@@ -903,22 +903,33 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                   PieceProgressState
                                 >(
                                   bloc: _progress,
-                                  builder: (context, _) => ListenableBuilder(
-                                    listenable: Listenable.merge([
-                                      _metadata,
-                                      _imported,
-                                    ]),
-                                    builder: (context, _) =>
-                                        BlocBuilder<
-                                          TrailProgressCubit,
-                                          TrailProgressState
-                                        >(
-                                          bloc: _trail,
-                                          builder: (context, _) => sideBySide
-                                              ? _contentSideBySide(snapshot)
-                                              : _content(snapshot),
-                                        ),
-                                  ),
+                                  builder: (context, _) =>
+                                      BlocBuilder<
+                                        PieceMetadataCubit,
+                                        PieceMetadataState
+                                      >(
+                                        bloc: _metadata,
+                                        builder: (context, _) =>
+                                            BlocBuilder<
+                                              ImportedScoresCubit,
+                                              ImportedScoresState
+                                            >(
+                                              bloc: _imported,
+                                              builder: (context, _) =>
+                                                  BlocBuilder<
+                                                    TrailProgressCubit,
+                                                    TrailProgressState
+                                                  >(
+                                                    bloc: _trail,
+                                                    builder: (context, _) =>
+                                                        sideBySide
+                                                        ? _contentSideBySide(
+                                                            snapshot,
+                                                          )
+                                                        : _content(snapshot),
+                                                  ),
+                                            ),
+                                      ),
                                 ),
                           ),
                     ),

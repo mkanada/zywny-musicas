@@ -3,6 +3,14 @@
 // `_ScoreHomePageState` (achado 5 da revisão); liga a gravura (R09,
 // [attach]) ao som (R08, [SoundOutputController]). O treino e a trilha
 // usam o player e o agendador daqui, mas moram fora.
+//
+// BL13: é um Cubit. O estado é o que a tela mostra (tocando, andamento,
+// loop, metrônomo e a gravura trocada); o player e o agendador são objetos
+// que o Cubit guarda, não estado. Os métodos são síncronos: quem decide lê
+// `state` na hora.
+
+// Os parâmetros são públicos e os campos, privados (como no R10).
+// ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
 import 'dart:ui' show Color;
@@ -10,6 +18,7 @@ import 'dart:ui' show Color;
 import 'package:flutter/foundation.dart';
 import 'package:score_bridge/score_bridge.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_audio/audio_playback_clock.dart';
 import 'package:zywny_audio/metronome.dart';
@@ -28,14 +37,53 @@ double Function() _stopwatchSeconds() {
   return () => watch.elapsedMicroseconds / 1e6;
 }
 
+/// O que o transporte mostra: tocando ou parado, o andamento, o loop A-B e a
+/// gravura trocada. [serial] sobe a cada [PlaybackCubit.attach]: a partitura
+/// nova tem outros ids, mesmo que o resto seja igual. O metrônomo é da
+/// configuração (`SettingsCubit`), e não passa por aqui.
+class PlaybackState extends Equatable {
+  const PlaybackState({
+    this.playing = false,
+    this.speed = 1.0,
+    this.loop,
+    this.serial = 0,
+  });
+
+  final bool playing;
+
+  /// 0,5×–1,5×.
+  final double speed;
+
+  /// O loop A-B, em **ocorrências** de compasso (índices em
+  /// `ScorePlayer.measures`, ordem de execução); `null` = desligado.
+  final ({int a, int b})? loop;
+
+  final int serial;
+
+  PlaybackState copyWith({
+    bool? playing,
+    double? speed,
+    ({int a, int b})? Function()? loop,
+    int? serial,
+  }) => PlaybackState(
+    playing: playing ?? this.playing,
+    speed: speed ?? this.speed,
+    loop: loop == null ? this.loop : loop(),
+    serial: serial ?? this.serial,
+  );
+
+  @override
+  List<Object?> get props => [playing, speed, loop, serial];
+}
+
 /// O transporte da partitura aberta: um [ScorePlayer] por gravura
 /// ([attach]) e, com som, um [ScoreAudioScheduler] sobre o motor de
 /// [sound], de quem o player lê o relógio.
 ///
-/// Quem cria descarta: [dispose] para o que estiver tocando e solta o
-/// player e o agendador. O motor é de [sound].
-class PlaybackController extends ChangeNotifier {
-  PlaybackController({
+/// Quem cria fecha ([close]): para o que estiver tocando e solta o player e
+/// o agendador. O motor é de [sound].
+class PlaybackCubit extends Cubit<PlaybackState> {
+  PlaybackCubit({
     required this.sound,
     required SettingsCubit settings,
     required this.controller,
@@ -47,16 +95,15 @@ class PlaybackController extends ChangeNotifier {
     this.onLoopChanged,
     double Function()? wallSeconds,
     void Function(bool on) wakelock = _setWakelock,
-  }) : _settings = settings, // ignore: prefer_initializing_formals
-       _speed = speed, // ignore: prefer_initializing_formals
-       _wallSeconds = wallSeconds, // ignore: prefer_initializing_formals
-       // ignore: prefer_initializing_formals
-       _wakelock = wakelock {
+  }) : _settings = settings,
+       _wallSeconds = wallSeconds,
+       _wakelock = wakelock,
+       super(PlaybackState(speed: speed)) {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
   /// Por onde sai o som: diz se ele está ligado e qual é o motor.
-  final SoundOutputController sound;
+  final SoundOutputCubit sound;
   final SettingsCubit _settings;
   late final StreamSubscription<SettingsState> _settingsSub;
 
@@ -91,9 +138,6 @@ class PlaybackController extends ChangeNotifier {
   PerformanceTrack? _track;
   ScoreAudioScheduler? _scheduler;
   AudioPlaybackClock? _audioClock;
-  bool _playing = false;
-  double _speed;
-  ({int a, int b})? _loop;
 
   /// Contagem do play com o som desligado: sem agendador para contar, o
   /// controller segura o player e conta sozinho — o número e, com o
@@ -118,22 +162,22 @@ class PlaybackController extends ChangeNotifier {
   /// O agendador do som; `null` com o som desligado (até ligar uma vez).
   ScoreAudioScheduler? get scheduler => _scheduler;
 
-  bool get playing => _playing;
+  bool get playing => state.playing;
 
   /// 0,5×–1,5×; alimenta o agendador com som ligado, ou `ScorePlayer.speed`
   /// mudo (C01: o relógio externo ignora `speed`).
-  double get speed => _speed;
+  double get speed => state.speed;
 
   /// O loop A-B, em **ocorrências** de compasso (índices em
   /// `ScorePlayer.measures`, ordem de execução).
-  ({int a, int b})? get loop => _loop;
+  ({int a, int b})? get loop => state.loop;
 
   /// O número da contagem na tela agora (a muda ou a do agendador).
   CountInTick? countIn() => _silentCountIn?.call() ?? _scheduler?.countInTick;
 
   /// `[startMs, endMs)` do loop atual, ou `null`.
   ({double startMs, double endMs})? get loopRangeMs {
-    final loop = _loop;
+    final loop = state.loop;
     final player = _player;
     if (loop == null || player == null) return null;
     final m = player.measures;
@@ -147,6 +191,7 @@ class PlaybackController extends ChangeNotifier {
   bool get metronomeOn => _settings.state.metronomeOn;
 
   void _onSettingsChanged() {
+    if (_disposed) return;
     _scheduler?.metronomeOn = _settings.state.metronomeOn;
   }
 
@@ -181,24 +226,21 @@ class PlaybackController extends ChangeNotifier {
     if (_player != null && sound.soundOn && engine != null) {
       attachAudio(engine);
     }
-    notifyListeners();
+    emit(state.copyWith(serial: state.serial + 1));
   }
 
   /// Every write to [playing] goes through here so the screen wakelock
   /// (X01: found the phone falling asleep mid-playback) never falls out of
   /// sync with one of the several places that flip the flag.
   void _setPlaying(bool value) {
-    if (_playing == value) return;
-    _playing = value;
+    if (state.playing == value) return;
     _wakelock(value);
+    emit(state.copyWith(playing: value));
   }
 
   /// Marca o transporte como tocando ou parado — o treino e a trilha, que
   /// soltam o player eles mesmos, também passam por aqui.
-  void setPlaying(bool value) {
-    _setPlaying(value);
-    notifyListeners();
-  }
+  void setPlaying(bool value) => _setPlaying(value);
 
   /// Play/pausa da música (sem treino). Com som, o agendador conta um
   /// compasso antes; sem som, a contagem é feita aqui
@@ -206,7 +248,7 @@ class PlaybackController extends ChangeNotifier {
   void togglePlay() {
     final player = _player;
     if (player == null) return;
-    if (_playing) {
+    if (state.playing) {
       cancelSilentCountIn();
       player.pause();
       _scheduler?.pause();
@@ -230,7 +272,7 @@ class PlaybackController extends ChangeNotifier {
       if (scheduler == null) {
         player.play();
       } else {
-        scheduler.play(fromMs, speed: _speed, countIn: true);
+        scheduler.play(fromMs, speed: state.speed, countIn: true);
         playPlayerAfterCount(fromMs);
       }
     } else {
@@ -251,7 +293,7 @@ class PlaybackController extends ChangeNotifier {
       return;
     }
     final firstMs = clicks.first.ms;
-    final speed = _speed;
+    final speed = state.speed;
     // Segundos desde o 1º clique (negativo enquanto ele não soa).
     double Function() elapsed;
     final engine = sound.appEngine;
@@ -313,7 +355,7 @@ class PlaybackController extends ChangeNotifier {
       if (scheduler.isCountingIn) return;
       timer.cancel();
       _countInPlayTimer = null;
-      if (_disposed || !identical(player, _player) || !_playing) return;
+      if (_disposed || !identical(player, _player) || !state.playing) return;
       player.seek(Duration(microseconds: (startMs * 1000).round()));
       player.play();
     });
@@ -350,14 +392,14 @@ class PlaybackController extends ChangeNotifier {
     player.seek(Duration.zero);
     _scheduler?.stop();
     controller.clearAll();
-    if (_playing) setPlaying(false);
+    if (state.playing) setPlaying(false);
   }
 
   /// Reiniciar: volta ao começo do trecho em repetição (ou da música) e
   /// segue como estava — tocando, recomeça de lá; parado, fica parado.
   void restart() {
     if (_player == null) return;
-    final wasPlaying = _playing;
+    final wasPlaying = state.playing;
     if (wasPlaying) togglePlay();
     controller.clearAll();
     seekTo(loopRangeMs?.startMs ?? 0);
@@ -381,7 +423,7 @@ class PlaybackController extends ChangeNotifier {
   /// The player pauses itself at the end of the piece; follow that here.
   void _onEntry(TimemapEntry entry) {
     final player = _player;
-    if (player == null || !_playing) return;
+    if (player == null || !state.playing) return;
     if (player.position >= player.duration) {
       onEnded?.call();
       _scheduler?.pause();
@@ -393,13 +435,12 @@ class PlaybackController extends ChangeNotifier {
   /// 0,5×–1,5×: alimenta o que estiver tocando de verdade agora — o
   /// agendador de áudio com som ligado, ou `ScorePlayer.speed` mudo.
   void setSpeed(double value) {
-    _speed = value;
+    emit(state.copyWith(speed: value));
     if (sound.soundOn) {
       _scheduler?.setSpeed(value);
     } else {
       _player?.speed = value;
     }
-    notifyListeners();
   }
 
   /// Liga o agendador sobre [engine] e passa o relógio de áudio ao player —
@@ -434,8 +475,8 @@ class PlaybackController extends ChangeNotifier {
     if (_track == null) return;
     attachAudio(engine);
     final player = _player;
-    if (player != null && (always || _playing)) {
-      _scheduler!.play(player.position.inMicroseconds / 1000, speed: _speed);
+    if (player != null && (always || state.playing)) {
+      _scheduler!.play(player.position.inMicroseconds / 1000, speed: state.speed);
     }
   }
 
@@ -444,29 +485,26 @@ class PlaybackController extends ChangeNotifier {
   void detachSound() {
     _scheduler?.pause();
     _player?.clock = null;
-    _player?.speed = _speed;
+    _player?.speed = state.speed;
   }
 
   void toggleMetronome() {
     _settings.setMetronomeOn(!_settings.state.metronomeOn);
     _scheduler?.metronomeOn = _settings.state.metronomeOn;
-    notifyListeners();
   }
 
   /// Liga o loop nos compassos `a..b` (ocorrências, 0-based) e vai ao início
   /// do trecho.
   void setLoop(int a, int b) {
     if (_player == null) return;
-    _loop = (a: a, b: b);
+    emit(state.copyWith(loop: () => (a: a, b: b)));
     _applyLoop();
     seekTo(loopRangeMs?.startMs ?? 0);
-    notifyListeners();
   }
 
   void clearLoop() {
-    _loop = null;
+    if (state.loop != null) emit(state.copyWith(loop: () => null));
     _applyLoop();
-    notifyListeners();
   }
 
   /// Empurra o loop para o agendador e avisa [onLoopChanged].
@@ -484,13 +522,13 @@ class PlaybackController extends ChangeNotifier {
   set highlightColor(Color color) => _player?.highlightColor = color;
 
   @override
-  void dispose() {
+  Future<void> close() {
     _disposed = true;
     unawaited(_settingsSub.cancel());
     cancelSilentCountIn();
     _setPlaying(false);
     _scheduler?.dispose();
     _player?.dispose();
-    super.dispose();
+    return super.close();
   }
 }

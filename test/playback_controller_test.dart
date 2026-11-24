@@ -1,4 +1,4 @@
-// R10: tocar a partitura (lib/app/playback_controller.dart) sem a tela. O
+// R10: tocar a partitura (lib/app/playback_cubit.dart) sem a tela. O
 // relógio é simulado: o do áudio é o `now` de um [FakeSoundEngine], o de
 // parede (contagem sem som) é uma variável do teste, e o `Ticker` do player
 // anda com o `pump` do `testWidgets`.
@@ -11,7 +11,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:score_bridge/score_bridge.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny/app/playback_controller.dart';
+import 'package:zywny/app/playback_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_audio/metronome.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
@@ -42,8 +42,8 @@ class _Harness {
   final FakeMidiInput input;
   final ScoreController scores = ScoreController();
   final List<FakeSoundEngine> appEngines = [];
-  late final SoundOutputController sound;
-  late final PlaybackController playback;
+  late final SoundOutputCubit sound;
+  late final PlaybackCubit playback;
 
   /// O relógio de parede da contagem sem som, em segundos.
   double wall = 0;
@@ -57,7 +57,7 @@ class _Harness {
     await settings.load();
     final h = _Harness._(settings, MidiDeviceManager(), FakeMidiInput());
     await tester.pump();
-    h.sound = SoundOutputController(
+    h.sound = SoundOutputCubit(
       settings: settings,
       devices: h.devices,
       input: h.input,
@@ -75,7 +75,7 @@ class _Harness {
         return engine;
       },
     );
-    h.playback = PlaybackController(
+    h.playback = PlaybackCubit(
       sound: h.sound,
       settings: settings,
       controller: h.scores,
@@ -108,8 +108,8 @@ class _Harness {
 
   /// No fim de cada teste (antes da conferência de `Timer`s pendentes).
   void dispose() {
-    playback.dispose();
-    sound.dispose();
+    playback.close();
+    sound.close();
     scores.dispose();
     input.dispose();
     devices.dispose();
@@ -196,7 +196,7 @@ void main() {
     final before = h.positionMs;
     expect(before, greaterThan(1000), reason: 'já tocando, depois da contagem');
 
-    // O que o `SoundOutputController` faz ao trocar de saída com o som
+    // O que o `SoundOutputCubit` faz ao trocar de saída com o som
     // ligado: o agendador vai para o motor novo e retoma do player.
     final other = FakeSoundEngine()..now = 100;
     h.appEngines.add(other);

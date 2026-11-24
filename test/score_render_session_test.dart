@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:score_bridge/score_bridge.dart' show VsbDocument;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
-import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/score_render_cubit.dart';
 import 'package:zywny_comum/render/layout_options.dart'
     show kPhoneUnit, kTabletUnit;
 import 'package:zywny_comum/render/score_renderer.dart';
@@ -50,7 +50,7 @@ class _GatedRenderer implements ScoreRenderer {
 void main() {
   late SettingsCubit settings;
   late _GatedRenderer renderer;
-  late ScoreRenderSession session;
+  late ScoreRenderCubit session;
   late List<VsbDocument> shown;
 
   setUp(() {
@@ -59,7 +59,7 @@ void main() {
     settings = SettingsCubit();
     renderer = _GatedRenderer();
     shown = [];
-    session = ScoreRenderSession(
+    session = ScoreRenderCubit(
       renderer: renderer,
       scoreXml: Uint8List(1),
       piece: fakePiece(),
@@ -72,7 +72,7 @@ void main() {
   });
 
   tearDown(() {
-    session.dispose();
+    session.close();
     settings.close();
   });
 
@@ -162,11 +162,11 @@ void main() {
 
   test('descartada, a sessão não grava nem avisa', () async {
     session.setBox(const Size(1000, 700));
-    session.dispose();
+    session.close();
     await pumpEventQueue();
     expect(renderer.waiting, 0);
     // O `tearDown` descarta de novo: uma sessão nova no lugar.
-    session = ScoreRenderSession(
+    session = ScoreRenderCubit(
       renderer: renderer,
       scoreXml: Uint8List(1),
       piece: fakePiece(),
@@ -177,8 +177,8 @@ void main() {
   });
 
   group('layout da partitura: vale para todos os hinos', () {
-    ScoreRenderSession sessionOn(DeviceKind kind, {String name = '13 · Hino'}) {
-      final s = ScoreRenderSession(
+    ScoreRenderCubit sessionOn(DeviceKind kind, {String name = '13 · Hino'}) {
+      final s = ScoreRenderCubit(
         renderer: renderer,
         scoreXml: Uint8List(1),
         piece: fakePiece(),
@@ -188,7 +188,7 @@ void main() {
         kind: kind,
         pixelRatio: 2,
       );
-      addTearDown(s.dispose);
+      addTearDown(s.close);
       return s;
     }
 
@@ -250,9 +250,9 @@ void main() {
   group('caixa em pé', () {
     const grace = Duration(milliseconds: 60);
 
-    ScoreRenderSession sessionFor(DeviceKind kind) {
-      session.dispose();
-      return session = ScoreRenderSession(
+    ScoreRenderCubit sessionFor(DeviceKind kind) {
+      session.close();
+      return session = ScoreRenderCubit(
         renderer: renderer,
         scoreXml: Uint8List(1),
         piece: fakePiece(),

@@ -2,10 +2,15 @@
 // app e teclado MIDI), a saída em uso, o `.sf2` e o monitor MIDI. Saiu de
 // `_ScoreHomePageState` (achado 5 da revisão); a reprodução (agendador,
 // player) ainda é da tela, que entra por [SoundOutputPlayback].
+//
+// BL12: `SoundOutputController` (um `ChangeNotifier`) virou [SoundOutputCubit].
+// O que a tela mostra (saída, som, `.sf2`, monitor) é o [SoundOutputState];
+// os motores e o monitor são objetos, não estado.
 
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_audio/engine_opener.dart';
 import 'package:zywny_audio/sound_engine.dart';
@@ -51,13 +56,75 @@ class SoundOutputPlayback {
 /// do teclado; [midiKeyboard] diz se o motor é o próprio teclado.
 typedef MonitorPitch = int Function(int received, {required bool midiKeyboard});
 
+/// O que a tela mostra do som: a saída em uso, o interruptor, o carregamento
+/// do `.sf2`, o `.sf2` próprio e o monitor MIDI. Imutável.
+class SoundOutputState extends Equatable {
+  const SoundOutputState({
+    required this.output,
+    this.soundOn = false,
+    this.loadingSoundFont = false,
+    this.customSoundFont = false,
+    this.midiMonitorOn = false,
+    this.serial = 0,
+  });
+
+  /// Saída **em uso** (M03). A escolhida mora nas configurações; quando ela
+  /// muda, o controller troca o motor e só então atualiza esta.
+  final SoundOutput output;
+
+  /// Interruptor "som" (K04): o estado de agora. O que o usuário quer ao abrir
+  /// um hino é `SettingsCubit.state.soundOn`.
+  final bool soundOn;
+
+  /// Abrindo o sintetizador do app (carregando o `.sf2`).
+  final bool loadingSoundFont;
+
+  /// O usuário escolheu um `.sf2` próprio (senão vale o TimGM6mb embutido).
+  final bool customSoundFont;
+
+  /// Monitor MIDI pelo sintetizador do app (M02).
+  final bool midiMonitorOn;
+
+  /// Sobe quando o motor ou o monitor é refeito sem que nenhum campo acima
+  /// mude (troca de saída, troca de dispositivo MIDI): quem escuta precisa
+  /// saber que o motor mudou mesmo assim.
+  final int serial;
+
+  SoundOutputState copyWith({
+    SoundOutput? output,
+    bool? soundOn,
+    bool? loadingSoundFont,
+    bool? customSoundFont,
+    bool? midiMonitorOn,
+    int? serial,
+  }) => SoundOutputState(
+    output: output ?? this.output,
+    soundOn: soundOn ?? this.soundOn,
+    loadingSoundFont: loadingSoundFont ?? this.loadingSoundFont,
+    customSoundFont: customSoundFont ?? this.customSoundFont,
+    midiMonitorOn: midiMonitorOn ?? this.midiMonitorOn,
+    serial: serial ?? this.serial,
+  );
+
+  @override
+  List<Object?> get props => [
+    output,
+    soundOn,
+    loadingSoundFont,
+    customSoundFont,
+    midiMonitorOn,
+    serial,
+  ];
+}
+
 /// Saída de som da partitura: um motor por [SoundOutput] (M03), som
 /// ligado/desligado (K04), `.sf2` (D-SF) e monitor MIDI (M02).
 ///
-/// Quem cria descarta: [dispose] fecha os dois motores e o monitor. As
-/// configurações e o gerenciador MIDI são de fora (da biblioteca).
-class SoundOutputController extends ChangeNotifier {
-  SoundOutputController({
+/// Quem decide lê `state` na hora (as chamadas são síncronas); quem mostra
+/// escuta o `stream`. Quem cria fecha com [close]: ele fecha os dois motores e
+/// o monitor. As configurações e o gerenciador MIDI são de fora (da biblioteca).
+class SoundOutputCubit extends Cubit<SoundOutputState> {
+  SoundOutputCubit({
     required SettingsCubit settings,
     required MidiDeviceManager devices,
     required MidiInputService input,
@@ -81,15 +148,15 @@ class SoundOutputController extends ChangeNotifier {
        _pickSoundFont = pickSoundFont, // ignore: prefer_initializing_formals
        // Lidos já aqui (e não na primeira vez que forem usados): é contra
        // eles que [_onSettingsChanged] compara para saber o que mudou.
-       _output = settings.state.output,
-       _soundSetting = settings.state.soundOn {
+       _soundSetting = settings.state.soundOn,
+       super(SoundOutputState(output: settings.state.output)) {
     _devices.connected.addListener(_onMidiDeviceChanged);
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
     unawaited(
       _soundFonts.hasCustom().then((v) {
-        if (_disposed) return;
-        _customSoundFont = v;
-        notifyListeners();
+        // Sem mudança, não emite: a primeira emissão do Bloc nunca é ignorada.
+        if (_disposed || v == state.customSoundFont) return;
+        _emitir(state.copyWith(customSoundFont: v));
       }),
     );
   }
@@ -127,57 +194,51 @@ class SoundOutputController extends ChangeNotifier {
 
   /// O motor da saída em uso, se já aberto.
   SoundEngine? get engine =>
-      _output == SoundOutput.midiKeyboard ? _midiOutEngine : _appEngine;
+      output == SoundOutput.midiKeyboard ? _midiOutEngine : _appEngine;
 
-  /// Saída **em uso** (M03). A escolhida mora nas configurações; quando ela
-  /// muda, [_onSettingsChanged] troca o motor e só então atualiza esta.
-  SoundOutput get output => _output;
-  SoundOutput _output;
+  /// Saída **em uso** (M03), o que está no [state].
+  SoundOutput get output => state.output;
 
-  /// Interruptor "som" (K04): liga o agendador de áudio sobre o player;
-  /// desligado, o player volta ao próprio relógio interno (`speed`), o
-  /// modo mudo de sempre.
-  ///
-  /// É o estado **de agora**; o que o usuário quer ao abrir um hino é
-  /// `settings.state.soundOn` ([_soundSetting] guarda o último valor visto, para
-  /// distinguir "o usuário mexeu" de "o treino ligou o som por conta").
-  bool get soundOn => _soundOn;
-  bool _soundOn = false;
+  /// Interruptor "som" de agora (K04), o que está no [state].
+  bool get soundOn => state.soundOn;
+
+  /// Último valor visto das configurações de som: distingue "o usuário mexeu"
+  /// de "o treino ligou o som por conta" (ver [_onSettingsChanged]).
   bool _soundSetting;
   bool _autoSoundDone = false;
 
   /// Abrindo o sintetizador do app (carregando o `.sf2`).
-  bool get loadingSoundFont => _loadingSoundFont;
-  bool _loadingSoundFont = false;
+  bool get loadingSoundFont => state.loadingSoundFont;
 
   /// O usuário escolheu um `.sf2` próprio (senão vale o TimGM6mb embutido).
-  bool get customSoundFont => _customSoundFont;
-  bool _customSoundFont = false;
+  bool get customSoundFont => state.customSoundFont;
 
   /// Monitor MIDI pelo sintetizador do app (M02): o que chega na entrada
   /// sai por [engine] num canal reservado, para teclados controladores sem
   /// som próprio. Mesmo motor de [toggleSound] (K04) — [ensureEngine] pede
   /// um `.sf2` só na primeira vez, para qualquer um dos dois. Preferência
   /// guardada por dispositivo em [MidiDeviceManager].
-  bool get midiMonitorOn => _midiMonitorOn;
+  bool get midiMonitorOn => state.midiMonitorOn;
   MidiMonitor? _midiMonitor;
-  bool _midiMonitorOn = false;
 
   Future<SoundEngine?>? _engineOpening;
 
-  void _changed() {
-    if (!_disposed) notifyListeners();
+  /// Emite [novo] (síncrono: quem decide lê `state` logo depois). Depois de
+  /// [close] não emite: um motor que abre tarde não pode lançar erro.
+  void _emitir(SoundOutputState novo) {
+    if (_disposed) return;
+    emit(novo);
   }
 
   void _onSettingsChanged() {
     if (_disposed) return;
-    if (_settings.state.output != _output) {
+    if (_settings.state.output != output) {
       unawaited(applyOutput(_settings.state.output));
     }
     _midiOutEngine?.useScoreInstruments = _settings.state.useScoreInstruments;
     if (_settings.state.soundOn != _soundSetting) {
       _soundSetting = _settings.state.soundOn;
-      if (_soundSetting != _soundOn && !_loadingSoundFont) {
+      if (_soundSetting != soundOn && !loadingSoundFont) {
         unawaited(toggleSound());
       }
     }
@@ -196,39 +257,36 @@ class SoundOutputController extends ChangeNotifier {
   /// A tela ligou o agendador por conta própria (treino, ouvir a etapa):
   /// o som está ligado agora, sem mexer na preferência.
   void markSoundOn() {
-    if (_soundOn) return;
-    _soundOn = true;
-    _changed();
+    if (state.soundOn) return;
+    _emitir(state.copyWith(soundOn: true));
   }
 
   /// Interruptor "som" (K04). Desligar volta ao modo mudo de sempre
   /// (relógio interno do player); ligar abre o motor (K03) e — só na
   /// primeira vez, D-SF ainda em aberto — pede um `.sf2` ao usuário.
   Future<void> toggleSound() async {
-    if (_soundOn) {
+    if (state.soundOn) {
       // Modo treino (T02) depende do agendador de som para o freio e a mão
       // do app — sem som, não há como continuar.
       playback.endPractice();
       playback.detach();
       engine?.allNotesOff();
-      _soundOn = false;
-      _changed();
+      _emitir(state.copyWith(soundOn: false));
       return;
     }
     if (!playback.hasTrack()) return;
     final opened = await ensureEngine();
     if (opened == null || _disposed) return;
     playback.attach(opened, always: false);
-    _soundOn = true;
-    _changed();
+    _emitir(state.copyWith(soundOn: true));
   }
 
   /// O usuário mexeu no interruptor de som desta tela: além de ligar ou
   /// desligar agora, vira a preferência geral (o próximo hino abre igual).
   Future<void> userToggleSound() async {
     await toggleSound();
-    _soundSetting = _soundOn;
-    _settings.setSoundOn(_soundOn);
+    _soundSetting = soundOn;
+    _settings.setSoundOn(soundOn);
   }
 
   /// Uma vez por hino, depois da primeira gravura: religa o som se ele
@@ -237,17 +295,17 @@ class SoundOutputController extends ChangeNotifier {
   void restoreSound() {
     if (_autoSoundDone) return;
     _autoSoundDone = true;
-    if (_soundOn) return;
+    if (state.soundOn) return;
     if (!_settings.state.soundOn) {
       // Som desligado: mesmo assim deixa o motor do app armado (dispositivo
       // aberto, `.sf2` carregado) enquanto o aluno ainda olha a partitura —
       // senão o primeiro play espera por isso. O play continua mudo até
       // alguém ligar o som. O motor MIDI não custa nada para abrir e
       // reclamaria da falta de teclado, então fica para quando for usado.
-      if (_output == SoundOutput.appSynth) unawaited(ensureEngine());
+      if (output == SoundOutput.appSynth) unawaited(ensureEngine());
       return;
     }
-    if (_output == SoundOutput.midiKeyboard &&
+    if (output == SoundOutput.midiKeyboard &&
         _devices.connected.value == null) {
       return;
     }
@@ -262,7 +320,7 @@ class SoundOutputController extends ChangeNotifier {
   Future<SoundEngine?> ensureEngine() async {
     final existing = engine;
     if (existing != null) return existing;
-    if (_output == SoundOutput.midiKeyboard) return ensureMidiOutEngine();
+    if (output == SoundOutput.midiKeyboard) return ensureMidiOutEngine();
     // Já abrindo (armado na entrada, ou dois pedidos seguidos): quem chega
     // depois espera a mesma abertura em vez de desistir.
     return _engineOpening ??= openAppEngine().whenComplete(
@@ -272,8 +330,7 @@ class SoundOutputController extends ChangeNotifier {
 
   /// Abre o sintetizador do app (`.sf2` do usuário ou o embutido).
   Future<SoundEngine?> openAppEngine() async {
-    _loadingSoundFont = true;
-    _changed();
+    _emitir(state.copyWith(loadingSoundFont: true));
     SoundEngine? engine;
     try {
       engine = await pickEngineWithSoundFont();
@@ -283,8 +340,7 @@ class SoundOutputController extends ChangeNotifier {
       if (!_disposed) onMessage?.call('som: erro ao iniciar ($e)');
       engine = null;
     } finally {
-      _loadingSoundFont = false;
-      _changed();
+      _emitir(state.copyWith(loadingSoundFont: false));
     }
     if (engine == null) return null;
     if (_disposed) {
@@ -323,26 +379,22 @@ class SoundOutputController extends ChangeNotifier {
   /// e reancora o agendador/monitor na nova — se a nova saída não abrir
   /// (ex.: MIDI sem dispositivo conectado), desliga os dois.
   Future<void> applyOutput(SoundOutput next) async {
-    if (next == _output) return;
-    final wasSoundOn = _soundOn;
-    final wasMonitorOn = _midiMonitorOn;
+    if (next == output) return;
+    final wasSoundOn = state.soundOn;
+    final wasMonitorOn = state.midiMonitorOn;
     if (!wasSoundOn && !wasMonitorOn) {
-      _output = next;
-      _changed();
+      _emitir(state.copyWith(output: next));
       return;
     }
     engine?.allNotesOff();
-    _output = next;
-    _changed();
+    _emitir(state.copyWith(output: next));
     final opened = await ensureEngine();
     if (_disposed) return;
     if (opened == null) {
       playback.detach();
       _midiMonitor?.dispose();
-      _soundOn = false;
       _midiMonitor = null;
-      _midiMonitorOn = false;
-      _changed();
+      _emitir(state.copyWith(soundOn: false, midiMonitorOn: false));
       return;
     }
     if (wasMonitorOn) {
@@ -352,7 +404,9 @@ class SoundOutputController extends ChangeNotifier {
     if (wasSoundOn && playback.hasTrack()) {
       playback.attach(opened, always: true);
     }
-    _changed();
+    // O motor da saída foi trocado: quem escuta precisa saber, mesmo que os
+    // campos sejam os mesmos (ver [SoundOutputState.serial]).
+    _emitir(state.copyWith(serial: state.serial + 1));
   }
 
   /// Interruptor "usar instrumentos da partitura" (M03): Program Change ao
@@ -364,7 +418,7 @@ class SoundOutputController extends ChangeNotifier {
   /// reservado, para teclados controladores sem som próprio. Guarda a
   /// escolha por dispositivo em [MidiDeviceManager].
   Future<void> toggleMidiMonitor() async {
-    if (_midiMonitorOn) {
+    if (state.midiMonitorOn) {
       disableMidiMonitor();
       return;
     }
@@ -372,8 +426,7 @@ class SoundOutputController extends ChangeNotifier {
     if (engine == null || _disposed) return;
     _midiMonitor?.dispose();
     _midiMonitor = newMidiMonitor(engine);
-    _midiMonitorOn = true;
-    _changed();
+    _emitir(state.copyWith(midiMonitorOn: true));
     final device = _devices.connected.value;
     if (device != null) {
       unawaited(_devices.setMonitorEnabled(device.id, true));
@@ -383,8 +436,7 @@ class SoundOutputController extends ChangeNotifier {
   void disableMidiMonitor() {
     _midiMonitor?.dispose();
     _midiMonitor = null;
-    _midiMonitorOn = false;
-    _changed();
+    _emitir(state.copyWith(midiMonitorOn: false));
     final device = _devices.connected.value;
     if (device != null) {
       unawaited(_devices.setMonitorEnabled(device.id, false));
@@ -416,10 +468,9 @@ class SoundOutputController extends ChangeNotifier {
     if (engine == null) return;
     _midiOutEngine = null;
     unawaited(engine.dispose());
-    if (_output != SoundOutput.midiKeyboard || !_soundOn) return;
+    if (output != SoundOutput.midiKeyboard || !state.soundOn) return;
     playback.detach();
-    _soundOn = false;
-    _changed();
+    _emitir(state.copyWith(soundOn: false));
   }
 
   /// Liga ou desliga o monitor conforme a preferência guardada para o
@@ -434,12 +485,17 @@ class SoundOutputController extends ChangeNotifier {
     _midiMonitor?.dispose();
     if (wanted && engine != null) {
       _midiMonitor = newMidiMonitor(engine);
-      _midiMonitorOn = true;
     } else {
       _midiMonitor = null;
-      _midiMonitorOn = false;
     }
-    _changed();
+    // O monitor foi refeito para o dispositivo novo: o aviso sai mesmo que o
+    // campo continue o mesmo (ver [SoundOutputState.serial]).
+    _emitir(
+      state.copyWith(
+        midiMonitorOn: _midiMonitor != null,
+        serial: state.serial + 1,
+      ),
+    );
   }
 
   /// Abre o motor e pede um soundfont ao usuário; `null` se o motor não
@@ -462,8 +518,7 @@ class SoundOutputController extends ChangeNotifier {
     try {
       await _appEngine?.loadSoundFont(bytes);
       await _soundFonts.saveCustom(bytes);
-      _customSoundFont = true;
-      _changed();
+      _emitir(state.copyWith(customSoundFont: true));
     } catch (e) {
       DiagLog.log('erro', 'soundfont: $e');
       if (!_disposed) onMessage?.call('não consegui usar esse soundfont ($e)');
@@ -475,15 +530,14 @@ class SoundOutputController extends ChangeNotifier {
     try {
       await _soundFonts.clearCustom();
       await _appEngine?.loadSoundFont(await _soundFonts.load());
-      _customSoundFont = false;
-      _changed();
+      _emitir(state.copyWith(customSoundFont: false));
     } catch (e) {
       DiagLog.log('erro', 'soundfont: $e');
     }
   }
 
   @override
-  void dispose() {
+  Future<void> close() {
     _disposed = true;
     _devices.connected.removeListener(_onMidiDeviceChanged);
     unawaited(_settingsSub.cancel());
@@ -493,6 +547,6 @@ class SoundOutputController extends ChangeNotifier {
     unawaited(_midiOutEngine?.dispose());
     _appEngine = null;
     _midiOutEngine = null;
-    super.dispose();
+    return super.close();
   }
 }

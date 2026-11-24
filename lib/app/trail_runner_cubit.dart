@@ -2,9 +2,15 @@
 // contar, ouvir, avaliar, avançar, encerrar — e o treino livre, que divide
 // com ela o mesmo `PracticeController`. Saiu de `_ScoreHomePageState`
 // (achado 5 da revisão): a lógica pura da trilha é o [TrailCubit]; o
-// que mora aqui é a cola entre ela, o player ([PlaybackController]), a
+// que mora aqui é a cola entre ela, o player ([PlaybackCubit]), a
 // prática e as marcas de erro na partitura. Os resumos e a conclusão são
 // diálogos: a tela os mostra por [TrailRunnerHost].
+//
+// BL13: é um Cubit. O que a tela e as decisões leem (o N, o aviso de
+// trilha indisponível, o ouvir, a latência, as marcas de erro e a revisão)
+// está no estado; a trilha, o treino e os caches da pauta são objetos que
+// o Cubit guarda. [TrailRunnerState.serial] sobe a cada aviso: a trilha ou o
+// treino mudaram, e eles não estão no estado.
 
 // Os parâmetros são públicos e os campos, privados (como no R08).
 // ignore_for_file: prefer_initializing_formals
@@ -13,6 +19,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:score_bridge/score_bridge.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_audio/score_audio_scheduler.dart';
 
@@ -44,8 +51,8 @@ import 'package:zywny_comum/trail/trail_stage.dart' show TrailPhase, TrailStage;
 import 'package:zywny_comum/trail/trail_widgets.dart'
     show StageSummaryAction, TrailConclusionAction, trailStripTextFor;
 import 'package:zywny_comum/ui/transpose_widgets.dart' show alsoStudiedText;
-import 'package:zywny/app/playback_controller.dart';
-import 'package:zywny/app/score_render_session.dart';
+import 'package:zywny/app/playback_cubit.dart';
+import 'package:zywny/app/score_render_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
 
 /// O resumo de uma etapa (ou de um bloco de reforço) que a tela mostra:
@@ -97,20 +104,108 @@ class TrailRunnerHost {
   /// e o resumo.
   final void Function(PracticeReport report) practiceReport;
 
-  /// O N deste hino mudou ([TrailRunner.setPieceN]): guardar.
+  /// O N deste hino mudou ([TrailRunnerCubit.setPieceN]): guardar.
   final void Function(int? n)? pieceNChanged;
+}
+
+/// O que a trilha do hino mostra e decide: o N, o aviso de trilha
+/// indisponível, o ouvir, a latência calibrada, as marcas de erro na pauta e a
+/// revisão das notas erradas. [serial] sobe a cada aviso (a trilha ou o treino
+/// mudaram, e eles não estão aqui).
+class TrailRunnerState extends Equatable {
+  const TrailRunnerState({
+    this.pieceN,
+    this.unavailable,
+    this.alsoStudied,
+    this.listening = false,
+    this.inputLatencyMs = 0,
+    this.errorMeasureIds = const {},
+    this.errorStageId,
+    this.wrongMarks = const [],
+    this.reviewing = false,
+    this.serial = 0,
+  });
+
+  /// N da trilha deste hino (`null` = o geral).
+  final int? pieceN;
+
+  /// Por que não há trilha (explicação no lugar da faixa); `null` com trilha
+  /// ou sem partitura.
+  final String? unavailable;
+
+  /// "Também estudada: original, 3 de 8 etapas" (Q04/Q08).
+  final String? alsoStudied;
+
+  /// Ouvindo o trecho da etapa (U03).
+  final bool listening;
+
+  /// Latência de entrada+saída calibrada para o teclado/saída correntes.
+  final double inputLatencyMs;
+
+  /// Compassos (ids da cena) com erro na última passagem.
+  final Set<String> errorMeasureIds;
+
+  /// A etapa a que as marcas de erro são (para descartá-las ao trocar).
+  final String? errorStageId;
+
+  /// As notas erradas do último treino que terminou (até o próximo treino, a
+  /// troca de etapa ou a nova gravura).
+  final List<WrongMark> wrongMarks;
+
+  /// A revisão está aberta: as notas erradas fixas na partitura.
+  final bool reviewing;
+
+  final int serial;
+
+  TrailRunnerState copyWith({
+    int? Function()? pieceN,
+    String? Function()? unavailable,
+    String? Function()? alsoStudied,
+    bool? listening,
+    double? inputLatencyMs,
+    Set<String>? errorMeasureIds,
+    String? Function()? errorStageId,
+    List<WrongMark>? wrongMarks,
+    bool? reviewing,
+    int? serial,
+  }) => TrailRunnerState(
+    pieceN: pieceN == null ? this.pieceN : pieceN(),
+    unavailable: unavailable == null ? this.unavailable : unavailable(),
+    alsoStudied: alsoStudied == null ? this.alsoStudied : alsoStudied(),
+    listening: listening ?? this.listening,
+    inputLatencyMs: inputLatencyMs ?? this.inputLatencyMs,
+    errorMeasureIds: errorMeasureIds ?? this.errorMeasureIds,
+    errorStageId: errorStageId == null ? this.errorStageId : errorStageId(),
+    wrongMarks: wrongMarks ?? this.wrongMarks,
+    reviewing: reviewing ?? this.reviewing,
+    serial: serial ?? this.serial,
+  );
+
+  @override
+  List<Object?> get props => [
+    pieceN,
+    unavailable,
+    alsoStudied,
+    listening,
+    inputLatencyMs,
+    errorMeasureIds,
+    errorStageId,
+    wrongMarks,
+    reviewing,
+    serial,
+  ];
 }
 
 /// A trilha do hino aberto e o treino (da etapa ou livre) em curso.
 ///
-/// Quem cria descarta: [dispose] para o treino e solta a trilha. O store
-/// do progresso é de fora (da biblioteca).
-class TrailRunner extends ChangeNotifier {
-  TrailRunner({
+/// Quem cria fecha ([close]): para o treino e solta a trilha. O store do
+/// progresso é de fora (da biblioteca).
+class TrailRunnerCubit extends Cubit<TrailRunnerState> {
+  TrailRunnerCubit({
     required TrailProgressCubit store,
-    required PlaybackController playback,
-    required ScoreRenderSession session,
-    required SoundOutputController sound,
+    required PlaybackCubit playback,
+    required ScoreRenderCubit session,
+    required SoundOutputCubit sound,
     required SettingsCubit settings,
     required MidiDeviceManager devices,
     required MidiInputService midiInput,
@@ -133,17 +228,17 @@ class TrailRunner extends ChangeNotifier {
        _midiInput = midiInput,
        _piece = piece,
        _term = term,
-       _pieceN = pieceN,
        _inputLatency =
            inputLatency ??
-           (() => calibratedInputLatency(devices, sound.output)) {
+           (() => calibratedInputLatency(devices, sound.output)),
+       super(TrailRunnerState(pieceN: pieceN)) {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
   final TrailProgressCubit _store;
-  final PlaybackController _playback;
-  final ScoreRenderSession _session;
-  final SoundOutputController _sound;
+  final PlaybackCubit _playback;
+  final ScoreRenderCubit _session;
+  final SoundOutputCubit _sound;
   final SettingsCubit _settings;
   late final StreamSubscription<SettingsState> _settingsSub;
   final MidiDeviceManager _devices;
@@ -164,34 +259,18 @@ class TrailRunner extends ChangeNotifier {
 
   TrailCubit? _trail;
 
-  /// Escuta o estado da trilha (BL10: era o `addListener`); cancelada ao
-  /// trocar ou soltar a trilha. Quando o `TrailRunner` virar Cubit (BL13), sai.
+  /// Escuta o estado da trilha; cancelada ao trocar ou soltar a trilha.
   StreamSubscription<TrailState>? _trailSub;
-  String? _unavailable;
-  String? _alsoStudied;
-  int? _pieceN;
   PracticeController? _practice;
-  bool _listening = false;
   Timer? _listenTimer;
-  double _inputLatencyMs = 0;
 
   /// Etapas e andamentos com que o plano da trilha foi montado: mudou nas
   /// configurações, a trilha é remontada.
   List<TrailPhase> _planPhases = const [];
   Set<double> _planSpeeds = const {};
 
-  /// Compassos (ids da cena) com erro na última passagem, marcados na pauta
-  /// até o próximo play, a troca de etapa ou a saída (U12).
-  Set<String> _errorMeasureIds = const {};
-  String? _errorStageId;
-
-  /// Notas erradas do último treino, guardadas para a revisão na partitura
-  /// (a mesma vida das marcas de erro: até o próximo treino, a troca de
-  /// etapa ou a nova gravura) e se a revisão está aberta.
-  List<WrongMark> _wrongMarks = const [];
-  bool _reviewing = false;
-
-  /// Id da etapa para a qual a partitura já foi levada (U02).
+  /// Id da etapa para a qual a partitura já foi levada (U02). Cache do
+  /// controlador, não é mostrado.
   String? _armedStageId;
 
   /// O cache de [markedIds]: vale para uma etapa **e** uma gravura. Cada
@@ -210,14 +289,14 @@ class TrailRunner extends ChangeNotifier {
 
   /// Por que não há trilha (explicação no lugar da faixa); `null` com trilha
   /// ou sem partitura.
-  String? get unavailable => _unavailable;
+  String? get unavailable => state.unavailable;
 
   /// "Também estudada: original, 3 de 8 etapas" (Q04/Q08): os outros tons
   /// em que este hino tem trilha. Lido a cada trilha montada.
-  String? get alsoStudied => _alsoStudied;
+  String? get alsoStudied => state.alsoStudied;
 
   /// N da trilha deste hino (`null` = o geral).
-  int? get pieceN => _pieceN;
+  int? get pieceN => state.pieceN;
 
   /// A trilha no comando (faixa), e não o treino livre.
   bool get trailMode => _trail != null && !_trail!.freeMode;
@@ -226,20 +305,20 @@ class TrailRunner extends ChangeNotifier {
   PracticeController? get practice => _practice;
 
   /// Ouvindo o trecho da etapa (U03).
-  bool get listening => _listening;
+  bool get listening => state.listening;
 
   /// Latência de entrada+saída calibrada para o teclado/saída correntes.
-  double get inputLatencyMs => _inputLatencyMs;
+  double get inputLatencyMs => state.inputLatencyMs;
 
   /// Compassos com erro na última passagem (ids da cena).
-  Set<String> get errorMeasureIds => _errorMeasureIds;
+  Set<String> get errorMeasureIds => state.errorMeasureIds;
 
   /// As notas erradas do último treino que terminou; vazio se não houve
   /// nenhuma.
-  List<WrongMark> get wrongMarks => _wrongMarks;
+  List<WrongMark> get wrongMarks => state.wrongMarks;
 
   /// A revisão está aberta: as notas erradas fixas na partitura.
-  bool get reviewing => _reviewing;
+  bool get reviewing => state.reviewing;
 
   /// Compassos do trecho da etapa selecionada, para marcar na pauta (U02).
   /// Vazio no treino livre, sem trilha e na fase final.
@@ -262,8 +341,13 @@ class TrailRunner extends ChangeNotifier {
   /// [id] é de um compasso do trecho da etapa ([markedIds]).
   bool isMarked(String id) => markedIds().isNotEmpty && _markedSet.contains(id);
 
-  void _changed() {
-    if (!_disposed) notifyListeners();
+  /// Avisa a tela: a trilha, o treino ou a partitura mudaram. [mudar] troca os
+  /// campos do estado (sem ele, só o [TrailRunnerState.serial] sobe); o aviso
+  /// sai sempre, como o `notifyListeners` de antes.
+  void _changed([TrailRunnerState Function(TrailRunnerState s)? mudar]) {
+    if (_disposed) return;
+    final novo = mudar == null ? state : mudar(state);
+    emit(novo.copyWith(serial: novo.serial + 1));
   }
 
   /// As configurações mudaram: a trilha é remontada se o corte ou as etapas
@@ -275,7 +359,7 @@ class TrailRunner extends ChangeNotifier {
     if (trail != null && !trail.running) {
       final effective = effectiveTrailMeasures(
         general: _settings.state.trailMeasures,
-        piece: _pieceN,
+        piece: state.pieceN,
       );
       if (effective != trail.plan.n ||
           !listEquals(_planPhases, _settings.state.trailPlanPhases) ||
@@ -326,7 +410,7 @@ class TrailRunner extends ChangeNotifier {
     final track = _session.track;
     final player = _playback.player;
     _soltaTrilha();
-    _unavailable = null;
+    _changed((s) => s.copyWith(unavailable: () => null));
     clearErrorMarks();
     if (_disposed) return;
     if (document == null || track == null || player == null) return;
@@ -336,15 +420,18 @@ class TrailRunner extends ChangeNotifier {
     unawaited(_refreshAlsoStudied());
     final n = effectiveTrailMeasures(
       general: _settings.state.trailMeasures,
-      piece: _pieceN,
+      piece: state.pieceN,
     );
     final path = TrailPath.fromTimeline(player.timeline);
     final plan = _planOf(path, track, n);
     if (plan.isEmpty) {
-      _unavailable =
-          'Trilha indisponível ${_term.neste} ${_term.singular} — treino '
-          'livre';
-      _changed();
+      _changed(
+        (s) => s.copyWith(
+          unavailable: () =>
+              'Trilha indisponível ${_term.neste} ${_term.singular} — treino '
+              'livre',
+        ),
+      );
       return;
     }
     var progress = await _store.ensureLoaded(pieceId);
@@ -408,9 +495,8 @@ class TrailRunner extends ChangeNotifier {
       fifths: _piece.fifths,
       naming: _settings.state.noteNaming,
     );
-    if (text == _alsoStudied) return;
-    _alsoStudied = text;
-    _changed();
+    if (text == state.alsoStudied) return;
+    _changed((s) => s.copyWith(alsoStudied: () => text));
   }
 
   /// Reinicia a trilha do hino (gaveta, J06): zera o progresso e remonta.
@@ -429,7 +515,7 @@ class TrailRunner extends ChangeNotifier {
   }) async {
     final oldEffective = effectiveTrailMeasures(
       general: _settings.state.trailMeasures,
-      piece: _pieceN,
+      piece: state.pieceN,
     );
     final newEffective = effectiveTrailMeasures(
       general: _settings.state.trailMeasures,
@@ -444,17 +530,16 @@ class TrailRunner extends ChangeNotifier {
       );
     }
     if (_disposed) return;
-    _pieceN = value;
+    _changed((s) => s.copyWith(pieceN: () => value));
     host.pieceNChanged?.call(value);
-    _changed();
     if (newEffective != oldEffective) unawaited(setup());
   }
 
   void _onTrailChanged() {
     if (_disposed) return;
     // Trocou de etapa: as marcas de erro eram da anterior.
-    if ((_errorMeasureIds.isNotEmpty || _wrongMarks.isNotEmpty) &&
-        _trail?.selected?.id != _errorStageId) {
+    if ((state.errorMeasureIds.isNotEmpty || state.wrongMarks.isNotEmpty) &&
+        _trail?.selected?.id != state.errorStageId) {
       clearErrorMarks();
     }
     _changed();
@@ -465,36 +550,47 @@ class TrailRunner extends ChangeNotifier {
   void markErrors(Iterable<int> occurrences) {
     final player = _playback.player;
     if (player == null) return;
-    _errorMeasureIds = {
+    final ids = {
       for (final i in occurrences)
         if (i >= 0 && i < player.measures.length) player.measures[i].id,
     };
-    _errorStageId = _trail?.selected?.id;
-    _changed();
+    _changed(
+      (s) => s.copyWith(
+        errorMeasureIds: ids,
+        errorStageId: () => _trail?.selected?.id,
+      ),
+    );
   }
 
   void clearErrorMarks() {
-    if (_errorMeasureIds.isEmpty && _wrongMarks.isEmpty) return;
-    _errorMeasureIds = const {};
-    _errorStageId = null;
-    _dropWrongMarks();
-    _changed();
+    if (state.errorMeasureIds.isEmpty && state.wrongMarks.isEmpty) return;
+    ghosts.clearReview();
+    _changed(
+      (s) => s.copyWith(
+        errorMeasureIds: const {},
+        errorStageId: () => null,
+        wrongMarks: const [],
+        reviewing: false,
+      ),
+    );
   }
 
   /// Guarda as notas erradas de um treino que acabou, para o aluno poder
   /// revê-las na partitura. Sem nenhuma, não oferece nada.
   void _keepWrongMarks(List<WrongMark> marks) {
-    _dropWrongMarks();
-    if (marks.isEmpty || _disposed) return;
-    _wrongMarks = marks;
-    _errorStageId = _trail?.selected?.id;
-    _changed();
-  }
-
-  void _dropWrongMarks() {
-    _wrongMarks = const [];
-    _reviewing = false;
     ghosts.clearReview();
+    if (_disposed) return;
+    if (marks.isEmpty) {
+      _changed((s) => s.copyWith(wrongMarks: const [], reviewing: false));
+      return;
+    }
+    _changed(
+      (s) => s.copyWith(
+        wrongMarks: marks,
+        reviewing: false,
+        errorStageId: () => _trail?.selected?.id,
+      ),
+    );
   }
 
   /// "Revisar": fixa na partitura as notas erradas do último treino — as
@@ -503,10 +599,9 @@ class TrailRunner extends ChangeNotifier {
   /// as marcas de erro ([clearErrorMarks]) — até o próximo treino, o play, a
   /// troca de etapa ou uma gravura nova.
   void startReview() {
-    if (_wrongMarks.isEmpty || _practice != null || _disposed) return;
-    ghosts.setReview([for (final m in _wrongMarks) m.ghostRequest]);
-    _reviewing = true;
-    _changed();
+    if (state.wrongMarks.isEmpty || _practice != null || _disposed) return;
+    ghosts.setReview([for (final m in state.wrongMarks) m.ghostRequest]);
+    _changed((s) => s.copyWith(reviewing: true));
   }
 
   /// Com a etapa parada, a partitura mostra o primeiro compasso do trecho:
@@ -536,14 +631,12 @@ class TrailRunner extends ChangeNotifier {
   Future<void> loadInputLatency() async {
     final ms = await _inputLatency();
     if (_disposed) return;
-    _inputLatencyMs = ms;
-    _changed();
+    _changed((s) => s.copyWith(inputLatencyMs: ms));
   }
 
   /// A calibração acabou de medir [ms].
   void setInputLatency(double ms) {
-    _inputLatencyMs = ms;
-    _changed();
+    _changed((s) => s.copyWith(inputLatencyMs: ms));
   }
 
   /// Um treino novo: o agendador sobre o motor (que abre se preciso),
@@ -624,7 +717,7 @@ class TrailRunner extends ChangeNotifier {
       controller: scores,
       hand: stage.phase.hand,
       ghosts: ghosts,
-      inputLatencyMs: _inputLatencyMs,
+      inputLatencyMs: state.inputLatencyMs,
       writtenFromReceived: writtenFromReceived,
       shiftDetector: shiftDetector,
       onShift: onShift,
@@ -658,7 +751,7 @@ class TrailRunner extends ChangeNotifier {
     final trail = _trail;
     final player = _playback.player;
     if (trail == null || _session.track == null || player == null) return;
-    if (_listening) {
+    if (state.listening) {
       stopListening();
       return;
     }
@@ -667,7 +760,7 @@ class TrailRunner extends ChangeNotifier {
     if (trail.running) abandonStage();
     clearErrorMarks();
     final scheduler = await _ensureScheduler();
-    if (scheduler == null || !_trilhaViva(trail) || _listening) return;
+    if (scheduler == null || !_trilhaViva(trail) || state.listening) return;
     _playback.cancelSilentCountIn();
     scores.clearAll();
     scheduler.setStaves(null);
@@ -687,18 +780,17 @@ class TrailRunner extends ChangeNotifier {
       }
     });
     _sound.markSoundOn();
-    _listening = true;
-    _changed();
+    _changed((s) => s.copyWith(listening: true));
     _playback.setPlaying(true);
   }
 
   /// Fecha o ouvir: devolve ao agendador o que era do aluno e volta ao
   /// início do trecho. Sem efeito se não está ouvindo.
   void stopListening() {
-    if (!_listening) return;
+    if (!state.listening) return;
     _listenTimer?.cancel();
     _listenTimer = null;
-    _listening = false;
+    _changed((s) => s.copyWith(listening: false));
     final scheduler = _playback.scheduler;
     if (scheduler != null) {
       scheduler.clearStopAt();
@@ -934,7 +1026,7 @@ class TrailRunner extends ChangeNotifier {
       controller: scores,
       hand: hand,
       ghosts: ghosts,
-      inputLatencyMs: _inputLatencyMs,
+      inputLatencyMs: state.inputLatencyMs,
       writtenFromReceived: writtenFromReceived,
       shiftDetector: shiftDetector,
       onShift: onShift,
@@ -1030,12 +1122,12 @@ class TrailRunner extends ChangeNotifier {
   }
 
   @override
-  void dispose() {
+  Future<void> close() {
     _disposed = true;
     unawaited(_settingsSub.cancel());
     _listenTimer?.cancel();
     _practice?.dispose();
     _soltaTrilha();
-    super.dispose();
+    return super.close();
   }
 }
