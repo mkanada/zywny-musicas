@@ -891,48 +891,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: FutureBuilder<PieceCatalog>(
                 future: _catalog,
-                builder: (context, snapshot) =>
-                    BlocBuilder<SettingsCubit, SettingsState>(
-                      bloc: _settings,
-                      builder: (context, _) =>
-                          BlocBuilder<LibraryCubit, LibraryState>(
-                            bloc: _libraries,
-                            builder: (context, _) =>
-                                BlocBuilder<
-                                  PieceProgressCubit,
-                                  PieceProgressState
-                                >(
-                                  bloc: _progress,
-                                  builder: (context, _) =>
-                                      BlocBuilder<
-                                        PieceMetadataCubit,
-                                        PieceMetadataState
-                                      >(
-                                        bloc: _metadata,
-                                        builder: (context, _) =>
-                                            BlocBuilder<
-                                              ImportedScoresCubit,
-                                              ImportedScoresState
-                                            >(
-                                              bloc: _imported,
-                                              builder: (context, _) =>
-                                                  BlocBuilder<
-                                                    TrailProgressCubit,
-                                                    TrailProgressState
-                                                  >(
-                                                    bloc: _trail,
-                                                    builder: (context, _) =>
-                                                        sideBySide
-                                                        ? _contentSideBySide(
-                                                            snapshot,
-                                                          )
-                                                        : _content(snapshot),
-                                                  ),
-                                            ),
-                                      ),
-                                ),
-                          ),
-                    ),
+                builder: (context, snapshot) => _listas(snapshot, sideBySide),
               ),
             ),
           ),
@@ -940,6 +899,38 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
   }
+
+  /// A tela se refaz a cada mudança de um dos estados que ela mostra (ajustes,
+  /// bibliotecas, progresso, metadados, partituras importadas e trilha). Cada
+  /// um é um `BlocBuilder` aninhado: o corpo não lê nenhum deles direto.
+  Widget _listas(
+    AsyncSnapshot<PieceCatalog> snapshot,
+    bool sideBySide,
+  ) => BlocBuilder<SettingsCubit, SettingsState>(
+    bloc: _settings,
+    builder: (context, _) => BlocBuilder<LibraryCubit, LibraryState>(
+      bloc: _libraries,
+      builder: (context, _) =>
+          BlocBuilder<PieceProgressCubit, PieceProgressState>(
+            bloc: _progress,
+            builder: (context, _) =>
+                BlocBuilder<PieceMetadataCubit, PieceMetadataState>(
+                  bloc: _metadata,
+                  builder: (context, _) =>
+                      BlocBuilder<ImportedScoresCubit, ImportedScoresState>(
+                        bloc: _imported,
+                        builder: (context, _) =>
+                            BlocBuilder<TrailProgressCubit, TrailProgressState>(
+                              bloc: _trail,
+                              builder: (context, _) => sideBySide
+                                  ? _contentSideBySide(snapshot)
+                                  : _content(snapshot),
+                            ),
+                      ),
+                ),
+          ),
+    ),
+  );
 
   Widget _content(AsyncSnapshot<PieceCatalog> snapshot) {
     final catalog = snapshot.data;
