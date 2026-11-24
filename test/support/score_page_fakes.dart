@@ -83,7 +83,7 @@ OpenedPiece fakeOpenedPiece({
   addTearDown(() {
     if (appSettings == null) settings.close();
     if (trailProgress == null) unawaited(trail.close());
-    midi.dispose();
+    unawaited(midi.close());
   });
   return OpenedPiece(
     piece: piece ?? fakePiece(),

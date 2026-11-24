@@ -106,12 +106,12 @@ void main() {
   tearDown(() async {
     if (!soundDisposed) await sound.close();
     input.dispose();
-    devices.dispose();
+    await devices.close();
     settings.close();
   });
 
   test('trocar de saída preserva o motor do app', () async {
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     await sound.toggleSound();
     expect(sound.soundOn, isTrue);
@@ -136,13 +136,13 @@ void main() {
 
   test('o motor MIDI é recriado quando o dispositivo muda', () async {
     settings.setOutput(SoundOutput.midiKeyboard);
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     await sound.toggleSound();
     final first = sound.engine;
     expect(first, isA<MidiOutSoundEngine>());
 
-    devices.connected.value = _device('b');
+    devices.simularConectado(_device('b'));
     await pumpEventQueue();
     // O antigo foi descartado (e silenciou o teclado que estava ligado),
     // e o som, que saía por ele, desligou.
@@ -162,7 +162,7 @@ void main() {
     await sound.ensureEngine(); // o motor do app já aberto
     final app = appEngines.single;
 
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     expect(sound.midiMonitorOn, isTrue);
     input.press(60);
@@ -172,28 +172,28 @@ void main() {
       hasLength(1),
     );
 
-    devices.connected.value = _device('b'); // sem o monitor guardado
+    devices.simularConectado(_device('b')); // sem o monitor guardado
     await pumpEventQueue();
     expect(sound.midiMonitorOn, isFalse);
     input.press(62);
     await pumpEventQueue();
     expect(app.sent.where((m) => m[1] == 62), isEmpty);
 
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     expect(sound.midiMonitorOn, isTrue);
   });
 
   test('sem motor aberto, o monitor não liga sozinho', () async {
     await devices.setMonitorEnabled('a', true);
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     expect(sound.midiMonitorOn, isFalse);
     expect(appEngines, isEmpty);
   });
 
   test('dispose fecha os dois motores', () async {
-    devices.connected.value = _device('a');
+    devices.simularConectado(_device('a'));
     await pumpEventQueue();
     await sound.ensureEngine();
     settings.setOutput(SoundOutput.midiKeyboard);

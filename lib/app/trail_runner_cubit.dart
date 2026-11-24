@@ -666,7 +666,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     final stage = trail.selected;
     if (stage == null) return;
     // Sem teclado quem chama é o ouvir ([listenStage]).
-    if (_devices.connected.value == null) return;
+    if (_devices.state.connected == null) return;
     clearErrorMarks();
     stopListening();
     final scheduler = await _ensureScheduler();

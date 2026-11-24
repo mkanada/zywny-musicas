@@ -85,11 +85,8 @@ class _Harness {
     h.devices = MidiDeviceManager();
     h.store = TrailProgressCubit();
     await tester.pump();
-    h.devices.connected.value = MidiDevice(
-      'k',
-      'Teclado',
-      MidiDeviceType.serial,
-      true,
+    h.devices.simularConectado(
+      MidiDevice('k', 'Teclado', MidiDeviceType.serial, true),
     );
     final piece = fakePiece(fifths: fifths);
     h.session = ScoreRenderCubit(
@@ -226,7 +223,7 @@ class _Harness {
     scores.dispose();
     ghosts.dispose();
     input.dispose();
-    devices.dispose();
+    unawaited(devices.close());
     unawaited(store.close());
     settings.close();
   }

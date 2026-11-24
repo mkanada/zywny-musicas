@@ -112,7 +112,7 @@ class _Harness {
     sound.close();
     scores.dispose();
     input.dispose();
-    devices.dispose();
+    devices.close();
     settings.close();
   }
 }

@@ -270,7 +270,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _listScroll.dispose();
     _searchController.dispose();
     unawaited(_screen.close());
-    _midi.dispose();
+    unawaited(_midi.close());
     if (widget.progress == null) unawaited(_progress.close());
     if (widget.libraryStore == null) unawaited(_libraries.close());
     if (widget.trailProgress == null) unawaited(_trail.close());
@@ -1360,9 +1360,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      ListenableBuilder(
-        listenable: _midi.connected,
-        builder: (context, _) => _midi.connected.value != null
+      BlocBuilder<MidiDeviceManager, MidiDeviceState>(
+        bloc: _midi,
+        builder: (context, midiState) => midiState.connected != null
             ? const Text(
                 'Teclado conectado ✓',
                 style: TextStyle(

@@ -75,7 +75,7 @@ void main() {
 
   tearDown(() {
     input.dispose();
-    devices.dispose();
+    devices.close();
     settings.close();
   });
 
@@ -151,11 +151,8 @@ void main() {
         addTearDown(cubit.close);
         expect(cubit.state.serial, 0);
 
-        devices.connected.value = MidiDevice(
-          'a',
-          'Teclado a',
-          MidiDeviceType.serial,
-          false,
+        devices.simularConectado(
+          MidiDevice('a', 'Teclado a', MidiDeviceType.serial, false),
         );
         await pumpEventQueue();
 

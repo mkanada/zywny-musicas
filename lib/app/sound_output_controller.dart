@@ -10,6 +10,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart' show MidiDevice;
 import 'package:zywny_bloc/zywny_bloc.dart';
 
 import 'package:zywny_audio/engine_opener.dart';
@@ -150,7 +151,8 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
        // eles que [_onSettingsChanged] compara para saber o que mudou.
        _soundSetting = settings.state.soundOn,
        super(SoundOutputState(output: settings.state.output)) {
-    _devices.connected.addListener(_onMidiDeviceChanged);
+    _conectadoVisto = _devices.state.connected;
+    _connectedSub = _devices.stream.listen(_onMidiState);
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
     unawaited(
       _soundFonts.hasCustom().then((v) {
@@ -164,6 +166,13 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
   final SettingsCubit _settings;
 
   late final StreamSubscription<SettingsState> _settingsSub;
+
+  /// Ouve o gerenciador de teclados; só a troca do teclado conectado chega a
+  /// [_onMidiDeviceChanged].
+  late final StreamSubscription<MidiDeviceState> _connectedSub;
+
+  /// O teclado conectado da última vez que [_onMidiState] viu.
+  MidiDevice? _conectadoVisto;
   final MidiDeviceManager _devices;
   final MidiInputService _input;
   final MonitorPitch _monitorPitch;
@@ -306,7 +315,7 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
       return;
     }
     if (output == SoundOutput.midiKeyboard &&
-        _devices.connected.value == null) {
+        _devices.state.connected == null) {
       return;
     }
     unawaited(toggleSound());
@@ -359,7 +368,7 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
   SoundEngine? ensureMidiOutEngine() {
     final existing = _midiOutEngine;
     if (existing != null) return existing;
-    final device = _devices.connected.value;
+    final device = _devices.state.connected;
     if (device == null) {
       onMessage?.call('conecte um teclado MIDI primeiro');
       return null;
@@ -427,7 +436,7 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
     _midiMonitor?.dispose();
     _midiMonitor = newMidiMonitor(engine);
     _emitir(state.copyWith(midiMonitorOn: true));
-    final device = _devices.connected.value;
+    final device = _devices.state.connected;
     if (device != null) {
       unawaited(_devices.setMonitorEnabled(device.id, true));
     }
@@ -437,7 +446,7 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
     _midiMonitor?.dispose();
     _midiMonitor = null;
     _emitir(state.copyWith(midiMonitorOn: false));
-    final device = _devices.connected.value;
+    final device = _devices.state.connected;
     if (device != null) {
       unawaited(_devices.setMonitorEnabled(device.id, false));
     }
@@ -451,11 +460,19 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
   void _onMidiDeviceChanged() {
     DiagLog.log(
       'midi-dev',
-      'conectado agora: ${_devices.connected.value?.name}',
+      'conectado agora: ${_devices.state.connected?.name}',
     );
     _midiMonitor?.allNotesOff();
     tearDownMidiOutEngine();
     unawaited(syncMidiMonitorToDevice());
+  }
+
+  /// Um estado novo do gerenciador de teclados: só a troca do teclado conectado
+  /// importa aqui (o resto, a lista e os avisos, não muda nada do som).
+  void _onMidiState(MidiDeviceState estado) {
+    if (estado.connected == _conectadoVisto) return;
+    _conectadoVisto = estado.connected;
+    _onMidiDeviceChanged();
   }
 
   /// Descarta o motor de saída MIDI (M03): seu `deviceId` só vale para o
@@ -476,11 +493,11 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
   /// Liga ou desliga o monitor conforme a preferência guardada para o
   /// dispositivo conectado agora.
   Future<void> syncMidiMonitorToDevice() async {
-    final device = _devices.connected.value;
+    final device = _devices.state.connected;
     final wanted = device == null
         ? false
         : await _devices.monitorEnabled(device.id);
-    if (_disposed || _devices.connected.value?.id != device?.id) return;
+    if (_disposed || _devices.state.connected?.id != device?.id) return;
     final engine = this.engine;
     _midiMonitor?.dispose();
     if (wanted && engine != null) {
@@ -539,7 +556,7 @@ class SoundOutputCubit extends Cubit<SoundOutputState> {
   @override
   Future<void> close() {
     _disposed = true;
-    _devices.connected.removeListener(_onMidiDeviceChanged);
+    unawaited(_connectedSub.cancel());
     unawaited(_settingsSub.cancel());
     _midiMonitor?.dispose();
     _midiMonitor = null;

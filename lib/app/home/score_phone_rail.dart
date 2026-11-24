@@ -65,7 +65,7 @@ class ScorePhoneRail extends StatelessWidget {
     final panels = context.read<HomePanelsCubit>();
     final hand = context.read<ScoreModeCubit>().state.hand;
     final trail = runner.trailMode ? runner.trail : null;
-    final keyboard = midi.connected.value != null;
+    final keyboard = midi.state.connected != null;
     final measureCount = scoreMeasureCountOf(playback);
     return PhoneRail(
       tourKeys: tourKeys.rail,
@@ -112,7 +112,7 @@ class ScorePhoneRail extends StatelessWidget {
   bool _canTrain(BuildContext context) =>
       _canPlay(context) &&
       context.read<ScoreModeCubit>().state.trainingMode &&
-      midi.connected.value != null;
+      midi.state.connected != null;
 
   /// O que o botão de tocar faz: na trilha, começa a etapa (com teclado) ou
   /// ouve o trecho; no treino livre, pratica ou toca.

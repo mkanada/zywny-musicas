@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_midi_command/flutter_midi_command.dart' show MidiDevice;
 import 'package:score_bridge/score_bridge.dart';
 import 'package:zywny/app/home/score_measure_jump.dart';
 import 'package:zywny/app/home/score_mode_cubit.dart';
@@ -221,6 +222,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// lá continua conectado aqui).
   late final MidiDeviceManager _midiDeviceManager =
       widget.opened.midiDeviceManager;
+
+  /// Ouve o gerenciador de teclados para a conferência da transposição: só a
+  /// troca do teclado conectado ([_tecladoVisto]) chama [_maybeCheckTranspose].
+  late final StreamSubscription<MidiDeviceState> _keyboardSub;
+  MidiDevice? _tecladoVisto;
   late final MidiInputService _midiInput = FlutterMidiInputService(
     resubscribeOn: _midiDeviceManager.transportInstalled,
     nowSeconds: () =>
@@ -283,7 +289,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     _sound = _newSoundOutput();
     _playback = _newPlayback();
     _runner = _newTrailRunner();
-    _midiDeviceManager.connected.addListener(_maybeCheckTranspose);
+    _tecladoVisto = _midiDeviceManager.state.connected;
+    _keyboardSub = _midiDeviceManager.stream.listen(_onMidiState);
     applyScoreOrientation(_kind);
   }
 
@@ -426,7 +433,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     _shiftNotice.dispose();
     unawaited(_shift.close());
     unawaited(_runner.close());
-    _midiDeviceManager.connected.removeListener(_maybeCheckTranspose);
+    unawaited(_keyboardSub.cancel());
     unawaited(_playback.close());
     unawaited(_sound.close());
     unawaited(_panels.close());
@@ -500,7 +507,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// sem teclado ou com o som só do app não há o que conferir, e a pessoa
   /// fica sabendo por quê.
   void _onSealTap() {
-    final message = _midiDeviceManager.connected.value == null
+    final message = _midiDeviceManager.state.connected == null
         ? 'Conecte o teclado para conferir o TRANSPOSE.'
         : _sound.midiMonitorOn
         ? 'O som sai pelo app, no tom original: não há o que ajustar no '
@@ -525,7 +532,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     final k = _session.renderedTransposition?.semitones ?? 0;
     if (k == 0) return PitchFrame.identity;
     final behavior = _settings.state.keyboardTransposeOf(
-      _midiDeviceManager.connected.value?.name,
+      _midiDeviceManager.state.connected?.name,
     );
     return PitchFrame(
       k,
@@ -711,7 +718,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       _sound.output == SoundOutput.midiKeyboard ? 'midi' : 'app';
 
   Future<void> _openCalibration() async {
-    final device = _midiDeviceManager.connected.value;
+    final device = _midiDeviceManager.state.connected;
     if (device == null) return;
     final engine = await _sound.ensureEngine();
     if (engine == null || !mounted) return;
@@ -744,7 +751,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     enabled: () =>
         !_sound.midiMonitorOn &&
         _settings.state
-                .keyboardTransposeOf(_midiDeviceManager.connected.value?.name)
+                .keyboardTransposeOf(_midiDeviceManager.state.connected?.name)
                 .shiftsOut !=
             false,
   );
@@ -757,7 +764,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     if (!mounted) return;
     final frame = _pitchFrame;
     final frameShiftsOut = frame.keyboardShiftsOut && !frame.appIsSound;
-    final name = _midiDeviceManager.connected.value?.name;
+    final name = _midiDeviceManager.state.connected?.name;
     final behavior = _settings.state.keyboardTransposeOf(name);
     if (name != null && !behavior.isChecked) {
       _settings.setKeyboardTranspose(
@@ -781,7 +788,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     final now = (_session.renderedTransposition?.semitones ?? 0) != 0;
     final previous = _settings.lastPieceTransposed;
     _settings.lastPieceTransposed = now;
-    final name = _midiDeviceManager.connected.value?.name;
+    final name = _midiDeviceManager.state.connected?.name;
     if (shouldRemindTransposeReset(
       state: ResetReminderState(
         previousWasTransposed: previous,
@@ -795,11 +802,19 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     }
   }
 
+  /// Um estado novo do gerenciador de teclados: só a troca do teclado conectado
+  /// chama [_maybeCheckTranspose].
+  void _onMidiState(MidiDeviceState estado) {
+    if (estado.connected == _tecladoVisto) return;
+    _tecladoVisto = estado.connected;
+    _maybeCheckTranspose();
+  }
+
   /// Oferece a conferência sozinha quando há transposição, um teclado
   /// conectado e ainda não conferido ([shouldAutoCheckTranspose]).
   void _maybeCheckTranspose() {
     if (!mounted || _transposeCheckOpen) return;
-    final name = _midiDeviceManager.connected.value?.name;
+    final name = _midiDeviceManager.state.connected?.name;
     if (!shouldAutoCheckTranspose(
       state: AutoCheckState(
         transposition: _session.renderedTransposition,
@@ -821,7 +836,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// nome do teclado.
   Future<void> _openTransposeCheck() async {
     final transposition = _session.renderedTransposition;
-    final device = _midiDeviceManager.connected.value;
+    final device = _midiDeviceManager.state.connected;
     if (transposition == null ||
         device == null ||
         _sound.midiMonitorOn ||
@@ -1063,18 +1078,18 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// `ValueNotifier` do player, que muda com o player: por isso o trilho
   /// refaz a escuta quando a gravura muda ([PlaybackCubit]).
   Widget _phoneRailRegion() => BlocBuilder<PlaybackCubit, PlaybackState>(
-    builder: (context, _) => ListenableBuilder(
-      listenable: Listenable.merge([
-        _playback.player?.currentMeasureIndex ?? _noMeasure,
-        _midiDeviceManager.connected,
-      ]),
-      builder: (context, _) => ScorePhoneRail(
-        index: (_playback.player?.currentMeasureIndex ?? _noMeasure).value,
-        tourKeys: _tourKeys,
-        midi: _midiDeviceManager,
-        onTogglePlay: _togglePlay,
-        onRestart: () => unawaited(_restart()),
-        onOpenMeasureJump: () => unawaited(_openMeasureJump()),
+    builder: (context, _) => BlocBuilder<MidiDeviceManager, MidiDeviceState>(
+      bloc: _midiDeviceManager,
+      builder: (context, _) => ListenableBuilder(
+        listenable: _playback.player?.currentMeasureIndex ?? _noMeasure,
+        builder: (context, _) => ScorePhoneRail(
+          index: (_playback.player?.currentMeasureIndex ?? _noMeasure).value,
+          tourKeys: _tourKeys,
+          midi: _midiDeviceManager,
+          onTogglePlay: _togglePlay,
+          onRestart: () => unawaited(_restart()),
+          onOpenMeasureJump: () => unawaited(_openMeasureJump()),
+        ),
       ),
     ),
   );

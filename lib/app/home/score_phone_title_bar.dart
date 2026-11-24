@@ -128,9 +128,11 @@ class _SoundButtonSlot extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocBuilder<SoundOutputCubit, SoundOutputState>(
         builder: (context, _) => BlocBuilder<TrailRunnerCubit, TrailRunnerState>(
-          builder: (context, _) => ValueListenableBuilder(
-            valueListenable: midi.connected,
-            builder: (context, device, _) {
+          builder: (context, _) =>
+              BlocBuilder<MidiDeviceManager, MidiDeviceState>(
+            bloc: midi,
+            builder: (context, midiState) {
+              final device = midiState.connected;
               final sound = context.read<SoundOutputCubit>();
               final practicing = context.read<TrailRunnerCubit>().practice;
               final noKeyboard =
@@ -210,9 +212,9 @@ class _KeyboardNoticeSlot extends StatelessWidget {
           }
           return Padding(
             padding: const EdgeInsets.only(left: 8),
-            child: ValueListenableBuilder(
-              valueListenable: midi.connected,
-              builder: (context, device, _) => device != null
+            child: BlocBuilder<MidiDeviceManager, MidiDeviceState>(
+              bloc: midi,
+              builder: (context, midiState) => midiState.connected != null
                   ? const SizedBox.shrink()
                   : PhoneKeyboardNotice(
                       // Barra estreita (celular em pé): só o ícone.
@@ -251,7 +253,7 @@ class _TrainingPillSlot extends StatelessWidget {
                             settings.practiceMode == PracticeMode.realtime,
                         practicing:
                             context.read<TrailRunnerCubit>().practice != null,
-                        keyboard: midi.connected.value != null,
+                        keyboard: midi.state.connected != null,
                       ),
                     ),
                   );
