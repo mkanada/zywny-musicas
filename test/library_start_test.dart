@@ -48,7 +48,7 @@ void main() {
 
   Future<void> pumpLibrary(
     WidgetTester tester, {
-    PieceProgressStore? progress,
+    PieceProgressCubit? progress,
     Size size = const Size(760, 900),
   }) async {
     tester.view.physicalSize = size;
@@ -82,7 +82,7 @@ void main() {
   testWidgets('com um hino já aberto o cartão de começo não existe', (
     tester,
   ) async {
-    final progress = PieceProgressStore();
+    final progress = PieceProgressCubit();
     await progress.markOpened('002');
     await pumpLibrary(tester, progress: progress);
     expect(find.text('COMECE POR AQUI'), findsNothing);

@@ -1,7 +1,7 @@
 // R11: o andamento da trilha de estudo — montar a trilha, armar a etapa,
 // contar, ouvir, avaliar, avançar, encerrar — e o treino livre, que divide
 // com ela o mesmo `PracticeController`. Saiu de `_ScoreHomePageState`
-// (achado 5 da revisão): a lógica pura da trilha é o [TrailController]; o
+// (achado 5 da revisão): a lógica pura da trilha é o [TrailCubit]; o
 // que mora aqui é a cola entre ela, o player ([PlaybackController]), a
 // prática e as marcas de erro na partitura. Os resumos e a conclusão são
 // diálogos: a tela os mostra por [TrailRunnerHost].
@@ -35,10 +35,11 @@ import 'package:zywny_comum/practice/shift_detector.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/trail/stage_result.dart'
     show StagePass, StageResult;
-import 'package:zywny_comum/trail/trail_controller.dart';
+import 'package:zywny_comum/trail/trail_cubit.dart';
 import 'package:zywny_comum/trail/trail_path.dart';
 import 'package:zywny_comum/trail/trail_plan.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_stage.dart' show TrailPhase, TrailStage;
 import 'package:zywny_comum/trail/trail_widgets.dart'
     show StageSummaryAction, TrailConclusionAction, trailStripTextFor;
@@ -61,7 +62,7 @@ typedef StageSummaryDialog = Future<StageSummaryAction?> Function({
 /// O começo de uma passada da trilha: a etapa, a trilha, o agendador, a faixa
 /// e o player que ela usa.
 typedef _PassStart = ({
-  TrailController trail,
+  TrailCubit trail,
   TrailStage stage,
   ScoreAudioScheduler scheduler,
   PerformanceTrack track,
@@ -71,7 +72,7 @@ typedef _PassStart = ({
 /// O fim de uma passada da trilha: a etapa, o que o aluno fez nela e as marcas
 /// de erro que ela deixou.
 typedef _StageEnd = ({
-  TrailController trail,
+  TrailCubit trail,
   TrailStage stage,
   StageResult result,
   List<WrongMark> wrongMarks,
@@ -106,7 +107,7 @@ class TrailRunnerHost {
 /// do progresso é de fora (da biblioteca).
 class TrailRunner extends ChangeNotifier {
   TrailRunner({
-    required TrailProgressStore store,
+    required TrailProgressCubit store,
     required PlaybackController playback,
     required ScoreRenderSession session,
     required SoundOutputController sound,
@@ -139,7 +140,7 @@ class TrailRunner extends ChangeNotifier {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
-  final TrailProgressStore _store;
+  final TrailProgressCubit _store;
   final PlaybackController _playback;
   final ScoreRenderSession _session;
   final SoundOutputController _sound;
@@ -161,7 +162,11 @@ class TrailRunner extends ChangeNotifier {
 
   bool _disposed = false;
 
-  TrailController? _trail;
+  TrailCubit? _trail;
+
+  /// Escuta o estado da trilha (BL10: era o `addListener`); cancelada ao
+  /// trocar ou soltar a trilha. Quando o `TrailRunner` virar Cubit (BL13), sai.
+  StreamSubscription<TrailState>? _trailSub;
   String? _unavailable;
   String? _alsoStudied;
   int? _pieceN;
@@ -201,7 +206,7 @@ class TrailRunner extends ChangeNotifier {
   /// Trilha de estudo (fase J): plano do hino, progresso e etapa
   /// selecionada. `null` sem trilha (caminho com saltos, ou partitura sem
   /// número de hino) — aí a tela fica no treino livre.
-  TrailController? get trail => _trail;
+  TrailCubit? get trail => _trail;
 
   /// Por que não há trilha (explicação no lugar da faixa); `null` com trilha
   /// ou sem partitura.
@@ -299,6 +304,20 @@ class TrailRunner extends ChangeNotifier {
     unawaited(setup());
   }
 
+  /// Solta a trilha atual: deixa de escutá-la e a fecha (BL10).
+  void _soltaTrilha() {
+    unawaited(_trailSub?.cancel());
+    _trailSub = null;
+    unawaited(_trail?.close());
+    _trail = null;
+  }
+
+  /// [trail] ainda é a trilha montada e não foi fechada: depois de um `await`,
+  /// só então ela recebe chamadas que emitem (BL10). Trocada ou fechada
+  /// enquanto o runner esperava, não se mexe nela.
+  bool _trilhaViva(TrailCubit trail) =>
+      !_disposed && identical(_trail, trail) && !trail.isClosed;
+
   /// Monta a trilha depois de cada gravura: caminho sem repetições (J01),
   /// plano de etapas (J03) e progresso do hino. Sem plano (saltos) ou sem
   /// número de hino, explica e fica no livre.
@@ -306,9 +325,7 @@ class TrailRunner extends ChangeNotifier {
     final document = _session.document;
     final track = _session.track;
     final player = _playback.player;
-    _trail?.removeListener(_onTrailChanged);
-    _trail?.dispose();
-    _trail = null;
+    _soltaTrilha();
     _unavailable = null;
     clearErrorMarks();
     if (_disposed) return;
@@ -336,14 +353,14 @@ class TrailRunner extends ChangeNotifier {
     // de outro corte e é descartada ao abrir (J06).
     if (progress.total > 0 && progress.n != n) await _store.reset(pieceId);
     progress = _fittedProgress(progress, n, plan.stages.length);
-    final trail = TrailController(
+    final trail = TrailCubit(
       path: path,
       plan: plan,
       progress: progress,
       store: _store,
       pieceId: pieceId,
     );
-    trail.addListener(_onTrailChanged);
+    _trailSub = trail.stream.listen((_) => _onTrailChanged());
     _armedStageId = null;
     _trail = trail;
     _changed();
@@ -560,7 +577,7 @@ class TrailRunner extends ChangeNotifier {
     clearErrorMarks();
     stopListening();
     final scheduler = await _ensureScheduler();
-    if (scheduler == null || _disposed) return;
+    if (scheduler == null || !_trilhaViva(trail)) return;
     // O andamento da etapa vale só nela (sem gravar no hino).
     if ((stage.speed ?? _playback.speed) != scheduler.speed) {
       scheduler.setSpeed(stage.speed ?? _playback.speed);
@@ -571,7 +588,7 @@ class TrailRunner extends ChangeNotifier {
     _paintForPractice(player, track, stage.phase.hand, stage.phase.mode);
     player.seek(Duration(microseconds: (stage.startMs * 1000).round()));
     await loadInputLatency();
-    if (_disposed) return;
+    if (!_trilhaViva(trail)) return;
     final timed = stage.speed != null;
     shiftDetector.rearm();
     final practice = _practiceOf((
@@ -650,7 +667,7 @@ class TrailRunner extends ChangeNotifier {
     if (trail.running) abandonStage();
     clearErrorMarks();
     final scheduler = await _ensureScheduler();
-    if (scheduler == null || _disposed || _listening) return;
+    if (scheduler == null || !_trilhaViva(trail) || _listening) return;
     _playback.cancelSilentCountIn();
     scores.clearAll();
     scheduler.setStaves(null);
@@ -735,7 +752,7 @@ class TrailRunner extends ChangeNotifier {
     final stage = end.stage;
     final result = end.result;
     await trail.recordDone(result);
-    if (_disposed) return;
+    if (!_trilhaViva(trail)) return;
     markErrors(result.badMeasures);
     _keepWrongMarks(end.wrongMarks);
     // Aprovou a final.100: concluiu a trilha (tela própria, J07).
@@ -762,15 +779,15 @@ class TrailRunner extends ChangeNotifier {
       isLast: trail.progress.current(trail.plan) == null,
       blockCount: blocks,
     );
-    if (_disposed) return;
+    if (!_trilhaViva(trail)) return;
     await _applyStageAction(trail, stage, action);
   }
 
   /// A trilha foi concluída pela final: a tela de conclusão decide (biblioteca
   /// ou modo livre).
-  Future<void> _onTrailConcluded(TrailController trail) async {
+  Future<void> _onTrailConcluded(TrailCubit trail) async {
     final action = await host.conclusion();
-    if (_disposed) return;
+    if (!_trilhaViva(trail)) return;
     switch (action) {
       case TrailConclusionAction.library:
         host.backToLibrary();
@@ -783,7 +800,7 @@ class TrailRunner extends ChangeNotifier {
 
   /// O que o resumo da etapa pediu, numa etapa que não é de bloco.
   Future<void> _applyStageAction(
-    TrailController trail,
+    TrailCubit trail,
     TrailStage stage,
     StageSummaryAction? action,
   ) async {
@@ -795,6 +812,7 @@ class TrailRunner extends ChangeNotifier {
         unawaited(startStage());
       case StageSummaryAction.skip:
         await trail.skipSelected();
+        if (!_trilhaViva(trail)) return;
         trail.next();
       case StageSummaryAction.train:
         trail.next();
@@ -821,7 +839,7 @@ class TrailRunner extends ChangeNotifier {
       badLogical: _badLogical(trail, result),
       isLast: false,
     );
-    if (_disposed) return;
+    if (!_trilhaViva(trail)) return;
     switch (action) {
       case StageSummaryAction.next:
       case StageSummaryAction.train:
@@ -839,7 +857,7 @@ class TrailRunner extends ChangeNotifier {
   }
 
   /// Compassos lógicos com erro para o resumo.
-  List<int> _badLogical(TrailController trail, StageResult result) {
+  List<int> _badLogical(TrailCubit trail, StageResult result) {
     final numbers = <int>{};
     for (final occurrence in result.badMeasures) {
       final logical = trail.path.logicalOf(occurrence);
@@ -1017,8 +1035,7 @@ class TrailRunner extends ChangeNotifier {
     unawaited(_settingsSub.cancel());
     _listenTimer?.cancel();
     _practice?.dispose();
-    _trail?.removeListener(_onTrailChanged);
-    _trail?.dispose();
+    _soltaTrilha();
     super.dispose();
   }
 }

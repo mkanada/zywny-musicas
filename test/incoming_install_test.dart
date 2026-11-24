@@ -17,7 +17,7 @@ import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
 import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_library/library_blob_store.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 
 import 'support/library_fixtures.dart';
 
@@ -39,7 +39,7 @@ IncomingPackage _arrived(String name, Uint8List bytes) =>
 void main() {
   late TestKeys keys;
   late MemoryLibraryBlobStore blobs;
-  late LibraryStore store;
+  late LibraryCubit store;
   late IncomingPackages incoming;
 
   setUpAll(() async => keys = await TestKeys.generate());
@@ -49,7 +49,7 @@ void main() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
     blobs = MemoryLibraryBlobStore();
-    store = LibraryStore(
+    store = LibraryCubit(
       blobs: blobs,
       prefs: SharedPreferencesAsync(),
       publicKey: keys.pub,
@@ -93,7 +93,7 @@ void main() {
     await pumpLibrary(tester);
 
     expect(find.text('Hinário instalada (3 hinos)'), findsOneWidget);
-    expect(store.activeId, 'hinos');
+    expect(store.state.activeId, 'hinos');
     expect(blobs.blobs.keys, ['hinos']);
     expect(find.text('Instale uma biblioteca de músicas'), findsNothing);
     expect(find.text('T1'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(store.activeId, 'classicos');
+    expect(store.state.activeId, 'classicos');
     expect(find.text('Biblioteca instalada (2 hinos)'), findsOneWidget);
   });
 
@@ -134,8 +134,8 @@ void main() {
 
     await tester.tap(find.text('Substituir'));
     await tester.pumpAndSettle();
-    expect(store['hinos']!.version, '2');
-    expect(store['hinos']!.pieceCount, 4);
+    expect(store.state['hinos']!.version, '2');
+    expect(store.state['hinos']!.pieceCount, 4);
   });
 
   testWidgets('dois arquivos seguidos: um de cada vez, na ordem', (
@@ -157,10 +157,10 @@ void main() {
       );
     await tester.pumpAndSettle();
 
-    expect(store['a'], isNotNull);
-    expect(store['b'], isNotNull);
+    expect(store.state['a'], isNotNull);
+    expect(store.state['b'], isNotNull);
     // A última instalada é a em uso.
-    expect(store.activeId, 'b');
+    expect(store.state.activeId, 'b');
   });
 
   testWidgets('arquivo que não é pacote: o diálogo explica e nada é gravado', (
@@ -217,7 +217,7 @@ void main() {
 
     expect(find.text('outra tela'), findsNothing);
     expect(find.text('T1'), findsOneWidget);
-    expect(store.activeId, 'hinos');
+    expect(store.state.activeId, 'hinos');
   });
 
   testWidgets('se o usuário cancela a substituição, fica onde estava', (
@@ -287,7 +287,7 @@ void main() {
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      expect(store['hinos']!.version, '2');
+      expect(store.state['hinos']!.version, '2');
       // Como ainda não tinha sido visto, o passeio começa quando a fila
       // esvazia.
       expect(find.byType(TourOverlay), findsOneWidget);

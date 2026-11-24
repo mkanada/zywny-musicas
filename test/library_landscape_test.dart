@@ -72,7 +72,7 @@ void main() {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final progress = PieceProgressStore();
+    final progress = PieceProgressCubit();
     if (opened) await progress.markOpened('600');
     await tester.pumpWidget(
       MaterialApp(
@@ -217,7 +217,7 @@ void main() {
       tester.view.physicalSize = _phoneLandscape;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      final progress = PieceProgressStore();
+      final progress = PieceProgressCubit();
       await progress.markOpened('600');
       await tester.pumpWidget(
         MaterialApp(

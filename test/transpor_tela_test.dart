@@ -20,6 +20,7 @@ import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
 import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_comum/ui/transpose_widgets.dart';
@@ -326,7 +327,7 @@ void main() {
       int? fifths = -3,
       PieceSettings pieceSettings = const PieceSettings(),
       SettingsCubit? appSettings,
-      TrailProgressStore? trail,
+      TrailProgressCubit? trail,
       bool emptyFirst = false,
     }) async {
       tester.view.physicalSize = const Size(844, 390);
@@ -478,7 +479,7 @@ void main() {
     testWidgets('trilha começada: trocar de tom pede confirmação', (
       tester,
     ) async {
-      final trail = TrailProgressStore();
+      final trail = TrailProgressCubit();
       final piece = _piece(13, fifths: -3);
       await tester.runAsync(
         () => trail.save(
@@ -535,7 +536,7 @@ void main() {
     testWidgets(
       'na trilha em Dó, a gaveta diz o que foi estudado no original',
       (tester) async {
-        final trail = TrailProgressStore();
+        final trail = TrailProgressCubit();
         final piece = _piece(13, fifths: -3);
         await tester.runAsync(
           () => trail.save(
@@ -611,7 +612,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final prefs = SharedPreferencesAsync();
-      final progress = PieceProgressStore(prefs: prefs);
+      final progress = PieceProgressCubit(prefs: prefs);
       await progress.load('hinos');
       await progress.markOpened('007', transpose: '-m3');
       final settings = SettingsCubit();
@@ -626,7 +627,7 @@ void main() {
             loadScore: (piece) async => throw UnimplementedError(),
             appSettings: settings,
             progress: progress,
-            trailProgress: TrailProgressStore(prefs: prefs),
+            trailProgress: TrailProgressCubit(prefs: prefs),
             scoreBuilder: (context, o) =>
                 const Scaffold(body: Text('partitura')),
           ),

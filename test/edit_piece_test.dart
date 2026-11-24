@@ -68,7 +68,7 @@ void main() {
           loadCatalog: () async =>
               PieceCatalog(pieces ?? [_piece(1, 'Hino Um')]),
           loadScore: (piece) async => Uint8List(0),
-          progress: PieceProgressStore(),
+          progress: PieceProgressCubit(),
           metadata: PieceMetadataStore(),
           imported: ImportedScoresStore(blobs: MemoryLibraryBlobStore()),
           pickMusicXml: pickMusicXml ?? (() async => null),

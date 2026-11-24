@@ -19,6 +19,7 @@ import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
@@ -92,12 +93,12 @@ void main() {
 
   group('trilha', () {
     test('o original e o tom transposto são trilhas independentes', () async {
-      final store = TrailProgressStore(prefs: prefs);
+      final store = TrailProgressCubit(prefs: prefs);
       await store.load(const [], 'hinos');
       await store.save('001', _trail(8, 20));
       await store.save(progressIdFor('001', _inC), _trail(2, 20));
 
-      final again = TrailProgressStore(prefs: prefs);
+      final again = TrailProgressCubit(prefs: prefs);
       await again.load(['001', progressIdFor('001', _inC)], 'hinos');
       expect(again['001'].done, 8);
       expect(again[progressIdFor('001', _inC)].done, 2);
@@ -115,14 +116,14 @@ void main() {
         'trail_hinos_009',
         jsonEncode(_trail(1, 4).toJson()),
       );
-      final store = TrailProgressStore(prefs: prefs);
+      final store = TrailProgressCubit(prefs: prefs);
       final p = await store.ensureLoaded(progressIdFor('009', null));
       expect(p.done, 1);
       expect((await store.ensureLoaded(progressIdFor('009', _inC))).total, 0);
     });
 
     test('loadMissing lê só os ids que ainda não foram procurados', () async {
-      final store = TrailProgressStore(prefs: prefs);
+      final store = TrailProgressCubit(prefs: prefs);
       await store.load(const ['a'], 'lib');
       await prefs.setString(
         'trail_lib_a',
@@ -138,7 +139,7 @@ void main() {
     });
 
     test('também estudada: o original e os tons com etapa feita', () async {
-      final store = TrailProgressStore(prefs: prefs);
+      final store = TrailProgressCubit(prefs: prefs);
       await store.load(const [], 'hinos');
       await store.save('001', _trail(3, 8));
       await store.save(progressIdFor('001', _inC), _trail(1, 8));
@@ -155,7 +156,7 @@ void main() {
     test(
       'trocar de tom pede confirmação só se a trilha ficaria para trás',
       () async {
-        final store = TrailProgressStore(prefs: prefs);
+        final store = TrailProgressCubit(prefs: prefs);
         await store.load(const [], 'hinos');
         await store.save('001', _trail(3, 8));
 
@@ -174,7 +175,7 @@ void main() {
 
   group('pontuação', () {
     test('cada tom guarda a sua melhor; a abertura é da música', () async {
-      final store = PieceProgressStore(
+      final store = PieceProgressCubit(
         prefs: prefs,
         now: () => DateTime(2026, 10, 6, 12),
       );
@@ -184,59 +185,62 @@ void main() {
       await store.recordScore(progressIdFor('001', _inC), 90);
       await store.recordScore(progressIdFor('001', _inC), 80); // não rebaixa
 
-      expect(store.forTone('001', null)!.bestScore, 70);
-      expect(store.forTone('001', _inC)!.bestScore, 90);
-      expect(store.forTone('001', _inA)!.bestScore, isNull);
+      expect(store.state.forTone('001', null)!.bestScore, 70);
+      expect(store.state.forTone('001', _inC)!.bestScore, 90);
+      expect(store.state.forTone('001', _inA)!.bestScore, isNull);
       // "Última aberta" não vê a entrada do tom como música.
-      expect(store.lastOpenedId, '001');
-      expect(store.forTone('001', _inC)!.lastOpened, DateTime(2026, 10, 6, 12));
+      expect(store.state.lastOpenedId, '001');
+      expect(
+        store.state.forTone('001', _inC)!.lastOpened,
+        DateTime(2026, 10, 6, 12),
+      );
 
-      final again = PieceProgressStore(prefs: prefs);
+      final again = PieceProgressCubit(prefs: prefs);
       await again.load('hinos');
-      expect(again.forTone('001', _inC)!.bestScore, 90);
-      expect(again.lastOpenedId, '001');
+      expect(again.state.forTone('001', _inC)!.bestScore, 90);
+      expect(again.state.lastOpenedId, '001');
     });
 
     test(
       'pontuar a versão simplificada não tira a música do "Continuar"',
       () async {
-        final store = PieceProgressStore(prefs: prefs);
+        final store = PieceProgressCubit(prefs: prefs);
         await store.load('hinos');
         await store.markOpened('001');
         await store.recordScore('001.s', 85);
-        expect(store.lastOpenedId, '001');
+        expect(store.state.lastOpenedId, '001');
       },
     );
 
     test(
       'pontuar um tom antes de abrir a música não a torna "aberta"',
       () async {
-        final store = PieceProgressStore(prefs: prefs);
+        final store = PieceProgressCubit(prefs: prefs);
         await store.load('hinos');
         await store.recordScore(progressIdFor('002', _inC), 60);
-        expect(store.lastOpenedId, isNull);
+        expect(store.state.lastOpenedId, isNull);
       },
     );
 
     test(
       'a escolha de transposição da música é guardada com a abertura',
       () async {
-        final store = PieceProgressStore(prefs: prefs);
+        final store = PieceProgressCubit(prefs: prefs);
         await store.load('hinos');
         await store.markOpened('001', transpose: '-m3');
         await store.setTranspose('001', kTransposeNone);
         await store.recordScore('001', 50);
 
-        final again = PieceProgressStore(prefs: prefs);
+        final again = PieceProgressCubit(prefs: prefs);
         await again.load('hinos');
-        expect(again.transposeChoice('001'), kTransposeNone);
-        expect(again.transposeChoice('002'), isNull);
-        expect(again['001']!.bestScore, 50);
+        expect(again.state.transposeChoice('001'), kTransposeNone);
+        expect(again.state.transposeChoice('002'), isNull);
+        expect(again.state['001']!.bestScore, 50);
       },
     );
 
     test('a ordem por pontuação usa o tom em uso', () async {
-      final store = PieceProgressStore(prefs: prefs);
+      final store = PieceProgressCubit(prefs: prefs);
       await store.load('hinos');
       await store.recordScore('001', 95);
       await store.recordScore(progressIdFor('002', _inC), 90);
@@ -244,20 +248,25 @@ void main() {
       const byScore = SortState(key: SortKey.score, ascending: false);
 
       // Os dois no original: o 1 (95) vence o 2 (sem nota).
-      expect(sortedPieces(pieces, byScore, store).map((p) => p.number), [1, 2]);
+      expect(sortedPieces(pieces, byScore, store.state).map((p) => p.number), [
+        1,
+        2,
+      ]);
       // O 2 em Dó: a nota de Dó (90) vale; o 1 segue no original.
       final sorted = sortedPieces(
         pieces,
         byScore,
-        store,
-        progressOf: (p) => store.forTone(p.id, p.number == 2 ? _inC : null),
+        store.state,
+        progressOf: (p) =>
+            store.state.forTone(p.id, p.number == 2 ? _inC : null),
       );
       expect(sorted.map((p) => p.number), [1, 2]);
       final byLow = sortedPieces(
         pieces,
         const SortState(key: SortKey.score),
-        store,
-        progressOf: (p) => store.forTone(p.id, p.number == 2 ? _inC : null),
+        store.state,
+        progressOf: (p) =>
+            store.state.forTone(p.id, p.number == 2 ? _inC : null),
       );
       expect(byLow.map((p) => p.number), [2, 1]);
     });
@@ -267,8 +276,8 @@ void main() {
     Future<void> pump(
       WidgetTester tester, {
       required SettingsCubit settings,
-      required PieceProgressStore progress,
-      required TrailProgressStore trail,
+      required PieceProgressCubit progress,
+      required TrailProgressCubit trail,
     }) async {
       tester.view.physicalSize = const Size(1000, 900);
       tester.view.devicePixelRatio = 1;
@@ -291,8 +300,8 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<TrailProgressStore> seededTrail() async {
-      final trail = TrailProgressStore(prefs: prefs);
+    Future<TrailProgressCubit> seededTrail() async {
+      final trail = TrailProgressCubit(prefs: prefs);
       await trail.save('007', _trail(8, 20));
       await trail.save('007@-m3', _trail(4, 10));
       return trail;
@@ -304,7 +313,7 @@ void main() {
       await pump(
         tester,
         settings: SettingsCubit(),
-        progress: PieceProgressStore(prefs: prefs),
+        progress: PieceProgressCubit(prefs: prefs),
         trail: await seededTrail(),
       );
       expect(find.text('8/20'), findsOneWidget);
@@ -318,7 +327,7 @@ void main() {
       await pump(
         tester,
         settings: settings,
-        progress: PieceProgressStore(prefs: prefs),
+        progress: PieceProgressCubit(prefs: prefs),
         trail: await seededTrail(),
       );
       expect(find.text('4/10'), findsOneWidget);
@@ -328,7 +337,7 @@ void main() {
     testWidgets('a escolha "Não" da música vence a chave geral', (
       tester,
     ) async {
-      final progress = PieceProgressStore(prefs: prefs);
+      final progress = PieceProgressCubit(prefs: prefs);
       await progress.load('hinos');
       await progress.markOpened('007', transpose: kTransposeNone);
       final settings = SettingsCubit()..setTransposeByDefault(true);
@@ -344,7 +353,7 @@ void main() {
     testWidgets('a escolha de um tom da música mostra a trilha desse tom', (
       tester,
     ) async {
-      final progress = PieceProgressStore(prefs: prefs);
+      final progress = PieceProgressCubit(prefs: prefs);
       await progress.load('hinos');
       await progress.markOpened('007', transpose: '-m3');
       await pump(

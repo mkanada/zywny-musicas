@@ -23,6 +23,7 @@ import 'package:zywny_comum/app/libraries_section.dart';
 import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart'
     show TrailProgressBar, trailResumeText;
 import 'package:zywny_comum/ui/device_kind.dart';
@@ -38,6 +39,7 @@ import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
+import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny_library/library_keys.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
@@ -45,7 +47,6 @@ import 'package:zywny_library/library_package.dart'
     show LibraryPackage, LibraryTerm;
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/library_sort.dart';
-import 'package:zywny_library/library_store.dart';
 
 /// O que a tela de partitura recebe da biblioteca ao abrir um hino.
 @immutable
@@ -99,7 +100,7 @@ class OpenedPiece {
 
   /// O progresso da trilha (o mesmo da biblioteca, para a linha do hino
   /// atualizar ao voltar da partitura sem reabrir nada — J09).
-  final TrailProgressStore trailProgress;
+  final TrailProgressCubit trailProgress;
 }
 
 /// Um treino avaliado terminou com [score] (0–100) no tom [transposition]
@@ -160,12 +161,12 @@ class LibraryScreen extends StatefulWidget {
   /// eles: o catálogo da biblioteca em uso e a partitura dele.
   final Future<PieceCatalog> Function()? loadCatalog;
   final Future<Uint8List> Function(Piece piece)? loadScore;
-  final LibraryStore? libraryStore;
+  final LibraryCubit? libraryStore;
 
   /// O seletor do MusicXML avulso (`.musicxml`, `.mxl`); os testes trocam
   /// por um falso.
   final PickMusicXmlFile pickMusicXml;
-  final PieceProgressStore? progress;
+  final PieceProgressCubit? progress;
   final SettingsCubit? appSettings;
   final PieceSettingsStore? pieceSettings;
 
@@ -177,7 +178,7 @@ class LibraryScreen extends StatefulWidget {
   final ImportedScoresStore? imported;
 
   /// Resumos da trilha por hino (J09); os testes injetam com dados.
-  final TrailProgressStore? trailProgress;
+  final TrailProgressCubit? trailProgress;
 
   /// O registro do tutorial de primeiro uso (`lib/tutorial/`). `null` (os
   /// testes) é sem tutorial: o passeio nem começa sozinho.
@@ -216,10 +217,10 @@ typedef _OpenRequest = ({
 });
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  late final LibraryStore _libraries = widget.libraryStore ?? LibraryStore();
+  late final LibraryCubit _libraries = widget.libraryStore ?? LibraryCubit();
   late Future<PieceCatalog> _catalog = _loadCatalog();
-  late final PieceProgressStore _progress =
-      widget.progress ?? PieceProgressStore();
+  late final PieceProgressCubit _progress =
+      widget.progress ?? PieceProgressCubit();
   final MidiDeviceManager _midi = MidiDeviceManager(
     bluetooth: !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
   );
@@ -234,8 +235,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       widget.metadata ?? PieceMetadataStore();
   late final ImportedScoresStore _imported =
       widget.imported ?? ImportedScoresStore();
-  late final TrailProgressStore _trail =
-      widget.trailProgress ?? TrailProgressStore();
+  late final TrailProgressCubit _trail =
+      widget.trailProgress ?? TrailProgressCubit();
 
   /// Os botões que o tutorial aponta, e se ele já foi decidido nesta
   /// abertura (começa sozinho no máximo uma vez por abertura do app).
@@ -283,8 +284,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _listScroll.dispose();
     _searchController.dispose();
     _midi.dispose();
-    if (widget.progress == null) _progress.dispose();
-    if (widget.trailProgress == null) _trail.dispose();
+    if (widget.progress == null) unawaited(_progress.close());
+    if (widget.libraryStore == null) unawaited(_libraries.close());
+    if (widget.trailProgress == null) unawaited(_trail.close());
     if (widget.metadata == null) _metadata.dispose();
     if (widget.imported == null) _imported.dispose();
     if (widget.appSettings == null) _settings.close();
@@ -308,7 +310,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final custom = widget.loadCatalog;
     if (custom != null) return custom();
     await _libraries.load();
-    final id = _libraries.activeId;
+    final id = _libraries.state.activeId;
     if (id != null) {
       final package = await _libraries.open(id);
       if (package != null) {
@@ -535,12 +537,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// cujo progresso a biblioteca mostra.
   Transposition? _toneInUse(Piece piece) => effectiveTransposition(
     piece,
-    PieceSettings(transpose: _progress.transposeChoice(piece.id)),
+    PieceSettings(transpose: _progress.state.transposeChoice(piece.id)),
     _settings,
   );
 
   PieceProgress? _progressOf(Piece piece) =>
-      _progress.forTone(piece.id, _toneInUse(piece));
+      _progress.state.forTone(piece.id, _toneInUse(piece));
 
   TrailProgress _trailOf(Piece piece) =>
       _trail[progressIdFor(piece.id, _toneInUse(piece))];
@@ -721,7 +723,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _progress.markOpened(
         base.id,
         transpose: simplified
-            ? _progress[base.id]?.transpose
+            ? _progress.state[base.id]?.transpose
             : pieceSettings.transpose,
       ),
     );
@@ -832,7 +834,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   /// Qual biblioteca (e versão) a lista mostra: muda quando a em uso troca,
   /// é substituída ou some.
   String _librarySignature() =>
-      '${_libraries.activeId}/${_libraries.active?.version}';
+      '${_libraries.state.activeId}/${_libraries.state.active?.version}';
   String? _shownLibrary;
 
   void _reloadCatalog() {
@@ -892,18 +894,33 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 builder: (context, snapshot) =>
                     BlocBuilder<SettingsCubit, SettingsState>(
                       bloc: _settings,
-                      builder: (context, _) => ListenableBuilder(
-                        listenable: Listenable.merge([
-                          _progress,
-                          _trail,
-                          _metadata,
-                          _imported,
-                          _libraries,
-                        ]),
-                        builder: (context, _) => sideBySide
-                            ? _contentSideBySide(snapshot)
-                            : _content(snapshot),
-                      ),
+                      builder: (context, _) =>
+                          BlocBuilder<LibraryCubit, LibraryState>(
+                            bloc: _libraries,
+                            builder: (context, _) =>
+                                BlocBuilder<
+                                  PieceProgressCubit,
+                                  PieceProgressState
+                                >(
+                                  bloc: _progress,
+                                  builder: (context, _) => ListenableBuilder(
+                                    listenable: Listenable.merge([
+                                      _metadata,
+                                      _imported,
+                                    ]),
+                                    builder: (context, _) =>
+                                        BlocBuilder<
+                                          TrailProgressCubit,
+                                          TrailProgressState
+                                        >(
+                                          bloc: _trail,
+                                          builder: (context, _) => sideBySide
+                                              ? _contentSideBySide(snapshot)
+                                              : _content(snapshot),
+                                        ),
+                                  ),
+                                ),
+                          ),
                     ),
               ),
             ),
@@ -1120,7 +1137,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Piece? _continuing(List<Piece> pieces) {
-    final id = _progress.lastOpenedId;
+    final id = _progress.state.lastOpenedId;
     if (id == null) return null;
     for (final h in pieces) {
       if (h.id == id) return h;
@@ -1506,7 +1523,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       sortedPieces(
         _effectivePieces(catalog),
         _sort,
-        _progress,
+        _progress.state,
         progressOf: _progressOf,
       ),
       _query,

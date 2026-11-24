@@ -12,6 +12,7 @@ import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
@@ -65,8 +66,8 @@ void main() {
   Future<void> pumpLibrary(
     WidgetTester tester, {
     required List<Piece> pieces,
-    PieceProgressStore? progress,
-    TrailProgressStore? trail,
+    PieceProgressCubit? progress,
+    TrailProgressCubit? trail,
     Size size = const Size(760, 900),
   }) async {
     tester.view.physicalSize = size;
@@ -95,10 +96,10 @@ void main() {
   testWidgets('a linha mostra a armadura, não o compositor; o resto e o '
       'progresso aparecem inteiros', (tester) async {
     const composer = 'Compositor Com Um Nome Bem Longo X';
-    final store = PieceProgressStore();
+    final store = PieceProgressCubit();
     await store.markOpened('007');
     await store.recordScore('007', 78);
-    final trail = TrailProgressStore();
+    final trail = TrailProgressCubit();
     await trail.save('007', _progress(approved: 12, skipped: 1, total: 75));
     await pumpLibrary(
       tester,
@@ -136,7 +137,7 @@ void main() {
   });
 
   testWidgets('trilha concluída: barra cheia e a marca', (tester) async {
-    final trail = TrailProgressStore();
+    final trail = TrailProgressCubit();
     await trail.save(
       '009',
       _progress(approved: 50, skipped: 0, total: 51, finalApproved: true),

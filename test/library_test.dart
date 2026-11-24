@@ -20,6 +20,7 @@ import 'package:zywny_library/library_sort.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
@@ -110,16 +111,18 @@ void main() {
     });
 
     test('número, nome e compositor', () {
-      final progress = PieceProgressStore();
-      expect(_numbers(sortedPieces(_pieces, const SortState(), progress)), [
-        1,
-        12,
-        120,
-        244,
-      ]);
+      final progress = PieceProgressCubit();
+      expect(
+        _numbers(sortedPieces(_pieces, const SortState(), progress.state)),
+        [1, 12, 120, 244],
+      );
       expect(
         _numbers(
-          sortedPieces(_pieces, const SortState(key: SortKey.title), progress),
+          sortedPieces(
+            _pieces,
+            const SortState(key: SortKey.title),
+            progress.state,
+          ),
         ),
         // "Ó Vem…" entra no O, não depois do Z.
         [120, 244, 1, 12],
@@ -131,7 +134,7 @@ void main() {
           sortedPieces(
             _pieces,
             const SortState(key: SortKey.accidentals),
-            progress,
+            progress.state,
           ),
         ),
         [244, 12, 1, 120],
@@ -141,7 +144,7 @@ void main() {
           sortedPieces(
             _pieces,
             const SortState(key: SortKey.accidentals, ascending: false),
-            progress,
+            progress.state,
           ),
         ),
         [1, 244, 12, 120],
@@ -152,7 +155,7 @@ void main() {
       'recentes e pontuação: quem nunca foi estudado vai para o fim',
       () async {
         var now = DateTime(2026, 10, 1, 9);
-        final progress = PieceProgressStore(now: () => now);
+        final progress = PieceProgressCubit(now: () => now);
         await progress.markOpened('120');
         now = DateTime(2026, 10, 1, 10);
         await progress.markOpened('012');
@@ -161,7 +164,7 @@ void main() {
         await progress.recordScore('120', 40); // pior que a melhor: não troca
 
         const recent = SortState(key: SortKey.recent, ascending: false);
-        expect(_numbers(sortedPieces(_pieces, recent, progress)), [
+        expect(_numbers(sortedPieces(_pieces, recent, progress.state)), [
           12,
           120,
           1,
@@ -169,7 +172,11 @@ void main() {
         ]);
         expect(
           _numbers(
-            sortedPieces(_pieces, recent.toggled(SortKey.recent), progress),
+            sortedPieces(
+              _pieces,
+              recent.toggled(SortKey.recent),
+              progress.state,
+            ),
           ),
           [120, 12, 1, 244],
         );
@@ -178,26 +185,26 @@ void main() {
             sortedPieces(
               _pieces,
               const SortState().toggled(SortKey.score),
-              progress,
+              progress.state,
             ),
           ),
           [120, 12, 1, 244],
         );
-        expect(progress['120']!.bestScore, 90);
-        expect(progress.lastOpenedId, '012');
+        expect(progress.state['120']!.bestScore, 90);
+        expect(progress.state.lastOpenedId, '012');
       },
     );
 
     test('o progresso sobrevive a fechar o app', () async {
       final prefs = SharedPreferencesAsync();
-      final first = PieceProgressStore(prefs: prefs);
+      final first = PieceProgressCubit(prefs: prefs);
       await first.markOpened('244');
       await first.recordScore('244', 81);
 
-      final second = PieceProgressStore(prefs: prefs);
+      final second = PieceProgressCubit(prefs: prefs);
       await second.load();
-      expect(second.lastOpenedId, '244');
-      expect(second['244']!.bestScore, 81);
+      expect(second.state.lastOpenedId, '244');
+      expect(second.state['244']!.bestScore, 81);
     });
   });
 
@@ -339,7 +346,7 @@ void main() {
       ),
     );
 
-    Future<Widget> libraryWith(TrailProgressStore trail) async {
+    Future<Widget> libraryWith(TrailProgressCubit trail) async {
       await trail.save('012', progress12of51());
       return MaterialApp(
         theme: buildAppTheme(),
@@ -356,7 +363,7 @@ void main() {
       tester,
     ) async {
       phonePortrait(tester);
-      await tester.pumpWidget(await libraryWith(TrailProgressStore()));
+      await tester.pumpWidget(await libraryWith(TrailProgressCubit()));
       await tester.pump();
       expect(find.textContaining('12/51'), findsOneWidget);
       expect(find.textContaining('2 pul.'), findsOneWidget);
@@ -367,7 +374,7 @@ void main() {
 
     testWidgets('final.100 aprovada marca concluído', (tester) async {
       phonePortrait(tester);
-      final trail = TrailProgressStore();
+      final trail = TrailProgressCubit();
       await trail.save(
         '012',
         const TrailProgress(
@@ -398,7 +405,7 @@ void main() {
       tester,
     ) async {
       phonePortrait(tester);
-      final trail = TrailProgressStore();
+      final trail = TrailProgressCubit();
       await tester.pumpWidget(await libraryWith(trail));
       await tester.pump();
       expect(find.textContaining('12/51'), findsOneWidget);
@@ -414,8 +421,8 @@ void main() {
 
     testWidgets('continuar diz em que etapa parou', (tester) async {
       phonePortrait(tester);
-      final trail = TrailProgressStore();
-      final progress = PieceProgressStore();
+      final trail = TrailProgressCubit();
+      final progress = PieceProgressCubit();
       await progress.markOpened('012');
       await tester.pumpWidget(
         MaterialApp(
@@ -441,7 +448,7 @@ void main() {
 
     testWidgets('600 hinos abrem sem montar nenhum plano', (tester) async {
       phonePortrait(tester);
-      final trail = TrailProgressStore();
+      final trail = TrailProgressCubit();
       await trail.save('001', progress12of51());
       await tester.pumpWidget(
         MaterialApp(

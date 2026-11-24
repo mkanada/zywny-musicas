@@ -7,7 +7,7 @@ lib/app/piece_metadata.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=0
 lib/app/playback_controller.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=0
 lib/app/score_render_session.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=0
 lib/app/sound_output_controller.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=1
-lib/app/trail_runner.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=1
+lib/app/trail_runner.dart S=0 CN=1 VN=0 VLB=0 SW=0 L=0
 lib/app/web_drop_web.dart S=3 CN=0 VN=0 VLB=0 SW=1 L=0
 lib/main.dart S=30 CN=0 VN=2 VLB=4 SW=1 L=7
 lib/tutorial/tour.dart S=2 CN=0 VN=0 VLB=0 SW=1 L=0

@@ -13,7 +13,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_comum/incoming/incoming_packages.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/library_fixtures.dart';
@@ -33,7 +33,7 @@ class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
 void main() {
   late TestKeys keys;
   late MemoryLibraryBlobStore blobs;
-  late LibraryStore store;
+  late LibraryCubit store;
   late IncomingPackages incoming;
 
   setUpAll(() async => keys = await TestKeys.generate());
@@ -43,7 +43,7 @@ void main() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
     blobs = MemoryLibraryBlobStore();
-    store = LibraryStore(
+    store = LibraryCubit(
       blobs: blobs,
       prefs: SharedPreferencesAsync(),
       publicKey: keys.pub,

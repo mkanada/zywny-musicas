@@ -3,6 +3,7 @@
 // relógio andado pelo teste, e o aluno toca pelo [FakeMidiInput] — a
 // primeira etapa é "notas da direita", no modo espera.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -28,6 +29,7 @@ import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart' show StageSummaryAction;
 
 import 'support/practice_fakes.dart';
@@ -58,7 +60,7 @@ class _Harness {
   final FakeMidiInput input = FakeMidiInput();
   final ScoreController scores = ScoreController();
   final GhostController ghosts = GhostController();
-  late final TrailProgressStore store;
+  late final TrailProgressCubit store;
   late final ScoreRenderSession session;
   late final SoundOutputController sound;
   late final PlaybackController playback;
@@ -81,7 +83,7 @@ class _Harness {
     h.settings = SettingsCubit();
     await h.settings.load();
     h.devices = MidiDeviceManager();
-    h.store = TrailProgressStore();
+    h.store = TrailProgressCubit();
     await tester.pump();
     h.devices.connected.value = MidiDevice(
       'k',
@@ -225,7 +227,7 @@ class _Harness {
     ghosts.dispose();
     input.dispose();
     devices.dispose();
-    store.dispose();
+    unawaited(store.close());
     settings.close();
   }
 }
@@ -246,6 +248,59 @@ VsbDocument _withRenamedIds(List<int> vsb, Set<String> ids) {
 }
 
 void main() {
+  testWidgets('trocar a trilha no meio do recordDone não lança nada', (
+    tester,
+  ) async {
+    final h = await _Harness.create(tester);
+    final velha = h.runner.trail!;
+    var trocou = false;
+    // O estado com o resultado sai dentro do `recordDone`, antes de a gravação
+    // acabar: o `setup` que troca a trilha cai nessa espera.
+    final sub = velha.stream.listen((estado) {
+      if (estado.lastResult == null || trocou) return;
+      trocou = true;
+      unawaited(h.runner.setup());
+    });
+    addTearDown(sub.cancel);
+
+    await h.runner.startStage();
+    expect(h.runner.practice, isNotNull, reason: 'a etapa começou');
+    var guard = 0;
+    while (!trocou) {
+      if (guard++ > 20000) throw StateError('a etapa não terminou');
+      final step = h.runner.practice?.currentStep.value;
+      final scheduler = h.playback.scheduler!;
+      if (step == null || scheduler.positionMs < step.onMs - 0.5) {
+        h.engine.now += 0.02;
+        await tester.pump(const Duration(milliseconds: 20));
+        continue;
+      }
+      final wanted = {for (final e in step.notes) e.pitch};
+      for (final p in wanted) {
+        h.input.press(p, atSeconds: h.engine.now);
+      }
+      await tester.pump();
+      for (final p in wanted) {
+        h.input.release(p, atSeconds: h.engine.now);
+      }
+      await tester.pump();
+    }
+    // Espera a trilha nova e o fim do `recordDone` (que não pode lançar).
+    for (
+      var i = 0;
+      i < 200 && (h.runner.trail == null || identical(h.runner.trail, velha));
+      i++
+    ) {
+      await tester.pump(const Duration(milliseconds: 1));
+    }
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(velha.isClosed, isTrue);
+    expect(h.runner.trail, isNotNull);
+    expect(identical(h.runner.trail, velha), isFalse);
+    expect(tester.takeException(), isNull);
+    h.dispose();
+  });
+
   testWidgets('uma etapa passada avança para a seguinte', (tester) async {
     final h = await _Harness.create(tester);
     final trail = h.runner.trail!;

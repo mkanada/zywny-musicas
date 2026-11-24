@@ -29,7 +29,7 @@ import 'package:score_bridge/score_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:zywny_library/library_keys.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_audio/performance_track.dart';
 import 'package:zywny_comum/practice/count_in_overlay.dart';
@@ -501,7 +501,7 @@ Future<void> _installTestLibrary() async {
       'Passe --dart-define=ZYWNY_TEST_LIBRARY=<dist/hinos.zywny no aparelho>',
     );
   }
-  await LibraryStore().install(await File(path).readAsBytes());
+  await LibraryCubit().install(await File(path).readAsBytes());
 }
 
 /// Histórico de quem já estuda há umas semanas: hinos abertos, pontuações

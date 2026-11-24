@@ -65,8 +65,8 @@ import 'package:zywny_comum/app/splash_screen.dart';
 import 'package:zywny_comum/auth/auth_gate.dart';
 import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/trail/stage_result.dart' show kTrailPassAccuracy;
-import 'package:zywny_comum/trail/trail_controller.dart';
-import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_cubit.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_stage.dart' show kTrailMinMeasures;
 import 'package:zywny_comum/trail/trail_widgets.dart';
 import 'package:zywny/tutorial/score_tour.dart';
@@ -318,7 +318,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// O progresso das trilhas é o da biblioteca (a linha do hino atualiza ao
   /// voltar sem reabrir nada — J09).
-  late final TrailProgressStore _trailStore = widget.opened.trailProgress;
+  late final TrailProgressCubit _trailStore = widget.opened.trailProgress;
 
   /// Gaveta da trilha aberta (J06).
   bool _trailDrawerOpen = false;
@@ -1644,7 +1644,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// O que o botão de tocar faz: na trilha, começa a etapa (com teclado) ou
   /// ouve o trecho; no treino livre, pratica ou toca.
-  VoidCallback? _railPlayAction(TrailController? trail, bool keyboard) {
+  VoidCallback? _railPlayAction(TrailCubit? trail, bool keyboard) {
     if (trail != null) {
       return keyboard
           ? () => unawaited(_runner.startStage())
@@ -1658,7 +1658,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   }
 
   /// O aviso do botão de tocar (ver `_railPlayAction`).
-  String? _railPlayTooltip(TrailController? trail, bool keyboard) {
+  String? _railPlayTooltip(TrailCubit? trail, bool keyboard) {
     if (trail != null) {
       if (trail.running) return 'Parar etapa';
       if (keyboard) return 'Começar etapa';
@@ -1669,7 +1669,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   }
 
   /// O ícone do botão de tocar (ver `_railPlayAction`).
-  Widget? _railPlayIcon(TrailController? trail) {
+  Widget? _railPlayIcon(TrailCubit? trail) {
     if (trail != null) {
       if (trail.running) return null;
       return Icon(_runner.listening ? Icons.stop : Icons.play_arrow, size: 24);

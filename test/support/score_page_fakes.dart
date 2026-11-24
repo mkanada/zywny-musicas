@@ -2,6 +2,7 @@
 // sem tocar em nada nativo: um gravador que devolve uma partitura pronta e
 // um `OpenedPiece` com os recursos que a biblioteca compartilharia.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -13,7 +14,7 @@ import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_comum/render/score_renderer.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
-import 'package:zywny_comum/trail/trail_progress.dart';
+import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 
 /// Guarda as opções de cada gravação pedida e devolve sempre a mesma
 /// partitura pronta (`test/fixtures/erik-satie.vsb`), sem o Verovio: o que
@@ -73,15 +74,15 @@ OpenedPiece fakeOpenedPiece({
   SettingsCubit? appSettings,
   PieceSettings pieceSettings = const PieceSettings(),
   ValueChanged<PieceSettings>? onPieceSettingsChanged,
-  TrailProgressStore? trailProgress,
+  TrailProgressCubit? trailProgress,
   PracticeScoreCallback? onPracticeScore,
 }) {
   final settings = appSettings ?? SettingsCubit();
-  final trail = trailProgress ?? TrailProgressStore();
+  final trail = trailProgress ?? TrailProgressCubit();
   final midi = MidiDeviceManager();
   addTearDown(() {
     if (appSettings == null) settings.close();
-    if (trailProgress == null) trail.dispose();
+    if (trailProgress == null) unawaited(trail.close());
     midi.dispose();
   });
   return OpenedPiece(

@@ -11,7 +11,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny_library/library_package.dart';
 import 'package:zywny/app/library_screen.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/library_sort.dart';
 import 'package:zywny_comum/app/layout_panel.dart';
@@ -126,14 +126,14 @@ void main() {
 
   group('telas', () {
     late TestKeys keys;
-    late LibraryStore store;
+    late LibraryCubit store;
     setUpAll(() async => keys = await TestKeys.generate());
 
     setUp(() {
       MidiCommandPlatform.instance = _NoDevicesMidiCommandPlatform();
       SharedPreferencesAsyncPlatform.instance =
           InMemorySharedPreferencesAsync.empty();
-      store = LibraryStore(
+      store = LibraryCubit(
         blobs: MemoryLibraryBlobStore(),
         prefs: SharedPreferencesAsync(),
         publicKey: keys.pub,

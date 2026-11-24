@@ -23,7 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 
 const _kHymnTitle = 'Jubilosos Te Adoramos';
 
@@ -132,7 +132,7 @@ void main() {
     (tester) async {
       await SharedPreferencesAsync().clear();
       const path = String.fromEnvironment('ZYWNY_TEST_LIBRARY');
-      await LibraryStore().install(await File(path).readAsBytes());
+      await LibraryCubit().install(await File(path).readAsBytes());
 
       await tester.pumpWidget(
         RepaintBoundary(

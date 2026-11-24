@@ -15,7 +15,7 @@ import 'package:zywny_library/library_envelope.dart';
 import 'package:zywny_library/library_installer.dart'
     show installLibraryFromFile, pickLibraryBytes;
 import 'package:zywny_library/library_package.dart' show LibraryFormatException;
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 
 /// Que tipo de pacote o zip de dentro descreve.
 enum PackageKind { library, course }
@@ -58,7 +58,7 @@ PackageKind packageKindOfZip(Uint8List zip) {
 /// explicou); nesse caso nada foi gravado.
 Future<InstalledLibrary?> installPackageFromFile(
   BuildContext context,
-  LibraryStore store, {
+  LibraryCubit store, {
   Future<Uint8List?> Function() pick = pickLibraryBytes,
 }) async {
   final navigator = Navigator.of(context, rootNavigator: true);
@@ -78,7 +78,7 @@ Future<InstalledLibrary?> installPackageFromFile(
 /// o mesmo fluxo do "Abrir arquivo…", sem o seletor.
 Future<InstalledLibrary?> installIncomingPackage(
   BuildContext context,
-  LibraryStore store,
+  LibraryCubit store,
   IncomingPackage package,
 ) async {
   final navigator = Navigator.of(context, rootNavigator: true);
@@ -102,7 +102,7 @@ Future<InstalledLibrary?> installIncomingPackage(
 /// aqui: o diálogo manda abri-lo no aprendizado.
 Future<InstalledLibrary?> _installBytes(
   BuildContext context,
-  LibraryStore store,
+  LibraryCubit store,
   Uint8List bytes,
 ) async {
   final navigator = Navigator.of(context, rootNavigator: true);

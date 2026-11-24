@@ -13,7 +13,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny_library/legacy_migration.dart';
 import 'package:zywny_library/library_blob_store.dart';
 import 'package:zywny/app/library_screen.dart';
-import 'package:zywny_library/library_store.dart';
+import 'package:zywny_library/library_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/library_fixtures.dart';
@@ -40,8 +40,8 @@ void main() {
         InMemorySharedPreferencesAsync.empty();
   });
 
-  LibraryStore storeWith(MemoryLibraryBlobStore blobs, {Uint8List? key}) =>
-      LibraryStore(
+  LibraryCubit storeWith(MemoryLibraryBlobStore blobs, {Uint8List? key}) =>
+      LibraryCubit(
         blobs: blobs,
         prefs: SharedPreferencesAsync(),
         publicKey: key ?? keys.pub,
@@ -49,7 +49,7 @@ void main() {
 
   Future<void> pump(
     WidgetTester tester,
-    LibraryStore store, {
+    LibraryCubit store, {
     Widget Function(BuildContext, OpenedPiece)? scoreBuilder,
   }) async {
     tester.view.physicalSize = const Size(760, 900);
