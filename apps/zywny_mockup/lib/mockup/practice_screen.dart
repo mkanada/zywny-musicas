@@ -1,10 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
+import 'measure_jump_cubit.dart';
 import 'options_panel.dart';
+import 'practice_cubit.dart';
 import 'practice_state.dart';
 import 'practice_wide.dart';
 
@@ -12,7 +12,7 @@ import 'practice_wide.dart';
 /// não são a biblioteca (`Estudo`, `Grande`, `Painel`, `Treino`): são o
 /// mesmo layout em estados diferentes (modo, mão, tamanho, painel
 /// aberto/fechado), não telas separadas.
-class PracticeScreen extends StatefulWidget {
+class PracticeScreen extends StatelessWidget {
   const PracticeScreen({
     super.key,
     required this.args,
@@ -27,170 +27,44 @@ class PracticeScreen extends StatefulWidget {
   final bool startWithPanelOpen;
 
   @override
-  State<PracticeScreen> createState() => _PracticeScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          PracticeCubit(args: args, startWithPanelOpen: startWithPanelOpen)
+            ..iniciar(),
+      child: const _PracticeView(),
+    );
+  }
 }
 
-class _PracticeScreenState extends State<PracticeScreen> {
-  late PracticeMode _mode;
-  late Hand _hand;
-  late int _tempo;
-  late int _measure;
-  late int _totalMeasures;
-  ScoreSize _size = ScoreSize.padrao;
-  bool _playing = false;
-  bool _panelOpen = false;
-  bool _repeatAB = false;
-  bool _metronome = true;
-
-  int _correct = 23;
-  int _reminders = 3;
-  int _mistakes = 1;
-  Timer? _liveTicker;
-
-  @override
-  void initState() {
-    super.initState();
-    _mode = widget.args.mode;
-    _hand = widget.args.hand;
-    _tempo = widget.args.tempoPercent;
-    _measure = widget.args.measure;
-    _totalMeasures = widget.args.totalMeasures;
-    _size = widget.args.size;
-    _panelOpen = widget.startWithPanelOpen;
-    if (_mode == PracticeMode.ouvir) {
-      _correct = 0;
-      _reminders = 0;
-      _mistakes = 0;
-    }
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
-
-  @override
-  void dispose() {
-    _liveTicker?.cancel();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    super.dispose();
-  }
-
-  bool get _isPracticing => _mode != PracticeMode.ouvir;
-
-  void _togglePlay() {
-    setState(() => _playing = !_playing);
-    _liveTicker?.cancel();
-    if (_playing && _isPracticing) {
-      // Só de enfeite: dá vida à tela quando demonstrada no aparelho, sem
-      // MIDI real por trás (ver docs/plano — o motor de som/MIDI é a fase
-      // K/M, ainda pendente).
-      _liveTicker = Timer.periodic(const Duration(seconds: 2), (_) {
-        if (!mounted) return;
-        setState(() {
-          _correct++;
-          if (_measure < _totalMeasures) _measure++;
-        });
-      });
-    }
-  }
-
-  void _setMode(PracticeMode next) {
-    setState(() {
-      final enteringPractice =
-          _mode == PracticeMode.ouvir && next != PracticeMode.ouvir;
-      final leavingPractice =
-          _mode != PracticeMode.ouvir && next == PracticeMode.ouvir;
-      _mode = next;
-      if (enteringPractice) {
-        _tempo = 80;
-        if (_hand == Hand.ambas) _hand = Hand.direita;
-      } else if (leavingPractice) {
-        _tempo = 100;
-        _hand = Hand.ambas;
-        _correct = 0;
-        _reminders = 0;
-        _mistakes = 0;
-      }
-    });
-  }
-
-  Future<void> _openMeasureJump() async {
-    var target = _measure;
-    final result = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: kSurface,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Ir para o compasso $target de $_totalMeasures',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Slider(
-                      value: target.toDouble(),
-                      min: 1,
-                      max: _totalMeasures.toDouble(),
-                      divisions: _totalMeasures - 1,
-                      onChanged: (v) => setSheetState(() => target = v.round()),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(context, target),
-                      child: const Text('Ir'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-    if (result != null && mounted) setState(() => _measure = result);
-  }
-
-  /// "Parar" da barra larga — pausa e volta ao início, diferente de
-  /// "Pausar" (retoma de onde estava). O celular não tem botão Parar
-  /// próprio (só Play/Pausar), como no artboard.
-  void _stop() {
-    _liveTicker?.cancel();
-    setState(() {
-      _playing = false;
-      _measure = 1;
-    });
-  }
+/// A tela: tudo o que aparece vem do [PracticeCubit] acima dela.
+class _PracticeView extends StatelessWidget {
+  const _PracticeView();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kSurface,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= kWidePracticeBreakpoint;
-            return Stack(
-              children: [
-                wide
-                    ? _wideLayout()
-                    : Row(
-                        children: [
-                          Expanded(child: _scoreArea()),
-                          _sideRail(),
-                        ],
-                      ),
-                if (_panelOpen) _panelOverlay(),
-              ],
-            );
-          },
+        child: BlocBuilder<PracticeCubit, PracticeState>(
+          builder: (context, state) => LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= kWidePracticeBreakpoint;
+              return Stack(
+                children: [
+                  wide
+                      ? _wideLayout(context, state)
+                      : Row(
+                          children: [
+                            Expanded(child: _scoreArea(context, state)),
+                            _sideRail(context, state),
+                          ],
+                        ),
+                  if (state.panelOpen) _panelOverlay(context, state),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -200,59 +74,57 @@ class _PracticeScreenState extends State<PracticeScreen> {
   /// `TabletEstudo.dc.html`: barra de topo com título, faixa de status do
   /// treino (só fora do modo Ouvir) e barra de transporte com tudo à
   /// vista, em vez da barra lateral + painel escondido do celular.
-  Widget _wideLayout() {
+  Widget _wideLayout(BuildContext context, PracticeState state) {
+    final cubit = context.read<PracticeCubit>();
+    final setup = state.setup;
     return Column(
       children: [
         WideTopBar(
-          title: widget.args.title,
-          composer: widget.args.composer,
+          title: cubit.args.title,
+          composer: cubit.args.composer,
           midiConnected: true,
           onBack: () => Navigator.of(context).pop(),
-          onSettings: () => setState(() => _panelOpen = true),
+          onSettings: () => cubit.definirPainel(true),
         ),
-        if (_isPracticing)
+        if (state.praticando)
           WideStatusBar(
-            mode: _mode,
-            hand: _hand,
-            correct: _correct,
-            reminders: _reminders,
-            mistakes: _mistakes,
+            mode: setup.mode,
+            hand: setup.hand,
+            correct: state.counts.correct,
+            reminders: state.counts.reminders,
+            mistakes: state.counts.mistakes,
           ),
-        Expanded(child: _wideScoreArea()),
+        Expanded(child: _wideScoreArea(setup.size)),
         WideTransportBar(
-          playing: _playing,
-          onPlayPause: _togglePlay,
-          onStop: _stop,
-          measure: _measure,
-          totalMeasures: _totalMeasures,
-          onMeasureTap: _openMeasureJump,
-          tempoPercent: _tempo,
-          onTempoStep: (d) =>
-              setState(() => _tempo = (_tempo + d).clamp(25, 150)),
-          hand: _hand,
-          onHandChanged: (h) => setState(() => _hand = h),
-          mode: _mode,
-          onModeChanged: _setMode,
-          repeatAB: _repeatAB,
-          onRepeatABChanged: (v) => setState(() => _repeatAB = v),
-          metronome: _metronome,
-          onMetronomeChanged: (v) => setState(() => _metronome = v),
+          playing: state.playing,
+          onPlayPause: cubit.alternarTocar,
+          onStop: cubit.parar,
+          measure: state.measure,
+          totalMeasures: cubit.args.totalMeasures,
+          onMeasureTap: () => _abrirIrParaCompasso(context),
+          tempoPercent: setup.tempoPercent,
+          onTempoStep: cubit.mudarAndamento,
+          hand: setup.hand,
+          onHandChanged: cubit.escolherMao,
+          mode: setup.mode,
+          onModeChanged: cubit.mudarModo,
+          repeatAB: setup.repeatAB,
+          onRepeatABChanged: cubit.definirRepeticaoAB,
+          metronome: setup.metronome,
+          onMetronomeChanged: cubit.definirMetronomo,
         ),
       ],
     );
   }
 
-  Widget _wideScoreArea() {
-    final asset = _size == ScoreSize.grande
-        ? 'assets/partitura_grande.png'
-        : 'assets/partitura_padrao.png';
+  Widget _wideScoreArea(ScoreSize tamanho) {
     return Stack(
       children: [
         Positioned.fill(
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 56),
-              child: Image.asset(asset, fit: BoxFit.contain),
+              child: Image.asset(_partituraDe(tamanho), fit: BoxFit.contain),
             ),
           ),
         ),
@@ -282,17 +154,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
     );
   }
 
-  Widget _scoreArea() {
-    final asset = _size == ScoreSize.grande
-        ? 'assets/partitura_grande.png'
-        : 'assets/partitura_padrao.png';
+  Widget _scoreArea(BuildContext context, PracticeState state) {
     return Stack(
       children: [
         Positioned.fill(
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Image.asset(asset, fit: BoxFit.contain),
+              child: Image.asset(
+                _partituraDe(state.setup.size),
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
@@ -305,7 +177,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
             icon: const Icon(Icons.chevron_left, size: 28, color: kInkCaption),
           ),
         ),
-        if (_isPracticing)
+        if (state.praticando)
           Positioned(
             left: 54,
             right: 12,
@@ -315,12 +187,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
               children: [
                 _StatusPill(
                   text:
-                      '${_mode.statusVerb} · mão ${_hand.shortLabel.toLowerCase()}',
+                      '${state.setup.mode.statusVerb} · mão ${state.setup.hand.shortLabel.toLowerCase()}',
                 ),
                 _CountersPill(
-                  correct: _correct,
-                  reminders: _reminders,
-                  mistakes: _mistakes,
+                  correct: state.counts.correct,
+                  reminders: state.counts.reminders,
+                  mistakes: state.counts.mistakes,
                 ),
               ],
             ),
@@ -329,7 +201,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
     );
   }
 
-  Widget _sideRail() {
+  Widget _sideRail(BuildContext context, PracticeState state) {
+    final cubit = context.read<PracticeCubit>();
+    final setup = state.setup;
     return Container(
       width: 84,
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -341,35 +215,35 @@ class _PracticeScreenState extends State<PracticeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton.filled(
-            tooltip: _playing ? 'Pausar' : 'Tocar',
-            onPressed: _togglePlay,
+            tooltip: state.playing ? 'Pausar' : 'Tocar',
+            onPressed: cubit.alternarTocar,
             style: IconButton.styleFrom(
               backgroundColor: kAccent,
               minimumSize: const Size(52, 52),
             ),
-            icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
+            icon: Icon(state.playing ? Icons.pause : Icons.play_arrow),
           ),
           _RailButton(
-            top: '$_measure',
-            bottom: 'de $_totalMeasures',
+            top: '${state.measure}',
+            bottom: 'de ${cubit.args.totalMeasures}',
             tooltip: 'Ir para compasso',
-            onTap: _openMeasureJump,
+            onTap: () => _abrirIrParaCompasso(context),
           ),
           _RailButton(
-            top: '$_tempo%',
+            top: '${setup.tempoPercent}%',
             bottom: 'andamento',
             tooltip: 'Andamento',
-            onTap: () => setState(() => _panelOpen = true),
+            onTap: () => cubit.definirPainel(true),
           ),
           _RailButton(
-            top: _hand.shortLabel,
+            top: setup.hand.shortLabel,
             bottom: 'mão',
             tooltip: 'Mão',
-            onTap: () => setState(() => _panelOpen = true),
+            onTap: () => cubit.definirPainel(true),
           ),
           IconButton(
             tooltip: 'Mais opções',
-            onPressed: () => setState(() => _panelOpen = true),
+            onPressed: () => cubit.definirPainel(true),
             icon: const Icon(Icons.more_horiz, color: kInkCaption),
           ),
         ],
@@ -377,12 +251,14 @@ class _PracticeScreenState extends State<PracticeScreen> {
     );
   }
 
-  Widget _panelOverlay() {
+  Widget _panelOverlay(BuildContext context, PracticeState state) {
+    final cubit = context.read<PracticeCubit>();
+    final setup = state.setup;
     return Stack(
       children: [
         Positioned.fill(
           child: GestureDetector(
-            onTap: () => setState(() => _panelOpen = false),
+            onTap: () => cubit.definirPainel(false),
             child: Container(color: kScrim),
           ),
         ),
@@ -392,25 +268,95 @@ class _PracticeScreenState extends State<PracticeScreen> {
           bottom: 0,
           width: 340,
           child: OptionsPanel(
-            mode: _mode,
-            onModeChanged: _setMode,
-            hand: _hand,
-            onHandChanged: (h) => setState(() => _hand = h),
-            size: _size,
-            onSizeChanged: (s) => setState(() => _size = s),
-            tempoPercent: _tempo,
-            onTempoChanged: (t) => setState(() => _tempo = t),
-            repeatAB: _repeatAB,
-            onRepeatABChanged: (v) => setState(() => _repeatAB = v),
-            metronome: _metronome,
-            onMetronomeChanged: (v) => setState(() => _metronome = v),
-            onClose: () => setState(() => _panelOpen = false),
+            mode: setup.mode,
+            onModeChanged: cubit.mudarModo,
+            hand: setup.hand,
+            onHandChanged: cubit.escolherMao,
+            size: setup.size,
+            onSizeChanged: cubit.escolherTamanho,
+            tempoPercent: setup.tempoPercent,
+            onTempoChanged: cubit.definirAndamento,
+            repeatAB: setup.repeatAB,
+            onRepeatABChanged: cubit.definirRepeticaoAB,
+            metronome: setup.metronome,
+            onMetronomeChanged: cubit.definirMetronomo,
+            onClose: () => cubit.definirPainel(false),
           ),
         ),
       ],
     );
   }
+
+  /// A folha "Ir para o compasso": o slider escolhe, "Ir" confirma. Fechá-la
+  /// sem "Ir" não muda o compasso.
+  Future<void> _abrirIrParaCompasso(BuildContext context) async {
+    final cubit = context.read<PracticeCubit>();
+    final compasso = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: kSurface,
+      builder: (_) => _FolhaIrParaCompasso(
+        inicial: cubit.state.measure,
+        total: cubit.args.totalMeasures,
+      ),
+    );
+    if (compasso != null && context.mounted) cubit.irParaCompasso(compasso);
+  }
 }
+
+/// A folha do slider de compasso: o alvo vive num [MeasureJumpCubit] só dela.
+class _FolhaIrParaCompasso extends StatelessWidget {
+  const _FolhaIrParaCompasso({required this.inicial, required this.total});
+
+  final int inicial;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => MeasureJumpCubit(inicial),
+      child: BlocBuilder<MeasureJumpCubit, MeasureJumpState>(
+        builder: (context, state) {
+          final alvo = state.target;
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Ir para o compasso $alvo de $total',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Slider(
+                    value: alvo.toDouble(),
+                    min: 1,
+                    max: total.toDouble(),
+                    divisions: total - 1,
+                    onChanged: (v) =>
+                        context.read<MeasureJumpCubit>().escolher(v.round()),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, alvo),
+                    child: const Text('Ir'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A partitura pré-renderizada do tamanho escolhido (`assets/`).
+String _partituraDe(ScoreSize tamanho) => tamanho == ScoreSize.grande
+    ? 'assets/partitura_grande.png'
+    : 'assets/partitura_padrao.png';
 
 class _RailButton extends StatelessWidget {
   const _RailButton({

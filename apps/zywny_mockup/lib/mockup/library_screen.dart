@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
+import 'library_cubit.dart';
 import 'models.dart';
 import 'practice_state.dart';
 import 'practice_screen.dart';
 
 /// Tela inicial, em retrato — `CelularBiblioteca.dc.html`.
-class LibraryScreen extends StatefulWidget {
+class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 
   @override
-  State<LibraryScreen> createState() => _LibraryScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => LibraryCubit()..iniciar(),
+      child: const _LibraryView(),
+    );
+  }
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
-  SortState _sort = const SortState();
-  String _query = '';
-  bool _midiConnected = true;
+/// A tela: a busca, a ordem e a lista vêm do [LibraryCubit] acima dela.
+class _LibraryView extends StatelessWidget {
+  const _LibraryView();
 
   // A peça "em andamento" mostrada no card "continuar" — mockup fixo, como
   // no artboard (Little bird, compasso 4 de 41, Espera, mão direita, 80%).
@@ -31,30 +36,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   );
 
   @override
-  void initState() {
-    super.initState();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  }
-
-  List<Piece> get _filtered {
-    final pieces = sortedPieces(kPieces, _sort);
-    if (_query.trim().isEmpty) return pieces;
-    final q = _query.toLowerCase();
-    return pieces
-        .where(
-          (p) =>
-              p.title.toLowerCase().contains(q) ||
-              p.composer.toLowerCase().contains(q),
-        )
-        .toList();
-  }
-
-  void _openPiece(PracticeArgs args) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => PracticeScreen(args: args)));
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kLibraryBg,
@@ -64,15 +45,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(),
+              _header(context),
               const SizedBox(height: 14),
-              _searchField(),
+              _searchField(context),
               const SizedBox(height: 14),
-              _continueCard(),
+              _continueCard(context),
               const SizedBox(height: 14),
-              _sortChips(),
+              _sortChips(context),
               const SizedBox(height: 4),
-              Expanded(child: _list()),
+              Expanded(child: _list(context)),
             ],
           ),
         ),
@@ -80,35 +61,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _header() {
+  Widget _header(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text('Biblioteca', style: serifDisplay(fontSize: 30)),
         Row(
           children: [
-            _IconPillButton(
-              tooltip: _midiConnected
-                  ? 'Teclado MIDI conectado'
-                  : 'Teclado MIDI desconectado',
-              onTap: () => setState(() => _midiConnected = !_midiConnected),
-              background: kChipBg,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.piano, size: 18, color: kInk),
-                  const SizedBox(width: 6),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _midiConnected ? kGoodColor : kInkMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _botaoMidi(context),
             const SizedBox(width: 4),
             _IconPillButton(
               tooltip: 'Abrir arquivo',
@@ -123,11 +83,40 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _searchField() {
+  /// O indicador do teclado MIDI: o ponto verde quando ligado.
+  Widget _botaoMidi(BuildContext context) {
+    return BlocSelector<LibraryCubit, LibraryState, bool>(
+      selector: (state) => state.midiConnected,
+      builder: (context, conectado) => _IconPillButton(
+        tooltip: conectado
+            ? 'Teclado MIDI conectado'
+            : 'Teclado MIDI desconectado',
+        onTap: context.read<LibraryCubit>().alternarMidi,
+        background: kChipBg,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.piano, size: 18, color: kInk),
+            const SizedBox(width: 6),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: conectado ? kGoodColor : kInkMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _searchField(BuildContext context) {
     return SizedBox(
       height: 44,
       child: TextField(
-        onChanged: (v) => setState(() => _query = v),
+        onChanged: context.read<LibraryCubit>().buscar,
         style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
           isDense: true,
@@ -154,7 +143,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _continueCard() {
+  Widget _continueCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
       decoration: BoxDecoration(
@@ -199,7 +188,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
           _IconPillButton(
             tooltip: 'Continuar estudo',
-            onTap: () => _openPiece(_continuing),
+            onTap: () => _openPiece(context, _continuing),
             background: kAccent,
             circle: true,
             size: 48,
@@ -210,7 +199,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _sortChips() {
+  Widget _sortChips(BuildContext context) {
     const order = [
       SortKey.recent,
       SortKey.score,
@@ -219,99 +208,112 @@ class _LibraryScreenState extends State<LibraryScreen> {
     ];
     return SizedBox(
       height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: order.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final key = order[i];
-          final selected = _sort.key == key;
-          return _SortChip(
-            label: '${labelFor(key)}${_sort.arrowFor(key)}',
-            selected: selected,
-            onTap: () => setState(() => _sort = _sort.toggled(key)),
-          );
-        },
+      child: BlocBuilder<LibraryCubit, LibraryState>(
+        builder: (context, state) => ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: order.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, i) {
+            final key = order[i];
+            return _SortChip(
+              label: '${labelFor(key)}${state.sort.arrowFor(key)}',
+              selected: state.sort.key == key,
+              onTap: () => context.read<LibraryCubit>().ordenar(key),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _list() {
-    final pieces = _filtered;
-    if (pieces.isEmpty) {
-      return const Center(
-        child: Text(
-          'Nenhuma partitura encontrada',
-          style: TextStyle(color: kInkCaption),
-        ),
-      );
-    }
-    return ListView.separated(
-      itemCount: pieces.length,
-      separatorBuilder: (_, _) => const Divider(height: 1, color: kBorderSoft),
-      itemBuilder: (context, i) {
-        final p = pieces[i];
-        return InkWell(
-          onTap: () =>
-              _openPiece(PracticeArgs(title: p.title, composer: p.composer)),
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        p.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w600,
-                          color: kInk,
-                        ),
-                      ),
-                      Text(
-                        '${p.composer} · ${whenStudied(p.daysAgo)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: kInkCaption,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: scoreBandColor(p.score),
-                  ),
-                ),
-                const SizedBox(width: 7),
-                SizedBox(
-                  width: 30,
-                  child: Text(
-                    p.score?.toString() ?? '—',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: p.score == null ? kInkMuted : kInk,
-                    ),
-                  ),
-                ),
-              ],
+  Widget _list(BuildContext context) {
+    return BlocBuilder<LibraryCubit, LibraryState>(
+      builder: (context, state) {
+        final pieces = state.filtradas;
+        if (pieces.isEmpty) {
+          return const Center(
+            child: Text(
+              'Nenhuma partitura encontrada',
+              style: TextStyle(color: kInkCaption),
             ),
-          ),
+          );
+        }
+        return ListView.separated(
+          itemCount: pieces.length,
+          separatorBuilder: (_, _) =>
+              const Divider(height: 1, color: kBorderSoft),
+          itemBuilder: (context, i) {
+            final p = pieces[i];
+            return InkWell(
+              onTap: () => _openPiece(
+                context,
+                PracticeArgs(title: p.title, composer: p.composer),
+              ),
+              child: SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            p.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600,
+                              color: kInk,
+                            ),
+                          ),
+                          Text(
+                            '${p.composer} · ${whenStudied(p.daysAgo)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: kInkCaption,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: scoreBandColor(p.score),
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    SizedBox(
+                      width: 30,
+                      child: Text(
+                        p.score?.toString() ?? '—',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: p.score == null ? kInkMuted : kInk,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
+  }
+
+  void _openPiece(BuildContext context, PracticeArgs args) {
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => PracticeScreen(args: args)));
   }
 }
 
