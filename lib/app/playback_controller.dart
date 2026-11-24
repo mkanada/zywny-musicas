@@ -17,7 +17,7 @@ import 'package:zywny_audio/score_audio_scheduler.dart';
 import 'package:zywny_audio/sound_engine.dart';
 import 'package:zywny_audio/performance_track.dart';
 
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
 
 void _setWakelock(bool on) =>
@@ -37,7 +37,7 @@ double Function() _stopwatchSeconds() {
 class PlaybackController extends ChangeNotifier {
   PlaybackController({
     required this.sound,
-    required AppSettings settings,
+    required SettingsCubit settings,
     required this.controller,
     this.view,
     double speed = 1.0,
@@ -52,12 +52,13 @@ class PlaybackController extends ChangeNotifier {
        _wallSeconds = wallSeconds, // ignore: prefer_initializing_formals
        // ignore: prefer_initializing_formals
        _wakelock = wakelock {
-    _settings.addListener(_onSettingsChanged);
+    _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
   /// Por onde sai o som: diz se ele está ligado e qual é o motor.
   final SoundOutputController sound;
-  final AppSettings _settings;
+  final SettingsCubit _settings;
+  late final StreamSubscription<SettingsState> _settingsSub;
 
   /// Os destaques de nota (o player acende e apaga por ele).
   final ScoreController controller;
@@ -143,10 +144,10 @@ class PlaybackController extends ChangeNotifier {
     );
   }
 
-  bool get metronomeOn => _settings.metronomeOn;
+  bool get metronomeOn => _settings.state.metronomeOn;
 
   void _onSettingsChanged() {
-    _scheduler?.metronomeOn = _settings.metronomeOn;
+    _scheduler?.metronomeOn = _settings.state.metronomeOn;
   }
 
   /// Uma gravura nova: os ids (e talvez as páginas) mudaram, então o player
@@ -171,7 +172,7 @@ class PlaybackController extends ChangeNotifier {
             view: view,
             onEntry: _onEntry,
             barWidth: barWidthOf?.call(document),
-            highlightColor: _settings.highlightColor,
+            highlightColor: _settings.state.highlightColor,
             // Ligadura é uma tecla só: a cadeia acende junta.
             mergeTies: true,
           )
@@ -447,8 +448,8 @@ class PlaybackController extends ChangeNotifier {
   }
 
   void toggleMetronome() {
-    _settings.metronomeOn = !_settings.metronomeOn;
-    _scheduler?.metronomeOn = _settings.metronomeOn;
+    _settings.setMetronomeOn(!_settings.state.metronomeOn);
+    _scheduler?.metronomeOn = _settings.state.metronomeOn;
     notifyListeners();
   }
 
@@ -485,7 +486,7 @@ class PlaybackController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _settings.removeListener(_onSettingsChanged);
+    unawaited(_settingsSub.cancel());
     cancelSilentCountIn();
     _setPlaying(false);
     _scheduler?.dispose();

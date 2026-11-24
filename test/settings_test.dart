@@ -1,4 +1,4 @@
-// Configurações: as gerais (lib/settings/app_settings.dart — som, MIDI,
+// Configurações: as gerais (lib/settings/settings_cubit.dart — som, MIDI,
 // cores, layout da partitura) e as de cada hino (lib/settings/piece_settings.dart
 // — andamento, mão, trilha, tom), e os dois painéis que as editam. O contrato principal é a
 // persistência: o que foi mudado volta numa nova instância (= o app aberto
@@ -21,7 +21,7 @@ import 'package:zywny/main.dart';
 import 'package:zywny_comum/practice/hand.dart';
 import 'package:zywny_comum/practice/practice_controller.dart';
 import 'package:zywny_comum/practice/practice_mode.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
@@ -61,36 +61,36 @@ void main() {
 
   group('configurações gerais', () {
     test('o que foi mudado volta ao abrir o app de novo', () async {
-      final first = AppSettings();
+      final first = SettingsCubit();
       await first.load();
-      expect(first.output, SoundOutput.appSynth);
-      expect(first.soundOn, isTrue); // padrão de instalação nova (U04)
+      expect(first.state.output, SoundOutput.appSynth);
+      expect(first.state.soundOn, isTrue); // padrão de instalação nova (U04)
 
       first
-        ..output = SoundOutput.midiKeyboard
-        ..useScoreInstruments = true
-        ..soundOn = true
-        ..metronomeOn = true
-        ..practiceMode = PracticeMode.realtime
-        ..highlightColor = const Color(0xFF00838F)
-        ..practicePendingColor = const Color(0xFFF57C00)
-        ..practiceWrongColor = const Color(0xFFAD1457)
-        ..haloWidth = 2.5
-        ..barColor = const Color(0xFF6A1B9A);
+        ..setOutput(SoundOutput.midiKeyboard)
+        ..setUseScoreInstruments(true)
+        ..setSoundOn(true)
+        ..setMetronomeOn(true)
+        ..setPracticeMode(PracticeMode.realtime)
+        ..setHighlightColor(const Color(0xFF00838F))
+        ..setPracticePendingColor(const Color(0xFFF57C00))
+        ..setPracticeWrongColor(const Color(0xFFAD1457))
+        ..setHaloWidth(2.5)
+        ..setBarColor(const Color(0xFF6A1B9A));
       await pumpEventQueue();
 
-      final second = AppSettings();
+      final second = SettingsCubit();
       await second.load();
-      expect(second.output, SoundOutput.midiKeyboard);
-      expect(second.useScoreInstruments, isTrue);
-      expect(second.soundOn, isTrue);
-      expect(second.metronomeOn, isTrue);
-      expect(second.practiceMode, PracticeMode.realtime);
-      expect(second.highlightColor, const Color(0xFF00838F));
-      expect(second.practicePendingColor, const Color(0xFFF57C00));
-      expect(second.practiceWrongColor, const Color(0xFFAD1457));
-      expect(second.haloWidth, 2.5);
-      expect(second.barColor, const Color(0xFF6A1B9A));
+      expect(second.state.output, SoundOutput.midiKeyboard);
+      expect(second.state.useScoreInstruments, isTrue);
+      expect(second.state.soundOn, isTrue);
+      expect(second.state.metronomeOn, isTrue);
+      expect(second.state.practiceMode, PracticeMode.realtime);
+      expect(second.state.highlightColor, const Color(0xFF00838F));
+      expect(second.state.practicePendingColor, const Color(0xFFF57C00));
+      expect(second.state.practiceWrongColor, const Color(0xFFAD1457));
+      expect(second.state.haloWidth, 2.5);
+      expect(second.state.barColor, const Color(0xFF6A1B9A));
     });
 
     test('lê a saída gravada por versões anteriores e ignora lixo', () async {
@@ -99,108 +99,114 @@ void main() {
       await prefs.setString('practice_mode', 'modo-que-nao-existe-mais');
       await prefs.setDouble('ui_halo_width', 99);
 
-      final settings = AppSettings();
+      final settings = SettingsCubit();
       await settings.load();
-      expect(settings.output, SoundOutput.midiKeyboard);
-      expect(settings.practiceMode, PracticeMode.wait);
-      expect(settings.haloWidth, 3.0);
+      expect(settings.state.output, SoundOutput.midiKeyboard);
+      expect(settings.state.practiceMode, PracticeMode.wait);
+      expect(settings.state.haloWidth, 3.0);
     });
 
     test('etapas e andamentos da trilha: gravam, voltam e nunca ficam '
         'vazios', () async {
-      final first = AppSettings();
+      final first = SettingsCubit();
       await first.load();
-      expect(first.trailPhases, TrailPhase.values.toSet());
-      expect(first.trailSpeeds, kTrailSpeeds.toSet());
+      expect(first.state.trailPhases, TrailPhase.values.toSet());
+      expect(first.state.trailSpeeds, kTrailSpeeds.toSet());
       first
-        ..trailPhases = {TrailPhase.notasJ, TrailPhase.junto}
-        ..trailSpeeds = {0.75, 1.0}
-        ..trailPhases = {}
-        ..trailSpeeds = {};
+        ..setTrailPhases({TrailPhase.notasJ, TrailPhase.junto})
+        ..setTrailSpeeds({0.75, 1.0})
+        ..setTrailPhases({})
+        ..setTrailSpeeds({});
       await pumpEventQueue();
 
-      final second = AppSettings();
+      final second = SettingsCubit();
       await second.load();
-      expect(second.trailPhases, {TrailPhase.notasJ, TrailPhase.junto});
-      expect(second.trailSpeeds, {0.75, 1.0});
+      expect(second.state.trailPhases, {TrailPhase.notasJ, TrailPhase.junto});
+      expect(second.state.trailSpeeds, {0.75, 1.0});
 
       // Ordem: a junto primeiro; as que não vieram completam no fim.
-      second.trailPhaseOrder = [TrailPhase.junto, TrailPhase.notasD];
+      second.setTrailPhaseOrder([TrailPhase.junto, TrailPhase.notasD]);
       await pumpEventQueue();
-      final third = AppSettings();
+      final third = SettingsCubit();
       await third.load();
-      expect(third.trailPhaseOrder.first, TrailPhase.junto);
-      expect(third.trailPhaseOrder.toSet(), TrailPhase.values.toSet());
-      expect(third.trailPlanPhases, [TrailPhase.junto, TrailPhase.notasJ]);
+      expect(third.state.trailPhaseOrder.first, TrailPhase.junto);
+      expect(third.state.trailPhaseOrder.toSet(), TrailPhase.values.toSet());
+      expect(third.state.trailPlanPhases, [
+        TrailPhase.junto,
+        TrailPhase.notasJ,
+      ]);
     });
 
     test('margem do tempo: grava, volta e fica entre os limites', () async {
-      final first = AppSettings();
+      final first = SettingsCubit();
       await first.load();
-      expect(first.rhythmToleranceMs, kDefaultRhythmToleranceMs);
-      first.rhythmToleranceMs = 120;
+      expect(first.state.rhythmToleranceMs, kDefaultRhythmToleranceMs);
+      first.setRhythmToleranceMs(120);
       await pumpEventQueue();
-      final second = AppSettings();
+      final second = SettingsCubit();
       await second.load();
-      expect(second.rhythmToleranceMs, 120);
-      second.rhythmToleranceMs = 5000;
-      expect(second.rhythmToleranceMs, kMaxRhythmToleranceMs);
+      expect(second.state.rhythmToleranceMs, 120);
+      second.setRhythmToleranceMs(5000);
+      expect(second.state.rhythmToleranceMs, kMaxRhythmToleranceMs);
     });
 
     test('quem gravou o som desligado continua desligado (U04)', () async {
       await SharedPreferencesAsync().setBool('sound_on', false);
-      final settings = AppSettings();
+      final settings = SettingsCubit();
       await settings.load();
-      expect(settings.soundOn, isFalse);
+      expect(settings.state.soundOn, isFalse);
     });
 
     test('"abrir sem acidentes" (fase Q): desligado, grava e volta', () async {
-      final first = AppSettings();
+      final first = SettingsCubit();
       await first.load();
-      expect(first.transposeByDefault, isFalse);
-      first.transposeByDefault = true;
+      expect(first.state.transposeByDefault, isFalse);
+      first.setTransposeByDefault(true);
       await pumpEventQueue();
       expect(
         await SharedPreferencesAsync().getBool('score_transpose_default'),
         isTrue,
       );
 
-      final second = AppSettings();
+      final second = SettingsCubit();
       await second.load();
-      expect(second.transposeByDefault, isTrue);
-      second.transposeByDefault = false;
+      expect(second.state.transposeByDefault, isTrue);
+      second.setTransposeByDefault(false);
       await pumpEventQueue();
-      final third = AppSettings();
+      final third = SettingsCubit();
       await third.load();
-      expect(third.transposeByDefault, isFalse);
+      expect(third.state.transposeByDefault, isFalse);
     });
 
-    test('avisa quem escuta só quando o valor muda', () {
-      final settings = AppSettings();
-      var calls = 0;
-      settings.addListener(() => calls++);
-      settings.metronomeOn = true;
-      settings.metronomeOn = true;
-      expect(calls, 1);
+    test('avisa quem escuta só quando o valor muda', () async {
+      final settings = SettingsCubit();
+      addTearDown(settings.close);
+      final avisos = <SettingsState>[];
+      final sub = settings.stream.listen(avisos.add);
+      addTearDown(sub.cancel);
+      settings.setMetronomeOn(true);
+      settings.setMetronomeOn(true);
+      await pumpEventQueue();
+      expect(avisos, hasLength(1));
     });
   });
 
   group('layout da partitura: vale para todos os hinos', () {
     test('o que a pessoa mudou volta ao abrir o app de novo', () async {
-      final first = AppSettings();
+      final first = SettingsCubit();
       await first.load();
-      expect(first.scoreLayout, isEmpty);
-      expect(first.scorePageFitsBox, isTrue);
+      expect(first.state.scoreLayout, isEmpty);
+      expect(first.state.scorePageFitsBox, isTrue);
 
       first
         ..setScoreLayout({'unit': 8.0, 'spacingStaff': 20})
-        ..scorePageFitsBox = false;
+        ..setScorePageFitsBox(false);
       await pumpEventQueue();
 
-      final second = AppSettings();
+      final second = SettingsCubit();
       await second.load();
-      expect(second.scoreLayout, {'unit': 8.0, 'spacingStaff': 20});
-      expect(second.scorePageFitsBox, isFalse);
+      expect(second.state.scoreLayout, {'unit': 8.0, 'spacingStaff': 20});
+      expect(second.state.scorePageFitsBox, isFalse);
 
       // Voltar ao padrão apaga a chave.
       second.setScoreLayout({});
@@ -211,15 +217,15 @@ void main() {
     test('um layout ilegível não derruba as outras configurações', () async {
       await SharedPreferencesAsync().setString('score_layout', '{quebrado');
       await SharedPreferencesAsync().setBool('score_page_fits_box', false);
-      final settings = AppSettings();
+      final settings = SettingsCubit();
       await settings.load();
-      expect(settings.scoreLayout, isEmpty);
-      expect(settings.scorePageFitsBox, isFalse);
+      expect(settings.state.scoreLayout, isEmpty);
+      expect(settings.state.scorePageFitsBox, isFalse);
 
       await SharedPreferencesAsync().setString('score_layout', '[1, 2]');
-      final list = AppSettings();
+      final list = SettingsCubit();
       await list.load();
-      expect(list.scoreLayout, isEmpty);
+      expect(list.state.scoreLayout, isEmpty);
     });
   });
 
@@ -326,10 +332,10 @@ void main() {
   });
 
   group('transpor (fase Q): o que o hino pede ao Verovio', () {
-    final settings = <AppSettings>[];
+    final settings = <SettingsCubit>[];
     tearDown(() {
       for (final s in settings) {
-        s.dispose();
+        s.close();
       }
       settings.clear();
     });
@@ -338,7 +344,7 @@ void main() {
     Future<RecordingRenderer> open(
       WidgetTester tester, {
       PieceSettings pieceSettings = const PieceSettings(),
-      AppSettings? appSettings,
+      SettingsCubit? appSettings,
       int? fifths = -3,
     }) async {
       if (appSettings != null) settings.add(appSettings);
@@ -374,7 +380,7 @@ void main() {
     ) async {
       final renderer = await open(
         tester,
-        appSettings: AppSettings()..transposeByDefault = true,
+        appSettings: SettingsCubit()..setTransposeByDefault(true),
       );
       expect(renderer.options, hasLength(1));
       expect(renderer.options.single['transpose'], '-m3');
@@ -386,7 +392,7 @@ void main() {
       final renderer = await open(
         tester,
         fifths: null,
-        appSettings: AppSettings()..transposeByDefault = true,
+        appSettings: SettingsCubit()..setTransposeByDefault(true),
       );
       expect(renderer.options.single.containsKey('transpose'), isFalse);
     });
@@ -395,7 +401,7 @@ void main() {
       final renderer = await open(
         tester,
         pieceSettings: const PieceSettings(transpose: kTransposeNone),
-        appSettings: AppSettings()..transposeByDefault = true,
+        appSettings: SettingsCubit()..setTransposeByDefault(true),
       );
       expect(renderer.options.single.containsKey('transpose'), isFalse);
     });
@@ -413,22 +419,22 @@ void main() {
     testWidgets('ligar e desligar a chave geral regrava o hino aberto', (
       tester,
     ) async {
-      final app = AppSettings();
+      final app = SettingsCubit();
       final renderer = await open(tester, appSettings: app);
       expect(renderer.options, hasLength(1));
 
-      app.transposeByDefault = true;
+      app.setTransposeByDefault(true);
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
       expect(renderer.options, hasLength(2));
       expect(renderer.options.last['transpose'], '-m3');
 
       // Uma mudança que não é da transposição não regrava.
-      app.haloWidth = 2;
+      app.setHaloWidth(2);
       await tester.pump(const Duration(milliseconds: 100));
       expect(renderer.options, hasLength(2));
 
-      app.transposeByDefault = false;
+      app.setTransposeByDefault(false);
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
       expect(renderer.options, hasLength(3));
@@ -519,10 +525,10 @@ void main() {
       await tester.tap(find.text('Trocar o timbre do teclado'));
       await tester.pump();
 
-      final reopened = AppSettings();
+      final reopened = SettingsCubit();
       await tester.runAsync(reopened.load);
-      expect(reopened.output, SoundOutput.midiKeyboard);
-      expect(reopened.useScoreInstruments, isTrue);
+      expect(reopened.state.output, SoundOutput.midiKeyboard);
+      expect(reopened.state.useScoreInstruments, isTrue);
     });
 
     testWidgets('celular: a gaveta separa "este hino" de "geral", e o que é '
@@ -559,9 +565,9 @@ void main() {
       await tester.pump();
       await tester.tap(metronome);
       await tester.pump();
-      final reopened = AppSettings();
+      final reopened = SettingsCubit();
       await tester.runAsync(reopened.load);
-      expect(reopened.metronomeOn, isTrue);
+      expect(reopened.state.metronomeOn, isTrue);
 
       final general = find.text('Configurações gerais');
       await tester.ensureVisible(general);
@@ -619,7 +625,7 @@ void main() {
       await open('Primeiro');
       // O hino recebe as mesmas configurações gerais que a biblioteca editou.
       // (O som nasce ligado, U04: o toque em "Som" o desligou.)
-      expect(opened!.appSettings.soundOn, isFalse);
+      expect(opened!.appSettings.state.soundOn, isFalse);
       expect(opened!.pieceSettings.isDefault, isTrue);
       opened!.onPieceSettingsChanged(const PieceSettings(speed: 0.6));
       await back();

@@ -213,7 +213,7 @@ de um teste fechado com 12 testadores por 14 dias.
 Dois painéis, duas gavetas de dados — ambas em `SharedPreferencesAsync`, que
 sobrevive a fechar o app e a instalar uma versão nova por cima:
 
-- **Gerais** (`AppSettings`, no zywny-comum; painel `GeneralSettingsPanel`):
+- **Gerais** (`SettingsCubit`, no zywny-comum; painel `GeneralSettingsPanel`):
   som, saída, instrumentos da partitura, metrônomo, tipo de treino e cores.
   Valem para todas as músicas; abrem pela engrenagem da biblioteca ou por
   "Configurações gerais" na partitura.

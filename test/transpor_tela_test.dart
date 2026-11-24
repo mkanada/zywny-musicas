@@ -17,7 +17,7 @@ import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_music/tone_choices.dart';
 import 'package:zywny_music/transposition.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
@@ -311,10 +311,10 @@ void main() {
   });
 
   group('na tela da música (celular)', () {
-    final settings = <AppSettings>[];
+    final settings = <SettingsCubit>[];
     tearDown(() {
       for (final s in settings) {
-        s.dispose();
+        s.close();
       }
       settings.clear();
     });
@@ -325,7 +325,7 @@ void main() {
       WidgetTester tester, {
       int? fifths = -3,
       PieceSettings pieceSettings = const PieceSettings(),
-      AppSettings? appSettings,
+      SettingsCubit? appSettings,
       TrailProgressStore? trail,
       bool emptyFirst = false,
     }) async {
@@ -573,7 +573,7 @@ void main() {
     testWidgets('a chave geral aparece nas configurações gerais e grava', (
       tester,
     ) async {
-      final app = AppSettings();
+      final app = SettingsCubit();
       await open(tester, appSettings: app);
       await openDrawer(tester);
       final general = find.text('Configurações gerais');
@@ -595,10 +595,10 @@ void main() {
         find.text('Cada música pode voltar ao original na gaveta'),
         findsOneWidget,
       );
-      expect(app.transposeByDefault, isFalse);
+      expect(app.state.transposeByDefault, isFalse);
       await tester.tap(tile);
       await settle(tester);
-      expect(app.transposeByDefault, isTrue);
+      expect(app.state.transposeByDefault, isTrue);
       expect(find.text('Mi♭ → Dó · teclado +3'), findsOneWidget);
     });
   });
@@ -614,8 +614,8 @@ void main() {
       final progress = PieceProgressStore(prefs: prefs);
       await progress.load('hinos');
       await progress.markOpened('007', transpose: '-m3');
-      final settings = AppSettings();
-      addTearDown(settings.dispose);
+      final settings = SettingsCubit();
+      addTearDown(settings.close);
 
       await tester.pumpWidget(
         MaterialApp(

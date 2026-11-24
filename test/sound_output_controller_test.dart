@@ -12,7 +12,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_midi/midi_out_sound_engine.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 
 import 'support/practice_fakes.dart';
 
@@ -53,7 +53,7 @@ MidiDevice _device(String id) =>
     MidiDevice(id, 'Teclado $id', MidiDeviceType.serial, false);
 
 void main() {
-  late AppSettings settings;
+  late SettingsCubit settings;
   late MidiDeviceManager devices;
   late FakeMidiInput input;
   late List<_AppEngine> appEngines;
@@ -67,7 +67,7 @@ void main() {
     MidiCommandPlatform.instance = _NoDevicesMidiCommandPlatform();
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
-    settings = AppSettings();
+    settings = SettingsCubit();
     await settings.load();
     devices = MidiDeviceManager();
     // A primeira listagem (vazia) zeraria o `connected` que os testes põem:
@@ -107,7 +107,7 @@ void main() {
     if (!soundDisposed) sound.dispose();
     input.dispose();
     devices.dispose();
-    settings.dispose();
+    settings.close();
   });
 
   test('trocar de saída preserva o motor do app', () async {
@@ -118,13 +118,13 @@ void main() {
     final app = sound.engine;
     expect(app, same(appEngines.single));
 
-    settings.output = SoundOutput.midiKeyboard;
+    settings.setOutput(SoundOutput.midiKeyboard);
     await pumpEventQueue();
     expect(sound.output, SoundOutput.midiKeyboard);
     expect(sound.engine, isA<MidiOutSoundEngine>());
     expect(sound.soundOn, isTrue);
 
-    settings.output = SoundOutput.appSynth;
+    settings.setOutput(SoundOutput.appSynth);
     await pumpEventQueue();
     expect(sound.output, SoundOutput.appSynth);
     expect(sound.engine, same(app));
@@ -135,7 +135,7 @@ void main() {
   });
 
   test('o motor MIDI é recriado quando o dispositivo muda', () async {
-    settings.output = SoundOutput.midiKeyboard;
+    settings.setOutput(SoundOutput.midiKeyboard);
     devices.connected.value = _device('a');
     await pumpEventQueue();
     await sound.toggleSound();
@@ -196,7 +196,7 @@ void main() {
     devices.connected.value = _device('a');
     await pumpEventQueue();
     await sound.ensureEngine();
-    settings.output = SoundOutput.midiKeyboard;
+    settings.setOutput(SoundOutput.midiKeyboard);
     await pumpEventQueue();
     await sound.ensureEngine();
     expect(senders, hasLength(1));

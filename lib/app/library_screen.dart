@@ -16,7 +16,8 @@ import 'package:zywny_music/tone_choices.dart';
 import 'package:zywny_music/transposition.dart';
 
 import 'package:zywny_comum/settings/effective_transposition.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/app/libraries_section.dart';
 import 'package:zywny_auth/zywny_auth.dart';
@@ -89,7 +90,7 @@ class OpenedPiece {
 
   /// As configurações gerais do app (som, MIDI, cores) — as mesmas que a
   /// biblioteca edita.
-  final AppSettings appSettings;
+  final SettingsCubit appSettings;
 
   /// O que este hino tinha guardado (layout, andamento, mão), e para onde
   /// vai o que o usuário mudar nele.
@@ -165,7 +166,7 @@ class LibraryScreen extends StatefulWidget {
   /// por um falso.
   final PickMusicXmlFile pickMusicXml;
   final PieceProgressStore? progress;
-  final AppSettings? appSettings;
+  final SettingsCubit? appSettings;
   final PieceSettingsStore? pieceSettings;
 
   /// As correções dos dados das músicas (qualquer biblioteca, mais as
@@ -225,7 +226,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   /// Configurações gerais (uma só para o app inteiro, lida ao abrir) e as
   /// de cada hino (lidas quando o hino abre).
-  late final AppSettings _settings = widget.appSettings ?? AppSettings();
+  late final SettingsCubit _settings = widget.appSettings ?? SettingsCubit();
   late final Future<void> _settingsLoaded = _settings.load();
   late final PieceSettingsStore _pieceSettings =
       widget.pieceSettings ?? PieceSettingsStore();
@@ -286,7 +287,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (widget.trailProgress == null) _trail.dispose();
     if (widget.metadata == null) _metadata.dispose();
     if (widget.imported == null) _imported.dispose();
-    if (widget.appSettings == null) _settings.dispose();
+    if (widget.appSettings == null) _settings.close();
     super.dispose();
   }
 
@@ -888,19 +889,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: FutureBuilder<PieceCatalog>(
                 future: _catalog,
-                builder: (context, snapshot) => ListenableBuilder(
-                  listenable: Listenable.merge([
-                    _progress,
-                    _trail,
-                    _settings,
-                    _metadata,
-                    _imported,
-                    _libraries,
-                  ]),
-                  builder: (context, _) => sideBySide
-                      ? _contentSideBySide(snapshot)
-                      : _content(snapshot),
-                ),
+                builder: (context, snapshot) =>
+                    BlocBuilder<SettingsCubit, SettingsState>(
+                      bloc: _settings,
+                      builder: (context, _) => ListenableBuilder(
+                        listenable: Listenable.merge([
+                          _progress,
+                          _trail,
+                          _metadata,
+                          _imported,
+                          _libraries,
+                        ]),
+                        builder: (context, _) => sideBySide
+                            ? _contentSideBySide(snapshot)
+                            : _content(snapshot),
+                      ),
+                    ),
               ),
             ),
           ),

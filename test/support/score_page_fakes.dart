@@ -11,7 +11,7 @@ import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_comum/render/score_renderer.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 
@@ -70,17 +70,17 @@ Piece fakePiece({
 /// instaladas (o `setUp` de cada arquivo de teste).
 OpenedPiece fakeOpenedPiece({
   Piece? piece,
-  AppSettings? appSettings,
+  SettingsCubit? appSettings,
   PieceSettings pieceSettings = const PieceSettings(),
   ValueChanged<PieceSettings>? onPieceSettingsChanged,
   TrailProgressStore? trailProgress,
   PracticeScoreCallback? onPracticeScore,
 }) {
-  final settings = appSettings ?? AppSettings();
+  final settings = appSettings ?? SettingsCubit();
   final trail = trailProgress ?? TrailProgressStore();
   final midi = MidiDeviceManager();
   addTearDown(() {
-    if (appSettings == null) settings.dispose();
+    if (appSettings == null) settings.close();
     if (trailProgress == null) trail.dispose();
     midi.dispose();
   });

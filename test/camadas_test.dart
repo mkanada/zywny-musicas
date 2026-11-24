@@ -15,11 +15,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 bool _sob(String arquivo, String pasta) => arquivo.startsWith('$pasta/');
 
-const _appSettings = 'settings/app_settings.dart';
-const _folhasDeAppSettings = {
+const _settingsCubit = 'settings/settings_cubit.dart';
+const _folhasDeSettings = {
   'practice/practice_mode.dart',
   'practice/practice_colors.dart',
   'trail/trail_stage.dart',
+  'settings/settings_state.dart',
 };
 const _entradasDoApp = {'main.dart'};
 
@@ -31,10 +32,8 @@ List<String> _regrasQuebradas(String origem, String alvo) {
   }
   // Fora de lib/, só a base musical (`package:zywny_music`), que o
   // compilador já separa.
-  if (origem == _appSettings && !_folhasDeAppSettings.contains(alvo)) {
-    quebradas.add(
-      '$_appSettings só importa ${_folhasDeAppSettings.join(', ')}',
-    );
+  if (origem == _settingsCubit && !_folhasDeSettings.contains(alvo)) {
+    quebradas.add('$_settingsCubit só importa ${_folhasDeSettings.join(', ')}');
   }
   if (_sob(alvo, 'app') &&
       !_sob(origem, 'app') &&

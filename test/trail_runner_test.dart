@@ -24,7 +24,7 @@ import 'package:zywny_library/library_package.dart' show LibraryTerm;
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/practice/shift_detector.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
@@ -53,7 +53,7 @@ typedef _Summary = ({String stageRef, StageResult result, List<int> bad});
 class _Harness {
   _Harness._();
 
-  late final AppSettings settings;
+  late final SettingsCubit settings;
   late final MidiDeviceManager devices;
   final FakeMidiInput input = FakeMidiInput();
   final ScoreController scores = ScoreController();
@@ -78,7 +78,7 @@ class _Harness {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
     final h = _Harness._();
-    h.settings = AppSettings();
+    h.settings = SettingsCubit();
     await h.settings.load();
     h.devices = MidiDeviceManager();
     h.store = TrailProgressStore();
@@ -226,7 +226,7 @@ class _Harness {
     input.dispose();
     devices.dispose();
     store.dispose();
-    settings.dispose();
+    settings.close();
   }
 }
 

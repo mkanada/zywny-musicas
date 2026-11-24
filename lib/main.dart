@@ -57,7 +57,7 @@ import 'package:zywny_comum/practice/shift_detector.dart';
 import 'package:zywny_comum/practice/practice_report.dart';
 import 'package:zywny_comum/practice/practice_tools.dart';
 import 'package:zywny_comum/practice/study_mode.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
@@ -260,7 +260,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Configurações gerais (som, MIDI, cores…): as da biblioteca, já lidas
   /// por ela. Ver [_onSettingsChanged].
-  late final AppSettings _settings = widget.opened.appSettings;
+  late final SettingsCubit _settings = widget.opened.appSettings;
+  late final StreamSubscription<SettingsState> _settingsSub;
 
   /// O que este hino tinha guardado ao abrir (andamento, mão, trilha, tom).
   late final PieceSettings _stored = widget.opened.pieceSettings;
@@ -312,8 +313,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Espera (o tempo para até o aluno tocar), ou tempo real (T03) —
   /// configuração geral.
-  PracticeMode get _practiceMode => _settings.practiceMode;
-  set _practiceMode(PracticeMode value) => _settings.practiceMode = value;
+  PracticeMode get _practiceMode => _settings.state.practiceMode;
+  set _practiceMode(PracticeMode value) => _settings.setPracticeMode(value);
 
   /// O progresso das trilhas é o da biblioteca (a linha do hino atualiza ao
   /// voltar sem reabrir nada — J09).
@@ -343,8 +344,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Appearance, from the general settings — pure paint-time, none of them
   /// reach Verovio or reflow the score.
-  double get _haloWidth => _settings.haloWidth;
-  Color get _barColor => _settings.barColor;
+  double get _haloWidth => _settings.state.haloWidth;
+  Color get _barColor => _settings.state.barColor;
 
   // Haste fina: meia cabeça de nota (o padrão do `ScoreView` são duas). O
   // player e a vista precisam do mesmo valor.
@@ -401,7 +402,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     _playback = _newPlayback()..addListener(_onPlaybackChanged);
     _runner = _newTrailRunner()..addListener(_onRunnerChanged);
     _midiDeviceManager.connected.addListener(_maybeCheckTranspose);
-    _settings.addListener(_onSettingsChanged);
+    _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
     _applyOrientation();
   }
 
@@ -583,7 +584,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       ..removeListener(_onSessionChanged)
       ..dispose();
     _flushPieceSettings();
-    _settings.removeListener(_onSettingsChanged);
+    unawaited(_settingsSub.cancel());
     _shiftNotice.dispose();
     _runner
       ..removeListener(_onRunnerChanged)
@@ -627,7 +628,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           opened.piece.fifths ?? 0,
           from: from,
           to: to,
-          naming: _settings.noteNaming,
+          naming: _settings.state.noteNaming,
         ),
         confirmLabel: 'Trocar',
       );
@@ -652,7 +653,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         fifths,
         lowest: range?.lowest ?? kCatalogLowestMidi,
         highest: range?.highest ?? kCatalogHighestMidi,
-        naming: _settings.noteNaming,
+        naming: _settings.state.noteNaming,
       ),
       currentFifths: fifths + (current?.fifthsDelta ?? 0),
     );
@@ -701,7 +702,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
               fifths,
               transposition,
               appIsSound: _sound.midiMonitorOn,
-              naming: _settings.noteNaming,
+              naming: _settings.state.noteNaming,
             ),
       onTap: _onSealTap,
     );
@@ -734,7 +735,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     // gravado): as alturas do `midi.json` são as dele.
     final k = _session.renderedTransposition?.semitones ?? 0;
     if (k == 0) return PitchFrame.identity;
-    final behavior = _settings.keyboardTransposeOf(
+    final behavior = _settings.state.keyboardTransposeOf(
       _midiDeviceManager.connected.value?.name,
     );
     return PitchFrame(
@@ -995,7 +996,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   late final ShiftDetector _shiftDetector = ShiftDetector(
     enabled: () =>
         !_sound.midiMonitorOn &&
-        _settings
+        _settings.state
                 .keyboardTransposeOf(_midiDeviceManager.connected.value?.name)
                 .shiftsOut !=
             false,
@@ -1010,7 +1011,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     final frame = _pitchFrame;
     final frameShiftsOut = frame.keyboardShiftsOut && !frame.appIsSound;
     final name = _midiDeviceManager.connected.value?.name;
-    final behavior = _settings.keyboardTransposeOf(name);
+    final behavior = _settings.state.keyboardTransposeOf(name);
     if (name != null && !behavior.isChecked) {
       _settings.setKeyboardTranspose(
         name,
@@ -1041,7 +1042,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         previousWasTransposed: previous,
         nowTransposed: now,
         hasKeyboard: name != null,
-        keyboardShiftsOut: _settings.keyboardTransposeOf(name).shiftsOut,
+        keyboardShiftsOut: _settings.state.keyboardTransposeOf(name).shiftsOut,
         appIsSound: _sound.midiMonitorOn,
       ),
     )) {
@@ -1061,7 +1062,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       state: AutoCheckState(
         transposition: _session.renderedTransposition,
         deviceName: name,
-        behavior: _settings.keyboardTransposeOf(name),
+        behavior: _settings.state.keyboardTransposeOf(name),
         appIsSound: _sound.midiMonitorOn,
         alreadyAsked: _transposeCheckAsked.contains(name),
       ),
@@ -1094,8 +1095,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           transposition: transposition,
           deviceName: device.name,
           input: _midiInput,
-          previous: _settings.keyboardTransposeOf(device.name),
-          naming: _settings.noteNaming,
+          previous: _settings.state.keyboardTransposeOf(device.name),
+          naming: _settings.state.noteNaming,
           playOwnSound: _playOwnTone,
           playOnKeyboard: _sound.output == SoundOutput.midiKeyboard
               ? _playKeyboardTone
@@ -1508,10 +1509,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Legenda das cores do treino, com as do aluno (U08).
   Widget _practiceLegend() => PracticeLegend(
-    pending: _settings.practicePendingColor,
-    correct: _settings.highlightColor,
+    pending: _settings.state.practicePendingColor,
+    correct: _settings.state.highlightColor,
     offBeat: kPracticeOffBeatColor,
-    wrong: _settings.practiceWrongColor,
+    wrong: _settings.state.practiceWrongColor,
     missed: kPracticeMissedColor,
   );
 
@@ -1760,7 +1761,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     const PhoneSectionLabel('TREINO'),
     PhoneToggleRow(
       label: 'Metrônomo (com som)',
-      value: _settings.metronomeOn,
+      value: _settings.state.metronomeOn,
       onChanged: (_) => _playback.toggleMetronome(),
     ),
     PhoneActionRow(
@@ -1781,11 +1782,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   List<Widget> _drawerCut() => [
     PhoneSectionLabel('${_term.este} ${_term.singular}'.toUpperCase()),
     PhoneToggleRow(
-      label: 'Trechos de ${_settings.trailMeasures} compassos (padrão)',
+      label: 'Trechos de ${_settings.state.trailMeasures} compassos (padrão)',
       value: _runner.pieceN == null,
       onChanged: (v) => unawaited(
         _runner.setPieceN(
-          v ? null : _settings.trailMeasures,
+          v ? null : _settings.state.trailMeasures,
           confirm: _confirmNewCut,
         ),
       ),

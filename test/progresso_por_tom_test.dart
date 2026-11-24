@@ -16,7 +16,7 @@ import 'package:zywny_library/library_sort.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny_music/transposition.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/ui/theme.dart';
@@ -266,7 +266,7 @@ void main() {
   group('biblioteca', () {
     Future<void> pump(
       WidgetTester tester, {
-      required AppSettings settings,
+      required SettingsCubit settings,
       required PieceProgressStore progress,
       required TrailProgressStore trail,
     }) async {
@@ -303,7 +303,7 @@ void main() {
     ) async {
       await pump(
         tester,
-        settings: AppSettings(),
+        settings: SettingsCubit(),
         progress: PieceProgressStore(prefs: prefs),
         trail: await seededTrail(),
       );
@@ -314,7 +314,7 @@ void main() {
     testWidgets('a chave geral leva a biblioteca ao progresso do tom em Dó', (
       tester,
     ) async {
-      final settings = AppSettings()..transposeByDefault = true;
+      final settings = SettingsCubit()..setTransposeByDefault(true);
       await pump(
         tester,
         settings: settings,
@@ -331,7 +331,7 @@ void main() {
       final progress = PieceProgressStore(prefs: prefs);
       await progress.load('hinos');
       await progress.markOpened('007', transpose: kTransposeNone);
-      final settings = AppSettings()..transposeByDefault = true;
+      final settings = SettingsCubit()..setTransposeByDefault(true);
       await pump(
         tester,
         settings: settings,
@@ -349,7 +349,7 @@ void main() {
       await progress.markOpened('007', transpose: '-m3');
       await pump(
         tester,
-        settings: AppSettings(),
+        settings: SettingsCubit(),
         progress: progress,
         trail: await seededTrail(),
       );

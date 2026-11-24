@@ -17,7 +17,7 @@ import 'package:zywny_midi/midi_input_service.dart';
 import 'package:zywny_midi/midi_monitor.dart';
 import 'package:zywny_midi/midi_out_sound_engine.dart';
 
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart'
     show pickSoundFontBytes;
 
@@ -58,7 +58,7 @@ typedef MonitorPitch = int Function(int received, {required bool midiKeyboard});
 /// configurações e o gerenciador MIDI são de fora (da biblioteca).
 class SoundOutputController extends ChangeNotifier {
   SoundOutputController({
-    required AppSettings settings,
+    required SettingsCubit settings,
     required MidiDeviceManager devices,
     required MidiInputService input,
     required this.playback,
@@ -81,10 +81,10 @@ class SoundOutputController extends ChangeNotifier {
        _pickSoundFont = pickSoundFont, // ignore: prefer_initializing_formals
        // Lidos já aqui (e não na primeira vez que forem usados): é contra
        // eles que [_onSettingsChanged] compara para saber o que mudou.
-       _output = settings.output,
-       _soundSetting = settings.soundOn {
+       _output = settings.state.output,
+       _soundSetting = settings.state.soundOn {
     _devices.connected.addListener(_onMidiDeviceChanged);
-    _settings.addListener(_onSettingsChanged);
+    _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
     unawaited(
       _soundFonts.hasCustom().then((v) {
         if (_disposed) return;
@@ -94,7 +94,9 @@ class SoundOutputController extends ChangeNotifier {
     );
   }
 
-  final AppSettings _settings;
+  final SettingsCubit _settings;
+
+  late final StreamSubscription<SettingsState> _settingsSub;
   final MidiDeviceManager _devices;
   final MidiInputService _input;
   final MonitorPitch _monitorPitch;
@@ -137,7 +139,7 @@ class SoundOutputController extends ChangeNotifier {
   /// modo mudo de sempre.
   ///
   /// É o estado **de agora**; o que o usuário quer ao abrir um hino é
-  /// `settings.soundOn` ([_soundSetting] guarda o último valor visto, para
+  /// `settings.state.soundOn` ([_soundSetting] guarda o último valor visto, para
   /// distinguir "o usuário mexeu" de "o treino ligou o som por conta").
   bool get soundOn => _soundOn;
   bool _soundOn = false;
@@ -169,10 +171,12 @@ class SoundOutputController extends ChangeNotifier {
 
   void _onSettingsChanged() {
     if (_disposed) return;
-    if (_settings.output != _output) unawaited(applyOutput(_settings.output));
-    _midiOutEngine?.useScoreInstruments = _settings.useScoreInstruments;
-    if (_settings.soundOn != _soundSetting) {
-      _soundSetting = _settings.soundOn;
+    if (_settings.state.output != _output) {
+      unawaited(applyOutput(_settings.state.output));
+    }
+    _midiOutEngine?.useScoreInstruments = _settings.state.useScoreInstruments;
+    if (_settings.state.soundOn != _soundSetting) {
+      _soundSetting = _settings.state.soundOn;
       if (_soundSetting != _soundOn && !_loadingSoundFont) {
         unawaited(toggleSound());
       }
@@ -224,7 +228,7 @@ class SoundOutputController extends ChangeNotifier {
   Future<void> userToggleSound() async {
     await toggleSound();
     _soundSetting = _soundOn;
-    _settings.soundOn = _soundOn;
+    _settings.setSoundOn(_soundOn);
   }
 
   /// Uma vez por hino, depois da primeira gravura: religa o som se ele
@@ -234,7 +238,7 @@ class SoundOutputController extends ChangeNotifier {
     if (_autoSoundDone) return;
     _autoSoundDone = true;
     if (_soundOn) return;
-    if (!_settings.soundOn) {
+    if (!_settings.state.soundOn) {
       // Som desligado: mesmo assim deixa o motor do app armado (dispositivo
       // aberto, `.sf2` carregado) enquanto o aluno ainda olha a partitura —
       // senão o primeiro play espera por isso. O play continua mudo até
@@ -307,7 +311,7 @@ class SoundOutputController extends ChangeNotifier {
     final engine = MidiOutSoundEngine(
       sender: _midiSender(),
       deviceId: device.id,
-      useScoreInstruments: _settings.useScoreInstruments,
+      useScoreInstruments: _settings.state.useScoreInstruments,
     );
     _midiOutEngine = engine;
     return engine;
@@ -354,7 +358,7 @@ class SoundOutputController extends ChangeNotifier {
   /// Interruptor "usar instrumentos da partitura" (M03): Program Change ao
   /// teclado MIDI — desligado por padrão.
   void setUseScoreInstruments(bool value) =>
-      _settings.useScoreInstruments = value;
+      _settings.setUseScoreInstruments(value);
 
   /// Interruptor "monitor MIDI" (M02): liga a entrada a [engine] num canal
   /// reservado, para teclados controladores sem som próprio. Guarda a
@@ -482,7 +486,7 @@ class SoundOutputController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _devices.connected.removeListener(_onMidiDeviceChanged);
-    _settings.removeListener(_onSettingsChanged);
+    unawaited(_settingsSub.cancel());
     _midiMonitor?.dispose();
     _midiMonitor = null;
     unawaited(_appEngine?.dispose());

@@ -32,7 +32,7 @@ import 'package:zywny_comum/practice/practice_colors.dart';
 import 'package:zywny_comum/practice/practice_controller.dart';
 import 'package:zywny_comum/practice/practice_report.dart';
 import 'package:zywny_comum/practice/shift_detector.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/trail/stage_result.dart'
     show StagePass, StageResult;
 import 'package:zywny_comum/trail/trail_controller.dart';
@@ -110,7 +110,7 @@ class TrailRunner extends ChangeNotifier {
     required PlaybackController playback,
     required ScoreRenderSession session,
     required SoundOutputController sound,
-    required AppSettings settings,
+    required SettingsCubit settings,
     required MidiDeviceManager devices,
     required MidiInputService midiInput,
     required Piece piece,
@@ -136,14 +136,15 @@ class TrailRunner extends ChangeNotifier {
        _inputLatency =
            inputLatency ??
            (() => calibratedInputLatency(devices, sound.output)) {
-    _settings.addListener(_onSettingsChanged);
+    _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
   final TrailProgressStore _store;
   final PlaybackController _playback;
   final ScoreRenderSession _session;
   final SoundOutputController _sound;
-  final AppSettings _settings;
+  final SettingsCubit _settings;
+  late final StreamSubscription<SettingsState> _settingsSub;
   final MidiDeviceManager _devices;
   final MidiInputService _midiInput;
   final Piece _piece;
@@ -268,24 +269,24 @@ class TrailRunner extends ChangeNotifier {
     final trail = _trail;
     if (trail != null && !trail.running) {
       final effective = effectiveTrailMeasures(
-        general: _settings.trailMeasures,
+        general: _settings.state.trailMeasures,
         piece: _pieceN,
       );
       if (effective != trail.plan.n ||
-          !listEquals(_planPhases, _settings.trailPlanPhases) ||
-          !setEquals(_planSpeeds, _settings.trailSpeeds)) {
+          !listEquals(_planPhases, _settings.state.trailPlanPhases) ||
+          !setEquals(_planSpeeds, _settings.state.trailSpeeds)) {
         unawaited(setup());
       }
     }
     // No treino o player destaca na cor de "esperado agora"; a cor da
     // reprodução volta em [endPractice].
     _playback.player?.highlightColor = _practice == null
-        ? _settings.highlightColor
-        : _settings.practicePendingColor;
+        ? _settings.state.highlightColor
+        : _settings.state.practicePendingColor;
     _practice
-      ?..correctColor = _settings.highlightColor
-      ..wrongColor = _settings.practiceWrongColor
-      ..pendingColor = _settings.practicePendingColor;
+      ?..correctColor = _settings.state.highlightColor
+      ..wrongColor = _settings.state.practiceWrongColor
+      ..pendingColor = _settings.state.practicePendingColor;
   }
 
   /// Uma gravura nova: o treino da anterior acaba, o player é trocado e a
@@ -317,7 +318,7 @@ class TrailRunner extends ChangeNotifier {
     final pieceId = progressIdFor(_piece.id, _session.renderedTransposition);
     unawaited(_refreshAlsoStudied());
     final n = effectiveTrailMeasures(
-      general: _settings.trailMeasures,
+      general: _settings.state.trailMeasures,
       piece: _pieceN,
     );
     final path = TrailPath.fromTimeline(player.timeline);
@@ -352,8 +353,8 @@ class TrailRunner extends ChangeNotifier {
   /// O plano de etapas de [path], com as fases e os andamentos de agora (que
   /// ficam guardados em `_planPhases` e `_planSpeeds`).
   TrailPlan _planOf(TrailPath path, PerformanceTrack track, int n) {
-    _planPhases = _settings.trailPlanPhases;
-    _planSpeeds = _settings.trailSpeeds;
+    _planPhases = _settings.state.trailPlanPhases;
+    _planSpeeds = _settings.state.trailSpeeds;
     return TrailPlan.build(path, track, n: n, options: TrailPlanOptions(includeFinal: true, phases: _planPhases, speeds: _planSpeeds));
   }
 
@@ -388,7 +389,7 @@ class TrailRunner extends ChangeNotifier {
       tones,
       current: _session.renderedTransposition,
       fifths: _piece.fifths,
-      naming: _settings.noteNaming,
+      naming: _settings.state.noteNaming,
     );
     if (text == _alsoStudied) return;
     _alsoStudied = text;
@@ -410,11 +411,11 @@ class TrailRunner extends ChangeNotifier {
     required Future<bool> Function() confirm,
   }) async {
     final oldEffective = effectiveTrailMeasures(
-      general: _settings.trailMeasures,
+      general: _settings.state.trailMeasures,
       piece: _pieceN,
     );
     final newEffective = effectiveTrailMeasures(
-      general: _settings.trailMeasures,
+      general: _settings.state.trailMeasures,
       piece: value,
     );
     if (newEffective != oldEffective &&
@@ -585,7 +586,7 @@ class TrailRunner extends ChangeNotifier {
     _playback.playPlayerAfterCount(stage.startMs);
     // No treino, o "esperado agora" acende na cor própria, como no modo
     // livre.
-    player.highlightColor = _settings.practicePendingColor;
+    player.highlightColor = _settings.state.practicePendingColor;
     trail.setRunning(true);
     trail.clearResult();
     _sound.markSoundOn();
@@ -626,10 +627,10 @@ class TrailRunner extends ChangeNotifier {
       onRangeJump: (ms) =>
           player.seek(Duration(microseconds: (ms * 1000).round())),
       onWaitTarget: (ms) => player.waitTarget = ms,
-      correctColor: _settings.highlightColor,
-      wrongColor: _settings.practiceWrongColor,
-      pendingColor: _settings.practicePendingColor,
-      rhythmToleranceMs: _settings.rhythmToleranceMs,
+      correctColor: _settings.state.highlightColor,
+      wrongColor: _settings.state.practiceWrongColor,
+      pendingColor: _settings.state.practicePendingColor,
+      rhythmToleranceMs: _settings.state.rhythmToleranceMs,
     );
   }
 
@@ -687,7 +688,7 @@ class TrailRunner extends ChangeNotifier {
       scheduler.clearJumps();
       scheduler.onJump = null;
       scheduler.setSpeed(_playback.speed);
-      scheduler.metronomeOn = _settings.metronomeOn;
+      scheduler.metronomeOn = _settings.state.metronomeOn;
       scheduler.pause();
     }
     _playback.player?.pause();
@@ -863,7 +864,7 @@ class TrailRunner extends ChangeNotifier {
     practice.dispose();
     _practice = null;
     _playback.scheduler?.setSpeed(_playback.speed);
-    _playback.scheduler?.metronomeOn = _settings.metronomeOn;
+    _playback.scheduler?.metronomeOn = _settings.state.metronomeOn;
     _playback.player?.pause();
     _playback.player?.cancelTurn();
     _trail?.setRunning(false);
@@ -875,7 +876,7 @@ class TrailRunner extends ChangeNotifier {
   /// "esperado agora") e desiste de soltar o player depois da contagem.
   void _releasePlayer() {
     final player = _playback.player;
-    player?.highlightColor = _settings.highlightColor;
+    player?.highlightColor = _settings.state.highlightColor;
     player?.highlightColorOf = null;
     player?.skipHighlight = null;
     _playback.cancelPlayAfterCount();
@@ -925,17 +926,17 @@ class TrailRunner extends ChangeNotifier {
       onLoopRestart: (ms) =>
           player.seek(Duration(microseconds: (ms * 1000).round())),
       onWaitTarget: (ms) => player.waitTarget = ms,
-      correctColor: _settings.highlightColor,
-      wrongColor: _settings.practiceWrongColor,
-      pendingColor: _settings.practicePendingColor,
-      rhythmToleranceMs: _settings.rhythmToleranceMs,
+      correctColor: _settings.state.highlightColor,
+      wrongColor: _settings.state.practiceWrongColor,
+      pendingColor: _settings.state.practicePendingColor,
+      rhythmToleranceMs: _settings.state.rhythmToleranceMs,
     );
     practice.start(fromMs: fromMs, countIn: mode != PracticeMode.wait);
     if (range != null) practice.setLoop(range.startMs, range.endMs);
     _playback.playPlayerAfterCount(fromMs);
     // No treino, o "esperado agora" acende na cor própria (azul por
     // padrão): o vermelho padrão do player confundia pendente com errada.
-    player.highlightColor = _settings.practicePendingColor;
+    player.highlightColor = _settings.state.practicePendingColor;
     _sound.markSoundOn();
     _practice = practice;
     _changed();
@@ -952,7 +953,7 @@ class TrailRunner extends ChangeNotifier {
     Hand hand,
     PracticeMode mode,
   ) {
-    player.highlightColor = _settings.practicePendingColor;
+    player.highlightColor = _settings.state.practicePendingColor;
     final appNotes = appHandNoteIds(track, hand);
     player.highlightColorOf = appNotes.isEmpty
         ? null
@@ -1013,7 +1014,7 @@ class TrailRunner extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _settings.removeListener(_onSettingsChanged);
+    unawaited(_settingsSub.cancel());
     _listenTimer?.cancel();
     _practice?.dispose();
     _trail?.removeListener(_onTrailChanged);

@@ -20,7 +20,7 @@ import 'package:zywny_music/transposition.dart';
 import 'package:zywny_comum/render/layout_options.dart';
 import 'package:zywny_comum/ui/device_kind.dart';
 import 'package:zywny_comum/render/score_renderer.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 
@@ -46,7 +46,7 @@ class ScoreRenderSession extends ChangeNotifier {
     required ScoreRenderer renderer,
     required Uint8List scoreXml,
     required Piece piece,
-    required AppSettings settings,
+    required SettingsCubit settings,
     required PieceSettings stored,
     required this.name,
     this.kind = DeviceKind.desktop,
@@ -60,15 +60,16 @@ class ScoreRenderSession extends ChangeNotifier {
        _piece = piece, // ignore: prefer_initializing_formals
        _settings = settings, // ignore: prefer_initializing_formals
        _transposeChoice = stored.transpose,
-       _layoutOverrides = layoutOverridesFrom(settings.scoreLayout),
-       _pageFitsBox = settings.scorePageFitsBox {
-    _settings.addListener(_onSettingsChanged);
+       _layoutOverrides = layoutOverridesFrom(settings.state.scoreLayout),
+       _pageFitsBox = settings.state.scorePageFitsBox {
+    _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
 
   final ScoreRenderer _renderer;
   final Uint8List _scoreXml;
   final Piece _piece;
-  final AppSettings _settings;
+  final SettingsCubit _settings;
+  late final StreamSubscription<SettingsState> _settingsSub;
 
   /// Como a partitura é chamada no status ("13 · Hino").
   final String name;
@@ -288,7 +289,7 @@ class ScoreRenderSession extends ChangeNotifier {
   void saveLayout() {
     _settings
       ..setScoreLayout(_layoutOverrides)
-      ..scorePageFitsBox = _pageFitsBox;
+      ..setScorePageFitsBox(_pageFitsBox);
   }
 
   /// Volta ao layout padrão do app, para todos os hinos. Não guarda nem grava
@@ -438,7 +439,7 @@ class ScoreRenderSession extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _resizeTimer?.cancel();
-    _settings.removeListener(_onSettingsChanged);
+    unawaited(_settingsSub.cancel());
     super.dispose();
   }
 }

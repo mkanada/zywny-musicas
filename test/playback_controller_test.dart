@@ -16,7 +16,7 @@ import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_audio/metronome.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_audio/performance_track.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 
 import 'support/practice_fakes.dart';
 
@@ -37,7 +37,7 @@ class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
 class _Harness {
   _Harness._(this.settings, this.devices, this.input);
 
-  final AppSettings settings;
+  final SettingsCubit settings;
   final MidiDeviceManager devices;
   final FakeMidiInput input;
   final ScoreController scores = ScoreController();
@@ -53,7 +53,7 @@ class _Harness {
     MidiCommandPlatform.instance = _NoDevicesMidiCommandPlatform();
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
-    final settings = AppSettings();
+    final settings = SettingsCubit();
     await settings.load();
     final h = _Harness._(settings, MidiDeviceManager(), FakeMidiInput());
     await tester.pump();
@@ -113,7 +113,7 @@ class _Harness {
     scores.dispose();
     input.dispose();
     devices.dispose();
-    settings.dispose();
+    settings.close();
   }
 }
 

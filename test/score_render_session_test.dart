@@ -13,7 +13,7 @@ import 'package:zywny/app/score_render_session.dart';
 import 'package:zywny_comum/render/layout_options.dart'
     show kPhoneUnit, kTabletUnit;
 import 'package:zywny_comum/render/score_renderer.dart';
-import 'package:zywny_comum/settings/app_settings.dart';
+import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/ui/device_kind.dart';
 
@@ -48,7 +48,7 @@ class _GatedRenderer implements ScoreRenderer {
 }
 
 void main() {
-  late AppSettings settings;
+  late SettingsCubit settings;
   late _GatedRenderer renderer;
   late ScoreRenderSession session;
   late List<VsbDocument> shown;
@@ -56,7 +56,7 @@ void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
-    settings = AppSettings();
+    settings = SettingsCubit();
     renderer = _GatedRenderer();
     shown = [];
     session = ScoreRenderSession(
@@ -73,7 +73,7 @@ void main() {
 
   tearDown(() {
     session.dispose();
-    settings.dispose();
+    settings.close();
   });
 
   /// A primeira caixa e a primeira gravura, já mostrada.
@@ -198,8 +198,8 @@ void main() {
       session.setPageFitsBox(false);
       session.saveLayout();
       await pumpEventQueue();
-      expect(settings.scoreLayout, {'unit': 6.5});
-      expect(settings.scorePageFitsBox, isFalse);
+      expect(settings.state.scoreLayout, {'unit': 6.5});
+      expect(settings.state.scorePageFitsBox, isFalse);
 
       final other = sessionOn(DeviceKind.desktop, name: '14 · Outro');
       expect(other.layout['unit'], 6.5);
@@ -239,8 +239,8 @@ void main() {
         session.resetLayout();
         session.saveLayout();
         await pumpEventQueue();
-        expect(settings.scoreLayout, isEmpty);
-        expect(settings.scorePageFitsBox, isTrue);
+        expect(settings.state.scoreLayout, isEmpty);
+        expect(settings.state.scorePageFitsBox, isTrue);
         expect(session.layout, session.layoutDefaults);
         expect(session.pageFitsBox, isTrue);
       },
