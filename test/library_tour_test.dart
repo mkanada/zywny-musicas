@@ -219,6 +219,8 @@ void main() {
       300,
       scrollable: _panelScrollable(),
     );
+    await tester.ensureVisible(find.text('Rever o tutorial'));
+    await tester.pump();
     await tester.tap(find.text('Rever o tutorial'));
     await tester.pumpAndSettle();
 

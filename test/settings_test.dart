@@ -521,8 +521,28 @@ void main() {
 
       await tester.tap(find.text('Teclado').first); // o segmento da saída
       await tester.pump();
-      expect(find.text('Trocar o timbre do teclado'), findsOneWidget);
-      await tester.tap(find.text('Trocar o timbre do teclado'));
+      // O timbre do teclado é um ajuste: fica em "Avançado", recolhido.
+      final painel = find
+          .descendant(
+            of: find.byType(GeneralSettingsPanel),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.scrollUntilVisible(
+        find.text('Avançado'),
+        200,
+        scrollable: painel,
+      );
+      await tester.tap(find.text('Avançado'));
+      await tester.pumpAndSettle();
+      final trocar = find.descendant(
+        of: find.byType(GeneralSettingsPanel),
+        matching: find.text('Trocar o timbre do teclado'),
+      );
+      await tester.ensureVisible(trocar);
+      await tester.pumpAndSettle();
+      expect(trocar, findsOneWidget);
+      await tester.tap(trocar);
       await tester.pump();
 
       final reopened = SettingsCubit();

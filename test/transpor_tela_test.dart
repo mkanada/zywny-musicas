@@ -193,7 +193,10 @@ void main() {
             body: TransposeSection(
               fifths: fifths,
               mode: mode,
-              noAccidentals: Transposition.toNoAccidentals(fifths, range: (lowest: 40, highest: 80)),
+              noAccidentals: Transposition.toNoAccidentals(
+                fifths,
+                range: (lowest: 40, highest: 80),
+              ),
               currentTone: mode == TransposeMode.none ? null : _inC,
               alsoStudied: alsoStudied,
               onNone: () => calls.add('none'),
@@ -257,7 +260,10 @@ void main() {
     });
 
     test('qual escolha descreve a transposição em uso', () {
-      final none = Transposition.toNoAccidentals(-3, range: (lowest: 40, highest: 80));
+      final none = Transposition.toNoAccidentals(
+        -3,
+        range: (lowest: 40, highest: 80),
+      );
       expect(transposeModeOf(null, none), TransposeMode.none);
       expect(transposeModeOf(none, none), TransposeMode.noAccidentals);
       expect(
@@ -592,6 +598,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).last,
       );
+      await tester.ensureVisible(tile);
+      await tester.pump();
       expect(
         find.text('Cada música pode voltar ao original na gaveta'),
         findsOneWidget,
