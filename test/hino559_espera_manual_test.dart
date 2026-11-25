@@ -1,6 +1,6 @@
 // Teste manual: modo espera no 1º trecho do hino 559, com o render Verovio
 // de verdade e as peças ligadas como no app (agendador + relógio de áudio no
-// player + `PracticeController` com intervalo). O teclado é simulado: em cada
+// player + `PracticeCubit` com intervalo). O teclado é simulado: em cada
 // passo, a nota pendente precisa estar acesa (azul) antes de o aluno tocar,
 // uma nota certa fica verde só enquanto apertada e o passo só avança com o
 // acorde todo apertado.
@@ -134,7 +134,7 @@ void main() {
             mergeTies: true,
           )..clock = AudioPlaybackClock(scheduler);
           // Como no app: no modo espera as notas do aluno são do
-          // PracticeController, o player não as acende.
+          // PracticeCubit, o player não as acende.
           final studentNotes = {
             for (final id in studentHandNoteIds(track, stage.phase.hand)) ...[
               id,
@@ -144,7 +144,7 @@ void main() {
           player.skipHighlight = studentNotes.contains;
           final midi = _Midi();
           var done = false;
-          final practice = PracticeController(
+          final practice = PracticeCubit(
             midiInput: midi,
             track: track,
             scheduler: scheduler,
@@ -180,7 +180,7 @@ void main() {
           var guard = 0;
           while (!done && guard++ < 200) {
             sync();
-            final step = practice.currentStep.value;
+            final step = practice.currentStep.state;
             if (step == null) break;
             final pendingColor = <String>[];
             for (final e in step.notes) {
@@ -240,7 +240,7 @@ void main() {
                 }
                 midi.key(pitches.first, on: false, at: t + 0.1);
                 await pumpEventQueue();
-                final still = practice.currentStep.value;
+                final still = practice.currentStep.state;
                 final colors = [
                   for (final e in step.notes)
                     controller.colorOf(doc.sceneIdOf(e.id) ?? e.id) ??
@@ -260,7 +260,7 @@ void main() {
               }
             }
             await pumpEventQueue();
-            final after = practice.currentStep.value;
+            final after = practice.currentStep.state;
             if (!done && after != null && after.index == step.index) {
               problems.add(
                 '$id passo ${step.index}: acorde inteiro tocado e não avançou '
@@ -276,7 +276,7 @@ void main() {
             }
           }
           if (!done) problems.add('$id: etapa não terminou');
-          practice.dispose();
+          unawaited(practice.close());
           player.close();
           controller.close();
         }

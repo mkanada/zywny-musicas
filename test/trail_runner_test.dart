@@ -188,7 +188,7 @@ class _Harness {
     var guard = 0;
     while (summaries.length == before) {
       if (guard++ > 20000) throw StateError('a etapa não terminou');
-      final step = runner.practice?.currentStep.value;
+      final step = runner.practice?.currentStep.state;
       final scheduler = playback.scheduler!;
       if (step == null || scheduler.positionMs < step.onMs - 0.5) {
         engine.now += 0.02;
@@ -265,7 +265,7 @@ void main() {
     var guard = 0;
     while (!trocou) {
       if (guard++ > 20000) throw StateError('a etapa não terminou');
-      final step = h.runner.practice?.currentStep.value;
+      final step = h.runner.practice?.currentStep.state;
       final scheduler = h.playback.scheduler!;
       if (step == null || scheduler.positionMs < step.onMs - 0.5) {
         h.engine.now += 0.02;
@@ -412,7 +412,10 @@ void main() {
   });
 
   testWidgets('o progresso é gravado no tom da partitura', (tester) async {
-    final none = Transposition.toNoAccidentals(-3, range: (lowest: 40, highest: 80))!;
+    final none = Transposition.toNoAccidentals(
+      -3,
+      range: (lowest: 40, highest: 80),
+    )!;
     final h = await _Harness.create(
       tester,
       fifths: -3,

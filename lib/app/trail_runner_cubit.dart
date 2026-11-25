@@ -1,6 +1,6 @@
 // R11: o andamento da trilha de estudo — montar a trilha, armar a etapa,
 // contar, ouvir, avaliar, avançar, encerrar — e o treino livre, que divide
-// com ela o mesmo `PracticeController`. Saiu de `_ScoreHomePageState`
+// com ela o mesmo `PracticeCubit`. Saiu de `_ScoreHomePageState`
 // (achado 5 da revisão): a lógica pura da trilha é o [TrailCubit]; o
 // que mora aqui é a cola entre ela, o player ([PlaybackCubit]), a
 // prática e as marcas de erro na partitura. Os resumos e a conclusão são
@@ -261,7 +261,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
 
   /// Escuta o estado da trilha; cancelada ao trocar ou soltar a trilha.
   StreamSubscription<TrailState>? _trailSub;
-  PracticeController? _practice;
+  PracticeCubit? _practice;
   Timer? _listenTimer;
 
   /// Etapas e andamentos com que o plano da trilha foi montado: mudou nas
@@ -302,7 +302,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   bool get trailMode => _trail != null && !_trail!.freeMode;
 
   /// O treino em curso (de uma etapa ou livre); `null` fora dele.
-  PracticeController? get practice => _practice;
+  PracticeCubit? get practice => _practice;
 
   /// Ouvindo o trecho da etapa (U03).
   bool get listening => state.listening;
@@ -381,7 +381,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   /// Uma gravura nova: o treino da anterior acaba, o player é trocado e a
   /// trilha é montada de novo.
   void attachDocument(VsbDocument document, PerformanceTrack track) {
-    _practice?.dispose();
+    unawaited(_practice?.close());
     _practice = null;
     _trail?.setRunning(false);
     _playback.attach(document, track);
@@ -459,7 +459,16 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   TrailPlan _planOf(TrailPath path, PerformanceTrack track, int n) {
     _planPhases = _settings.state.trailPlanPhases;
     _planSpeeds = _settings.state.trailSpeeds;
-    return TrailPlan.build(path, track, n: n, options: TrailPlanOptions(includeFinal: true, phases: _planPhases, speeds: _planSpeeds));
+    return TrailPlan.build(
+      path,
+      track,
+      n: n,
+      options: TrailPlanOptions(
+        includeFinal: true,
+        phases: _planPhases,
+        speeds: _planSpeeds,
+      ),
+    );
   }
 
   /// O progresso guardado, no corte [n] e com o total de etapas de agora
@@ -707,10 +716,10 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
 
   /// O controlador de avaliação da passada [pass]: o que ela toca e confere, e
   /// o que acontece nas bordas dela (o fim do trecho, os saltos e a espera).
-  PracticeController _practiceOf(_PassStart pass) {
+  PracticeCubit _practiceOf(_PassStart pass) {
     final stage = pass.stage;
     final player = pass.player;
-    return PracticeController(
+    return PracticeCubit(
       midiInput: _midiInput,
       track: pass.track,
       scheduler: pass.scheduler,
@@ -813,7 +822,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   /// O intervalo terminou por conta própria: grava, limpa e mostra o resumo
   /// da etapa (ou do bloco de reforço). Parar no meio não passa por aqui
   /// (abandono, sem registro).
-  void _onStageDone(PracticeController practice, TrailStage stage) {
+  void _onStageDone(PracticeCubit practice, TrailStage stage) {
     if (_disposed || !identical(_practice, practice)) return;
     final trail = _trail;
     final result = practice.stageResult;
@@ -971,7 +980,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     if (practice == null) return;
     _releasePlayer();
     practice.stop();
-    practice.dispose();
+    unawaited(practice.close());
     _practice = null;
     _playback.scheduler?.setSpeed(_playback.speed);
     _playback.scheduler?.metronomeOn = _settings.state.metronomeOn;
@@ -1019,7 +1028,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     await loadInputLatency();
     if (_disposed) return;
     shiftDetector.rearm();
-    final practice = PracticeController(
+    final practice = PracticeCubit(
       midiInput: _midiInput,
       track: track,
       scheduler: scheduler,
@@ -1056,7 +1065,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   /// Cores do destaque durante o treino (U08), antes do `seek` que acende o
   /// instante de partida: "esperada" para as notas do aluno e cinza para as
   /// da mão que o app toca. No modo espera as notas do aluno são do
-  /// `PracticeController` (esperada/certa em camadas): o player não as acende.
+  /// `PracticeCubit` (esperada/certa em camadas): o player não as acende.
   void _paintForPractice(
     ScorePlayer player,
     PerformanceTrack track,
@@ -1097,7 +1106,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     }
     final wrongMarks = practice.wrongMarks;
     practice.stop();
-    practice.dispose();
+    unawaited(practice.close());
     _practice = null;
     _changed();
     if (_disposed) return;
@@ -1112,7 +1121,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   }
 
   /// Para o treino em curso e volta ao estado pausado normal —
-  /// [PracticeController.stop] já solta o freio/filtro do agendador e os
+  /// [PracticeCubit.stop] já solta o freio/filtro do agendador e os
   /// destaques.
   void stopPractice() {
     if (_practice == null) return;
@@ -1126,7 +1135,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     _disposed = true;
     unawaited(_settingsSub.cancel());
     _listenTimer?.cancel();
-    _practice?.dispose();
+    unawaited(_practice?.close());
     _soltaTrilha();
     return super.close();
   }

@@ -1271,17 +1271,13 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           right: 0,
           child: BlocSelector<ScoreRenderCubit, ScoreRenderState, bool>(
             selector: (session) => session.busy,
-            builder: (context, busy) =>
-                busy ? const LinearProgressIndicator() : const SizedBox.shrink(),
+            builder: (context, busy) => busy
+                ? const LinearProgressIndicator()
+                : const SizedBox.shrink(),
           ),
         ),
         if (hasPage)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _pagerRegion(),
-          ),
+          Positioned(left: 0, right: 0, bottom: 0, child: _pagerRegion()),
         Positioned(
           top: 0,
           left: 0,
@@ -1331,7 +1327,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         deviceManager: _midiDeviceManager,
         input: _midiInput,
         onClose: _panels.closeMidi,
-        wrong: _runner.practice?.wrongPitches,
+        wrong: _runner.practice?.wrongView,
         heldPitchOf: (r) => _pitchFrame.writtenFromReceived(r),
       ),
     ),
@@ -1353,7 +1349,9 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         onReset: _resetLayout,
         onCopy: _copyOptions,
         onClose: _panels.closeLayout,
-        zoomSection: scoreZoomable ? zoomControls(_view, () => _viewport) : null,
+        zoomSection: scoreZoomable
+            ? zoomControls(_view, () => _viewport)
+            : null,
       ),
     ),
   );

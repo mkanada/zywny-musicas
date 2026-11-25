@@ -125,39 +125,39 @@ class _SoundButtonSlot extends StatelessWidget {
   final MidiDeviceManager midi;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<SoundOutputCubit, SoundOutputState>(
-        builder: (context, _) => BlocBuilder<TrailRunnerCubit, TrailRunnerState>(
-          builder: (context, _) =>
-              BlocBuilder<MidiDeviceManager, MidiDeviceState>(
-            bloc: midi,
-            builder: (context, midiState) {
-              final device = midiState.connected;
-              final sound = context.read<SoundOutputCubit>();
-              final practicing = context.read<TrailRunnerCubit>().practice;
-              final noKeyboard =
-                  sound.output == SoundOutput.midiKeyboard && device == null;
-              if (noKeyboard) {
-                return PhoneSoundButton(
-                  key: tourKeys.sound,
-                  on: false,
-                  tooltip: 'Som no teclado: nenhum conectado',
-                  onPressed: () => unawaited(showMidiDevicePicker(context, midi)),
-                );
-              }
-              return PhoneSoundButton(
-                key: tourKeys.sound,
-                on: sound.soundOn,
-                loading: sound.loadingSoundFont,
-                tooltip: sound.soundOn ? 'Som ligado' : 'Som desligado',
-                onPressed: practicing != null
-                    ? null
-                    : () => unawaited(sound.userToggleSound()),
-              );
-            },
-          ),
-        ),
-      );
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SoundOutputCubit, SoundOutputState>(
+    builder: (context, _) => BlocBuilder<TrailRunnerCubit, TrailRunnerState>(
+      builder: (context, _) => BlocBuilder<MidiDeviceManager, MidiDeviceState>(
+        bloc: midi,
+        builder: (context, midiState) {
+          final device = midiState.connected;
+          final sound = context.read<SoundOutputCubit>();
+          final practicing = context.read<TrailRunnerCubit>().practice;
+          final noKeyboard =
+              sound.output == SoundOutput.midiKeyboard && device == null;
+          if (noKeyboard) {
+            return PhoneSoundButton(
+              key: tourKeys.sound,
+              on: false,
+              tooltip: 'Som no teclado: nenhum conectado',
+              onPressed: () => unawaited(showMidiDevicePicker(context, midi)),
+            );
+          }
+          return PhoneSoundButton(
+            key: tourKeys.sound,
+            on: sound.soundOn,
+            loading: sound.loadingSoundFont,
+            tooltip: sound.soundOn ? 'Som ligado' : 'Som desligado',
+            onPressed: practicing != null
+                ? null
+                : () => unawaited(sound.userToggleSound()),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 /// O selo da partitura transposta: "Mi♭ → Dó · teclado +3". Mostra o tom da
@@ -169,32 +169,33 @@ class _TransposeSealSlot extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<ScoreRenderCubit, ScoreRenderState>(
-        builder: (context, _) => BlocBuilder<SoundOutputCubit, SoundOutputState>(
-          builder: (context, _) => BlocBuilder<SettingsCubit, SettingsState>(
-            builder: (context, settings) {
-              final transposition = context
-                  .read<ScoreRenderCubit>()
-                  .renderedTransposition;
-              if (transposition == null) return const SizedBox.shrink();
-              final fifths = piece.fifths;
-              final text = fifths == null
-                  ? 'Transposta · teclado ${transposition.keyboardLabel}'
-                  : transposeSealText(
-                      fifths,
-                      transposition,
-                      appIsSound: context.read<SoundOutputCubit>().midiMonitorOn,
-                      naming: settings.noteNaming,
-                    );
-              return Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: TransposeSeal(text: text, onTap: onTap),
-              );
-            },
-          ),
-        ),
-      );
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<ScoreRenderCubit, ScoreRenderState>(
+    builder: (context, _) => BlocBuilder<SoundOutputCubit, SoundOutputState>(
+      builder: (context, _) => BlocBuilder<SettingsCubit, SettingsState>(
+        builder: (context, settings) {
+          final transposition = context
+              .read<ScoreRenderCubit>()
+              .renderedTransposition;
+          if (transposition == null) return const SizedBox.shrink();
+          final fifths = piece.fifths;
+          final text = fifths == null
+              ? 'Transposta · teclado ${transposition.keyboardLabel}'
+              : transposeSealText(
+                  fifths,
+                  transposition,
+                  appIsSound: context.read<SoundOutputCubit>().midiMonitorOn,
+                  naming: settings.noteNaming,
+                );
+          return Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: TransposeSeal(text: text, onTap: onTap),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 /// O aviso de teclado desligado, na trilha (só o ícone, na barra estreita).
@@ -278,21 +279,29 @@ class _PracticeScoreSlot extends StatelessWidget {
             padding: const EdgeInsets.only(left: 8),
             child: practice.mode == PracticeMode.wait && practice.range == null
                 // Modo espera livre não tem resultado: os dois contadores.
-                ? ListenableBuilder(
-                    listenable: Listenable.merge([
-                      practice.correctCount,
-                      practice.wrongCount,
-                    ]),
-                    builder: (context, _) => PhoneCountersPill(
-                      correct: practice.correctCount.value,
-                      mistakes: practice.wrongCount.value,
+                ? BlocSelector<
+                    PracticeCubit,
+                    PracticeState,
+                    ({int correct, int wrong})
+                  >(
+                    bloc: practice,
+                    selector: (s) =>
+                        (correct: s.correctCount, wrong: s.wrongCount),
+                    builder: (context, c) => PhoneCountersPill(
+                      correct: c.correct,
+                      mistakes: c.wrong,
                     ),
                   )
                 // Com resultado (trilha ou tempo real livre): a porcentagem
                 // do resumo, com a meta na trilha.
-                : ValueListenableBuilder(
-                    valueListenable: practice.liveScore,
-                    builder: (context, score, _) => PhoneScorePill(
+                : BlocSelector<
+                    PracticeCubit,
+                    PracticeState,
+                    ({int hits, int total})
+                  >(
+                    bloc: practice,
+                    selector: (s) => s.liveScore,
+                    builder: (context, score) => PhoneScorePill(
                       hits: score.hits,
                       total: score.total,
                       goalPercent: practice.range != null
