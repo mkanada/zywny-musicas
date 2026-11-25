@@ -30,14 +30,14 @@ class PracticeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
-          PracticeCubit(args: args, startWithPanelOpen: startWithPanelOpen)
+          MockupPracticeCubit(args: args, startWithPanelOpen: startWithPanelOpen)
             ..iniciar(),
       child: const _PracticeView(),
     );
   }
 }
 
-/// A tela: tudo o que aparece vem do [PracticeCubit] acima dela.
+/// A tela: tudo o que aparece vem do [MockupPracticeCubit] acima dela.
 class _PracticeView extends StatelessWidget {
   const _PracticeView();
 
@@ -46,7 +46,7 @@ class _PracticeView extends StatelessWidget {
     return Scaffold(
       backgroundColor: kSurface,
       body: SafeArea(
-        child: BlocBuilder<PracticeCubit, PracticeState>(
+        child: BlocBuilder<MockupPracticeCubit, MockupPracticeState>(
           builder: (context, state) => LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= kWidePracticeBreakpoint;
@@ -74,8 +74,8 @@ class _PracticeView extends StatelessWidget {
   /// `TabletEstudo.dc.html`: barra de topo com título, faixa de status do
   /// treino (só fora do modo Ouvir) e barra de transporte com tudo à
   /// vista, em vez da barra lateral + painel escondido do celular.
-  Widget _wideLayout(BuildContext context, PracticeState state) {
-    final cubit = context.read<PracticeCubit>();
+  Widget _wideLayout(BuildContext context, MockupPracticeState state) {
+    final cubit = context.read<MockupPracticeCubit>();
     final setup = state.setup;
     return Column(
       children: [
@@ -154,7 +154,7 @@ class _PracticeView extends StatelessWidget {
     );
   }
 
-  Widget _scoreArea(BuildContext context, PracticeState state) {
+  Widget _scoreArea(BuildContext context, MockupPracticeState state) {
     return Stack(
       children: [
         Positioned.fill(
@@ -201,8 +201,8 @@ class _PracticeView extends StatelessWidget {
     );
   }
 
-  Widget _sideRail(BuildContext context, PracticeState state) {
-    final cubit = context.read<PracticeCubit>();
+  Widget _sideRail(BuildContext context, MockupPracticeState state) {
+    final cubit = context.read<MockupPracticeCubit>();
     final setup = state.setup;
     return Container(
       width: 84,
@@ -251,8 +251,8 @@ class _PracticeView extends StatelessWidget {
     );
   }
 
-  Widget _panelOverlay(BuildContext context, PracticeState state) {
-    final cubit = context.read<PracticeCubit>();
+  Widget _panelOverlay(BuildContext context, MockupPracticeState state) {
+    final cubit = context.read<MockupPracticeCubit>();
     final setup = state.setup;
     return Stack(
       children: [
@@ -290,7 +290,7 @@ class _PracticeView extends StatelessWidget {
   /// A folha "Ir para o compasso": o slider escolhe, "Ir" confirma. Fechá-la
   /// sem "Ir" não muda o compasso.
   Future<void> _abrirIrParaCompasso(BuildContext context) async {
-    final cubit = context.read<PracticeCubit>();
+    final cubit = context.read<MockupPracticeCubit>();
     final compasso = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: kSurface,

@@ -13,7 +13,6 @@ import 'package:zywny/app/home/score_overlays.dart';
 import 'package:zywny/app/home/score_panels_cubit.dart';
 import 'package:zywny/app/home/score_phone_rail.dart';
 import 'package:zywny/app/home/score_phone_title_bar.dart';
-import 'package:zywny/app/home/score_shift_notice_cubit.dart';
 import 'package:zywny/app/home/score_system_ui.dart';
 import 'package:zywny/app/home/score_trail_drawer.dart';
 import 'package:zywny/app/home/score_zoom.dart';
@@ -42,6 +41,7 @@ import 'package:zywny_comum/practice/practice_report.dart';
 import 'package:zywny_comum/practice/practice_tools.dart';
 import 'package:zywny_comum/practice/shift_banner.dart';
 import 'package:zywny_comum/practice/shift_detector.dart';
+import 'package:zywny_comum/practice/shift_notice_cubit.dart';
 import 'package:zywny_comum/practice/study_mode.dart';
 import 'package:zywny_comum/practice/transpose_check.dart';
 import 'package:zywny_comum/render/score_renderer.dart';
@@ -109,36 +109,6 @@ class ScoreHomePage extends StatefulWidget {
   State<ScoreHomePage> createState() => _ScoreHomePageState();
 }
 
-/// A ponte entre o [ShiftNoticeCubit] e a faixa do comum (`ShiftBanner`), que
-/// ainda pede um `ValueNotifier`: lê o aviso do Cubit e o escreve de volta
-/// (a faixa zera o aviso ao fechar). Não guarda estado: o dono é o Cubit.
-class _ShiftNoticeLink extends ValueNotifier<ShiftNotice?> {
-  _ShiftNoticeLink(this._cubit) : super(null) {
-    _sub = _cubit.stream.listen((_) => notifyListeners());
-  }
-
-  final ShiftNoticeCubit _cubit;
-  late final StreamSubscription<ShiftNoticeState> _sub;
-
-  @override
-  ShiftNotice? get value => _cubit.state.notice;
-
-  @override
-  set value(ShiftNotice? novo) {
-    if (novo == null) {
-      _cubit.clear();
-    } else {
-      _cubit.show(novo);
-    }
-  }
-
-  @override
-  void dispose() {
-    unawaited(_sub.cancel());
-    super.dispose();
-  }
-}
-
 class _ScoreHomePageState extends State<ScoreHomePage> {
   /// Como a biblioteca chama a música.
   LibraryTerm get _term => widget.opened.term;
@@ -151,12 +121,10 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Gavetas e painéis abertos ([HomePanelsCubit]); o modo de treino e a mão
   /// ([ScoreModeCubit], a mão começa com a deste hino); o aviso da faixa
-  /// ([ShiftNoticeCubit], e a ponte que o comum pede). Criados na
-  /// `initState` e fechados no `dispose`.
+  /// ([ShiftNoticeCubit]). Criados na `initState` e fechados no `dispose`.
   late final HomePanelsCubit _panels;
   late final ScoreModeCubit _mode;
   late final ShiftNoticeCubit _shift;
-  late final _ShiftNoticeLink _shiftNotice;
 
   static const _kDefaultHand = Hand.direita;
 
@@ -262,7 +230,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     _panels = HomePanelsCubit();
     _mode = ScoreModeCubit(hand: _stored.hand ?? _kDefaultHand);
     _shift = ShiftNoticeCubit();
-    _shiftNotice = _ShiftNoticeLink(_shift);
     _diagOffState = DiagLog.retrato(
       'musica',
       () => {
@@ -430,7 +397,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     restoreEdgeToEdge(_kind);
     unawaited(_session.close());
     _flushPieceSettings();
-    _shiftNotice.dispose();
     unawaited(_shift.close());
     unawaited(_runner.close());
     unawaited(_keyboardSub.cancel());
@@ -1282,7 +1248,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           top: 0,
           left: 0,
           right: 0,
-          child: ShiftBanner(notice: _shiftNotice, notes: _midiInput.notes),
+          child: ShiftBanner(notice: _shift, notes: _midiInput.notes),
         ),
         Positioned.fill(child: _panelsRegion(constraints)),
       ],

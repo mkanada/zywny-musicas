@@ -19,12 +19,12 @@ PracticeArgs _peca({
   totalMeasures: totalMeasures,
 );
 
-PracticeCubit _criar({
+MockupPracticeCubit _criar({
   PracticeArgs? args,
   bool painel = false,
   Duration intervalo = const Duration(seconds: 2),
   List<List<DeviceOrientation>>? giros,
-}) => PracticeCubit(
+}) => MockupPracticeCubit(
   args: args ?? _peca(),
   startWithPanelOpen: painel,
   tickInterval: intervalo,
@@ -83,23 +83,23 @@ void main() {
   });
 
   group('ao vivo', () {
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'tique avança o compasso e soma um acerto',
       build: _criar,
       act: (cubit) => cubit.tique(),
       expect: () => [
-        isA<PracticeState>()
+        isA<MockupPracticeState>()
             .having((s) => s.measure, 'compasso', 5)
             .having((s) => s.counts.correct, 'acertos', 24),
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'tique no último compasso não passa do total',
       build: () => _criar(args: _peca(measure: 41)),
       act: (cubit) => cubit.tique(),
       expect: () => [
-        isA<PracticeState>()
+        isA<MockupPracticeState>()
             .having((s) => s.measure, 'compasso', 41)
             .having((s) => s.counts.correct, 'acertos', 24),
       ],
@@ -148,10 +148,10 @@ void main() {
   });
 
   group('parar', () {
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'volta ao começo e para, sem mexer no placar',
       build: _criar,
-      seed: () => const PracticeState(
+      seed: () => const MockupPracticeState(
         setup: PracticeSetup(
           mode: PracticeMode.espera,
           hand: Hand.direita,
@@ -163,7 +163,7 @@ void main() {
       ),
       act: (cubit) => cubit.parar(),
       expect: () => [
-        const PracticeState(
+        const MockupPracticeState(
           setup: PracticeSetup(
             mode: PracticeMode.espera,
             hand: Hand.direita,
@@ -177,37 +177,37 @@ void main() {
   });
 
   group('modo', () {
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'do Ouvir a um treino: andamento 80% e a mão ambas vira a direita',
       build: () => _criar(
         args: _peca(mode: PracticeMode.ouvir, hand: Hand.ambas),
       ),
       act: (cubit) => cubit.mudarModo(PracticeMode.tempoReal),
       expect: () => [
-        isA<PracticeState>()
+        isA<MockupPracticeState>()
             .having((s) => s.setup.mode, 'modo', PracticeMode.tempoReal)
             .having((s) => s.setup.tempoPercent, 'andamento', 80)
             .having((s) => s.setup.hand, 'mão', Hand.direita),
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'do Ouvir a um treino, uma mão escolhida fica',
       build: () => _criar(
         args: _peca(mode: PracticeMode.ouvir, hand: Hand.esquerda),
       ),
       act: (cubit) => cubit.mudarModo(PracticeMode.espera),
       expect: () => [
-        isA<PracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
+        isA<MockupPracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'de um treino ao Ouvir: andamento 100%, ambas as mãos e placar zerado',
       build: _criar,
       act: (cubit) => cubit.mudarModo(PracticeMode.ouvir),
       expect: () => [
-        isA<PracticeState>()
+        isA<MockupPracticeState>()
             .having((s) => s.setup.mode, 'modo', PracticeMode.ouvir)
             .having((s) => s.setup.tempoPercent, 'andamento', 100)
             .having((s) => s.setup.hand, 'mão', Hand.ambas)
@@ -215,12 +215,12 @@ void main() {
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'entre dois treinos só troca o modo',
       build: _criar,
       act: (cubit) => cubit.mudarModo(PracticeMode.tempoReal),
       expect: () => [
-        isA<PracticeState>()
+        isA<MockupPracticeState>()
             .having((s) => s.setup.mode, 'modo', PracticeMode.tempoReal)
             .having((s) => s.setup.tempoPercent, 'andamento', 80)
             .having((s) => s.setup.hand, 'mão', Hand.direita)
@@ -230,12 +230,12 @@ void main() {
   });
 
   group('andamento e mão', () {
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'mudarAndamento soma o passo',
       build: _criar,
       act: (cubit) => cubit.mudarAndamento(10),
       expect: () => [
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having(
           (s) => s.setup.tempoPercent,
           'andamento',
           90,
@@ -243,12 +243,12 @@ void main() {
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'mudarAndamento não desce de 25%',
       build: _criar,
       act: (cubit) => cubit.mudarAndamento(-100),
       expect: () => [
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having(
           (s) => s.setup.tempoPercent,
           'andamento',
           25,
@@ -256,12 +256,12 @@ void main() {
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'mudarAndamento não sobe de 150%',
       build: _criar,
       act: (cubit) => cubit.mudarAndamento(100),
       expect: () => [
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having(
           (s) => s.setup.tempoPercent,
           'andamento',
           150,
@@ -269,12 +269,12 @@ void main() {
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'definirAndamento vai ao valor pedido, sem limite',
       build: _criar,
       act: (cubit) => cubit.definirAndamento(60),
       expect: () => [
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having(
           (s) => s.setup.tempoPercent,
           'andamento',
           60,
@@ -282,18 +282,18 @@ void main() {
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'escolherMao troca a mão',
       build: _criar,
       act: (cubit) => cubit.escolherMao(Hand.esquerda),
       expect: () => [
-        isA<PracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
+        isA<MockupPracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
       ],
     );
   });
 
   group('painel, compasso e opções', () {
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'definirPainel abre e fecha o painel',
       build: _criar,
       act: (cubit) {
@@ -301,21 +301,21 @@ void main() {
         cubit.definirPainel(false);
       },
       expect: () => [
-        isA<PracticeState>().having((s) => s.panelOpen, 'painel', isTrue),
-        isA<PracticeState>().having((s) => s.panelOpen, 'painel', isFalse),
+        isA<MockupPracticeState>().having((s) => s.panelOpen, 'painel', isTrue),
+        isA<MockupPracticeState>().having((s) => s.panelOpen, 'painel', isFalse),
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'irParaCompasso vai ao compasso escolhido',
       build: _criar,
       act: (cubit) => cubit.irParaCompasso(12),
       expect: () => [
-        isA<PracticeState>().having((s) => s.measure, 'compasso', 12),
+        isA<MockupPracticeState>().having((s) => s.measure, 'compasso', 12),
       ],
     );
 
-    blocTest<PracticeCubit, PracticeState>(
+    blocTest<MockupPracticeCubit, MockupPracticeState>(
       'tamanho, repetição A–B e metrônomo mudam só o seu campo',
       build: _criar,
       act: (cubit) {
@@ -324,13 +324,13 @@ void main() {
         cubit.definirMetronomo(false);
       },
       expect: () => [
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having(
           (s) => s.setup.size,
           'tamanho',
           ScoreSize.grande,
         ),
-        isA<PracticeState>().having((s) => s.setup.repeatAB, 'A–B', isTrue),
-        isA<PracticeState>().having(
+        isA<MockupPracticeState>().having((s) => s.setup.repeatAB, 'A–B', isTrue),
+        isA<MockupPracticeState>().having(
           (s) => s.setup.metronome,
           'metrônomo',
           isFalse,

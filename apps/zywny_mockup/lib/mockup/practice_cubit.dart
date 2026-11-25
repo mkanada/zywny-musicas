@@ -81,8 +81,8 @@ class PracticeCounts extends Equatable {
 
 /// Tudo o que a tela de estudo mostra. As escolhas ficam em [setup]; o resto
 /// (tocando, painel, compasso e placar) fica aqui.
-class PracticeState extends Equatable {
-  const PracticeState({
+class MockupPracticeState extends Equatable {
+  const MockupPracticeState({
     required this.setup,
     required this.measure,
     this.playing = false,
@@ -99,13 +99,13 @@ class PracticeState extends Equatable {
   /// Fora do modo Ouvir o treino tem status, placar e "Tocar" de verdade.
   bool get praticando => setup.mode != PracticeMode.ouvir;
 
-  PracticeState copyWith({
+  MockupPracticeState copyWith({
     PracticeSetup? setup,
     int? measure,
     bool? playing,
     bool? panelOpen,
     PracticeCounts? counts,
-  }) => PracticeState(
+  }) => MockupPracticeState(
     setup: setup ?? this.setup,
     measure: measure ?? this.measure,
     playing: playing ?? this.playing,
@@ -125,9 +125,9 @@ const _retrato = [DeviceOrientation.portraitUp];
 
 /// O estado inicial vem dos argumentos da peça; o placar só começa com
 /// números fora do modo Ouvir (são de enfeite, como no artboard).
-PracticeState _estadoInicial(PracticeArgs args, bool painelAberto) {
+MockupPracticeState _estadoInicial(PracticeArgs args, bool painelAberto) {
   final ouvindo = args.mode == PracticeMode.ouvir;
-  return PracticeState(
+  return MockupPracticeState(
     setup: PracticeSetup(
       mode: args.mode,
       hand: args.hand,
@@ -145,8 +145,8 @@ PracticeState _estadoInicial(PracticeArgs args, bool painelAberto) {
 /// A tela de estudo. Os métodos mudam o estado na hora (síncronos). A
 /// orientação da tela (paisagem ao abrir, retrato ao fechar) passa por
 /// [_setOrientations], que os testes trocam por um falso.
-class PracticeCubit extends Cubit<PracticeState> {
-  PracticeCubit({
+class MockupPracticeCubit extends Cubit<MockupPracticeState> {
+  MockupPracticeCubit({
     required this.args,
     bool startWithPanelOpen = false,
     this.tickInterval = const Duration(seconds: 2),
