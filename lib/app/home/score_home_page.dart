@@ -65,6 +65,7 @@ import 'package:zywny_midi/midi_monitor.dart';
 import 'package:zywny_midi/midi_out_sound_engine.dart';
 import 'package:zywny_music/pitch_frame.dart';
 import 'package:zywny_music/tone_choices.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 /// A tela da partitura de um hino: gravura, tocar, treino, trilha e as
 /// gavetas. O estado vive em Cubits (BL14b): a gravura, o som, a reprodução,
@@ -74,12 +75,16 @@ import 'package:zywny_music/tone_choices.dart';
 class ScoreHomePage extends StatefulWidget {
   const ScoreHomePage({
     super.key,
+    required this.clock,
     required this.opened,
     this.debugMode = false,
     this.renderer,
     this.tourStore,
     this.authStore,
   });
+
+  /// O relógio do app (CT05b): o da reprodução e o da trilha o recebem.
+  final AppClock clock;
 
   /// O registro do tutorial de primeiro uso (`lib/tutorial/`); `null` (os
   /// testes) é sem passeio.
@@ -281,6 +286,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// A reprodução da partitura, com o som desta tela e o zoom dela.
   PlaybackCubit _newPlayback() => PlaybackCubit(
+    clock: widget.clock,
     sound: _sound,
     settings: _settings,
     controller: _controller,
@@ -297,6 +303,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// O treino da trilha deste hino, com a sessão, o som e a reprodução desta
   /// tela.
   TrailRunnerCubit _newTrailRunner() => TrailRunnerCubit(
+    clock: widget.clock,
     store: _trailStore,
     playback: _playback,
     session: _session,

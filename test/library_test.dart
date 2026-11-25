@@ -22,6 +22,7 @@ import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -228,7 +229,9 @@ void main() {
       tester,
     ) async {
       phonePortrait(tester);
-      await tester.pumpWidget(const MyApp(loadCatalog: _loadCatalog));
+      await tester.pumpWidget(
+        MyApp(clock: SystemClock(), loadCatalog: _loadCatalog),
+      );
       await tester.pump();
 
       // Nome e contagem formam uma linha só (um nome comprido não estoura).
@@ -252,7 +255,9 @@ void main() {
 
     testWidgets('busca filtra e os chips reordenam', (tester) async {
       phonePortrait(tester);
-      await tester.pumpWidget(const MyApp(loadCatalog: _loadCatalog));
+      await tester.pumpWidget(
+        MyApp(clock: SystemClock(), loadCatalog: _loadCatalog),
+      );
       await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'igreja');

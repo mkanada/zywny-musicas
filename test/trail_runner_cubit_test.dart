@@ -24,6 +24,7 @@ import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart' show StageSummaryAction;
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/practice_fakes.dart';
 import 'support/score_page_fakes.dart';
@@ -79,12 +80,14 @@ TrailRunnerCubit _trilha({int? pieceN}) {
     ),
   );
   playback = PlaybackCubit(
+    clock: ManualClock(DateTime(2026)),
     sound: sound,
     settings: settings,
     controller: scores,
     wakelock: (_) {},
   );
   return TrailRunnerCubit(
+    clock: ManualClock(DateTime(2026)),
     store: TrailProgressCubit(),
     playback: playback,
     session: session,
@@ -122,11 +125,7 @@ void main() {
     build: _trilha,
     act: (c) => c.setInputLatency(12.5),
     expect: () => [
-      isA<TrailRunnerState>().having(
-        (s) => s.inputLatencyMs,
-        'latência',
-        12.5,
-      ),
+      isA<TrailRunnerState>().having((s) => s.inputLatencyMs, 'latência', 12.5),
     ],
   );
 

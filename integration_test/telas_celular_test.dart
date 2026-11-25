@@ -40,6 +40,7 @@ import 'package:zywny_comum/trail/trail_stage.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_comum/ui/transpose_widgets.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 /// O hino do roteiro: música de Beethoven (domínio público), logo no começo
 /// da lista.
@@ -237,7 +238,7 @@ Future<void> _launch(WidgetTester tester, {required bool splash}) =>
     tester.pumpWidget(
       RepaintBoundary(
         key: _shotKey,
-        child: MyApp(splash: splash),
+        child: MyApp(clock: SystemClock(), splash: splash),
       ),
     );
 

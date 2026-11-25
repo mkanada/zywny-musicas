@@ -9,12 +9,14 @@ import 'package:zywny_comum/diag/bug_report_scope.dart';
 import 'package:zywny_comum/diag/diag_screens.dart';
 import 'package:zywny_comum/incoming/incoming_packages.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_library/library_term_scope.dart';
 import 'package:zywny_library/piece.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
+    required this.clock,
     this.debugMode = false,
     this.splash = false,
     this.loadCatalog,
@@ -23,6 +25,10 @@ class MyApp extends StatelessWidget {
     this.authStore,
     this.requireNickname = false,
   });
+
+  /// O relógio do app (CT05b): a raiz o passa às telas que criam motores e
+  /// cubits de tempo. O `main` passa o do aparelho; os testes, o que pedirem.
+  final AppClock clock;
 
   final bool debugMode;
 
@@ -81,6 +87,7 @@ class MyApp extends StatelessWidget {
               term: opened.term,
               numbered: opened.numbered,
               child: ScoreHomePage(
+                clock: clock,
                 debugMode: debugMode,
                 opened: opened,
                 tourStore: tourStore,

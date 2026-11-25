@@ -17,6 +17,7 @@ import 'package:zywny/tutorial/tour.dart';
 import 'package:zywny/tutorial/tour_store.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/score_page_fakes.dart';
 
@@ -57,6 +58,7 @@ void main() {
   Widget scoreApp(TourStore? store) => MaterialApp(
     theme: buildAppTheme(),
     home: ScoreHomePage(
+      clock: SystemClock(),
       renderer: RecordingRenderer(),
       tourStore: store,
       opened: fakeOpenedPiece(

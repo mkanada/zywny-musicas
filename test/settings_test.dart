@@ -27,6 +27,7 @@ import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/score_page_fakes.dart';
 
@@ -353,6 +354,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: ScoreHomePage(
+            clock: SystemClock(),
             renderer: renderer,
             opened: fakeOpenedPiece(
               piece: _piece(13, 'Hino', fifths: fifths),
@@ -466,6 +468,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: ScoreHomePage(
+            clock: SystemClock(),
             renderer: RecordingRenderer(),
             opened: fakeOpenedPiece(),
           ),
@@ -511,6 +514,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: ScoreHomePage(
+            clock: SystemClock(),
             renderer: RecordingRenderer(),
             opened: fakeOpenedPiece(),
           ),
@@ -560,6 +564,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: ScoreHomePage(
+            clock: SystemClock(),
             renderer: RecordingRenderer(),
             opened: fakeOpenedPiece(),
           ),

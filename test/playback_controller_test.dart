@@ -17,6 +17,7 @@ import 'package:zywny_audio/metronome.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
 import 'package:zywny_audio/performance_track.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/practice_fakes.dart';
 
@@ -76,6 +77,7 @@ class _Harness {
       },
     );
     h.playback = PlaybackCubit(
+      clock: SystemClock(),
       sound: h.sound,
       settings: settings,
       controller: h.scores,

@@ -28,6 +28,7 @@ import 'package:zywny_audio/performance_track.dart';
 
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 void _setWakelock(bool on) =>
     unawaited(on ? WakelockPlus.enable() : WakelockPlus.disable());
@@ -85,6 +86,7 @@ class PlaybackState extends Equatable {
 class PlaybackCubit extends Cubit<PlaybackState> {
   PlaybackCubit({
     required this.sound,
+    required this.clock,
     required SettingsCubit settings,
     required this.controller,
     this.view,
@@ -104,6 +106,9 @@ class PlaybackCubit extends Cubit<PlaybackState> {
 
   /// Por onde sai o som: diz se ele está ligado e qual é o motor.
   final SoundOutputCubit sound;
+
+  /// O relógio do app (CT05b): o agendador de cada motor de som o recebe.
+  final AppClock clock;
   final SettingsCubit _settings;
   late final StreamSubscription<SettingsState> _settingsSub;
 
@@ -455,7 +460,11 @@ class PlaybackCubit extends Cubit<PlaybackState> {
     // O agendador anterior para de vez: trocar de saída tocando deixava o
     // timer dele vivo, agendando no motor antigo junto com o novo.
     unawaited(_scheduler?.close());
-    final scheduler = ScoreAudioScheduler(engine: engine, track: track);
+    final scheduler = ScoreAudioScheduler(
+      engine: engine,
+      track: track,
+      clock: clock,
+    );
     if (pitchOf case final pitchOf?) scheduler.pitchOf = pitchOf(engine);
     _scheduler = scheduler;
     _audioClock = AudioPlaybackClock(scheduler);
@@ -476,7 +485,10 @@ class PlaybackCubit extends Cubit<PlaybackState> {
     attachAudio(engine);
     final player = _player;
     if (player != null && (always || state.playing)) {
-      _scheduler!.play(player.position.inMicroseconds / 1000, speed: state.speed);
+      _scheduler!.play(
+        player.position.inMicroseconds / 1000,
+        speed: state.speed,
+      );
     }
   }
 

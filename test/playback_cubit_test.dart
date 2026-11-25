@@ -14,6 +14,7 @@ import 'package:zywny/app/playback_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_midi/midi_device_manager.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/practice_fakes.dart';
 
@@ -49,6 +50,7 @@ PlaybackCubit _transporte() {
     ),
   );
   playback = PlaybackCubit(
+    clock: ManualClock(DateTime(2026)),
     sound: sound,
     settings: settings,
     controller: ScoreCubit(),

@@ -33,6 +33,7 @@ import 'package:zywny_comum/trail/trail_path.dart';
 import 'package:zywny_comum/trail/trail_plan.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
 import 'package:zywny_comum/render/verovio_render.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/render_helper.dart';
 
@@ -122,6 +123,7 @@ void main() {
           var held = <int>{};
           final engine = _Engine();
           final scheduler = ScoreAudioScheduler(
+            clock: SystemClock(),
             engine: engine,
             track: track,
             autoTick: false,
@@ -145,6 +147,7 @@ void main() {
           final midi = _Midi();
           var done = false;
           final practice = PracticeCubit(
+            clock: SystemClock(),
             midiInput: midi,
             track: track,
             scheduler: scheduler,

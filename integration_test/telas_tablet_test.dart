@@ -24,6 +24,7 @@ import 'package:zywny/main.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_library/library_cubit.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 const _kHymnTitle = 'Jubilosos Te Adoramos';
 
@@ -127,60 +128,56 @@ void main() {
   binding.reportData = {'telas': _shots};
   WidgetsApp.debugAllowBannerOverride = false;
 
-  testWidgets(
-    'partitura no tablet, deitado e em pé',
-    (tester) async {
-      await SharedPreferencesAsync().clear();
-      const path = String.fromEnvironment('ZYWNY_TEST_LIBRARY');
-      await LibraryCubit().install(await File(path).readAsBytes());
+  testWidgets('partitura no tablet, deitado e em pé', (tester) async {
+    await SharedPreferencesAsync().clear();
+    const path = String.fromEnvironment('ZYWNY_TEST_LIBRARY');
+    await LibraryCubit().install(await File(path).readAsBytes());
 
-      await tester.pumpWidget(
-        RepaintBoundary(
-          key: _shotKey,
-          child: const MyApp(splash: false),
-        ),
-      );
-      await _rotate(tester, portrait: false);
-      await _until(
-        tester,
-        () => _has(find.textContaining(' hinos')),
-        what: 'biblioteca',
-      );
-      await _skipTour(tester);
-      await _shot(tester, 'tablet-01-biblioteca-deitado');
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: _shotKey,
+        child: MyApp(clock: SystemClock(), splash: false),
+      ),
+    );
+    await _rotate(tester, portrait: false);
+    await _until(
+      tester,
+      () => _has(find.textContaining(' hinos')),
+      what: 'biblioteca',
+    );
+    await _skipTour(tester);
+    await _shot(tester, 'tablet-01-biblioteca-deitado');
 
-      await _typeSearch(tester, 'Jubilosos');
-      await _tap(tester, find.text(_kHymnTitle).last, ms: 1500);
-      await _until(
-        tester,
-        () => _has(find.byType(PhoneTitleBar)),
-        what: 'tela da partitura',
-      );
-      await _skipTour(tester);
-      await _scoreReady(tester);
-      await _shot(tester, 'tablet-02-partitura-deitado');
+    await _typeSearch(tester, 'Jubilosos');
+    await _tap(tester, find.text(_kHymnTitle).last, ms: 1500);
+    await _until(
+      tester,
+      () => _has(find.byType(PhoneTitleBar)),
+      what: 'tela da partitura',
+    );
+    await _skipTour(tester);
+    await _scoreReady(tester);
+    await _shot(tester, 'tablet-02-partitura-deitado');
 
-      await _rotate(tester, portrait: true);
-      await _scoreReady(tester);
-      await _shot(tester, 'tablet-03-partitura-em-pe');
+    await _rotate(tester, portrait: true);
+    await _scoreReady(tester);
+    await _shot(tester, 'tablet-03-partitura-em-pe');
 
-      await _tap(tester, find.byTooltip('Mais opções'));
-      await _shot(tester, 'tablet-04-opcoes-em-pe');
-      await _tap(tester, find.byTooltip('Fechar'));
+    await _tap(tester, find.byTooltip('Mais opções'));
+    await _shot(tester, 'tablet-04-opcoes-em-pe');
+    await _tap(tester, find.byTooltip('Fechar'));
 
-      await _tap(tester, find.byType(TrailTitleChip));
-      await _shot(tester, 'tablet-05-gaveta-da-trilha-em-pe');
-      await _tap(tester, find.byTooltip('Fechar'));
+    await _tap(tester, find.byType(TrailTitleChip));
+    await _shot(tester, 'tablet-05-gaveta-da-trilha-em-pe');
+    await _tap(tester, find.byTooltip('Fechar'));
 
-      await _tap(tester, find.byTooltip('Voltar à biblioteca'), ms: 2000);
-      await _until(
-        tester,
-        () => _has(find.textContaining(' hinos')),
-        what: 'biblioteca de volta',
-      );
-      await _shot(tester, 'tablet-06-biblioteca-em-pe');
-      await SystemChrome.setPreferredOrientations([]);
-    },
-    timeout: const Timeout(Duration(minutes: 8)),
-  );
+    await _tap(tester, find.byTooltip('Voltar à biblioteca'), ms: 2000);
+    await _until(
+      tester,
+      () => _has(find.textContaining(' hinos')),
+      what: 'biblioteca de volta',
+    );
+    await _shot(tester, 'tablet-06-biblioteca-em-pe');
+    await SystemChrome.setPreferredOrientations([]);
+  }, timeout: const Timeout(Duration(minutes: 8)));
 }

@@ -20,6 +20,7 @@ import 'package:zywny_comum/app/layout_panel.dart';
 import 'package:zywny/main.dart';
 import 'package:zywny_comum/ui/phone_chrome.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/score_page_fakes.dart';
 
@@ -27,6 +28,7 @@ import 'support/score_page_fakes.dart';
 Widget _scoreApp() => MaterialApp(
   theme: buildAppTheme(),
   home: ScoreHomePage(
+    clock: SystemClock(),
     renderer: RecordingRenderer(),
     opened: fakeOpenedPiece(
       piece: fakePiece(number: 244, title: 'Ó Vem à Igreja Comigo'),

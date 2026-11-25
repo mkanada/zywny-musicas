@@ -54,6 +54,7 @@ import 'package:zywny_comum/ui/transpose_widgets.dart' show alsoStudiedText;
 import 'package:zywny/app/playback_cubit.dart';
 import 'package:zywny/app/score_render_cubit.dart';
 import 'package:zywny/app/sound_output_controller.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 /// O resumo de uma etapa (ou de um bloco de reforço) que a tela mostra:
 /// [blockCount] é o número de blocos de reforço que a reprovação abriu.
@@ -217,6 +218,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     required this.onShift,
     required this.writtenFromReceived,
     required this.host,
+    required this.clock,
     int? pieceN,
     Future<double> Function()? inputLatency,
   }) : _store = store,
@@ -234,6 +236,9 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
        super(TrailRunnerState(pieceN: pieceN)) {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
   }
+
+  /// O relógio do app (CT05b): cada prática de passada o recebe.
+  final AppClock clock;
 
   final TrailProgressCubit _store;
   final PlaybackCubit _playback;
@@ -720,6 +725,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     final stage = pass.stage;
     final player = pass.player;
     return PracticeCubit(
+      clock: clock,
       midiInput: _midiInput,
       track: pass.track,
       scheduler: pass.scheduler,
@@ -1029,6 +1035,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     if (_disposed) return;
     shiftDetector.rearm();
     final practice = PracticeCubit(
+      clock: clock,
       midiInput: _midiInput,
       track: track,
       scheduler: scheduler,

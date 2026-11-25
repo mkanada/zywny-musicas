@@ -19,6 +19,7 @@ import 'package:zywny_comum/auth/account_settings_section.dart';
 import 'package:zywny_comum/auth/sign_in_screen.dart';
 import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_library/piece.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -61,6 +62,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MyApp(
+        clock: SystemClock(),
         loadCatalog: _loadCatalog,
         authStore: store,
         requireNickname: requireNickname,

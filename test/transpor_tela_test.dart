@@ -24,6 +24,7 @@ import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_stage.dart';
 import 'package:zywny_comum/ui/theme.dart';
 import 'package:zywny_comum/ui/transpose_widgets.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/score_page_fakes.dart';
 
@@ -347,6 +348,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: ScoreHomePage(
+            clock: SystemClock(),
             renderer: renderer,
             opened: fakeOpenedPiece(
               piece: _piece(13, fifths: fifths),

@@ -31,6 +31,7 @@ import 'package:zywny_comum/trail/stage_result.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/trail/trail_widgets.dart' show StageSummaryAction;
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'support/practice_fakes.dart';
 import 'support/score_page_fakes.dart';
@@ -116,6 +117,7 @@ class _Harness {
       },
     );
     h.playback = PlaybackCubit(
+      clock: SystemClock(),
       sound: h.sound,
       settings: h.settings,
       controller: h.scores,
@@ -123,6 +125,7 @@ class _Harness {
       wakelock: (_) {},
     );
     h.runner = TrailRunnerCubit(
+      clock: SystemClock(),
       store: h.store,
       playback: h.playback,
       session: h.session,

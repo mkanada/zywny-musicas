@@ -7,6 +7,7 @@ import 'package:zywny/tutorial/tour_store.dart';
 import 'package:zywny_auth/zywny_auth.dart';
 import 'package:zywny_comum/about/licenses.dart';
 import 'package:zywny_comum/diag/diag_screens.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_comum/incoming/incoming_packages.dart';
 import 'package:zywny_diag/diag_log.dart';
 
@@ -36,6 +37,8 @@ Future<void> main(List<String> args) async {
   runApp(
     MyApp(
       debugMode: args.contains('--debug'),
+      // O relógio do app (CT05b): o do aparelho; o roteiro de capturas põe outro.
+      clock: SystemClock(),
       splash: true,
       tourStore: TourStore(),
       incoming: incoming,
