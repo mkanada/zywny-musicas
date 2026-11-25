@@ -58,8 +58,8 @@ class _Harness {
   late final SettingsCubit settings;
   late final MidiDeviceManager devices;
   final FakeMidiInput input = FakeMidiInput();
-  final ScoreController scores = ScoreController();
-  final GhostController ghosts = GhostController();
+  final ScoreCubit scores = ScoreCubit();
+  final GhostCubit ghosts = GhostCubit();
   late final TrailProgressCubit store;
   late final ScoreRenderCubit session;
   late final SoundOutputCubit sound;
@@ -220,8 +220,8 @@ class _Harness {
     playback.close();
     sound.close();
     session.close();
-    scores.dispose();
-    ghosts.dispose();
+    scores.close();
+    ghosts.close();
     input.dispose();
     unawaited(devices.close());
     unawaited(store.close());

@@ -54,7 +54,7 @@ TrailRunnerCubit _trilha({int? pieceN}) {
   final settings = SettingsCubit();
   final devices = MidiDeviceManager();
   final input = FakeMidiInput();
-  final scores = ScoreController();
+  final scores = ScoreCubit();
   final piece = fakePiece();
   final session = ScoreRenderCubit(
     renderer: RecordingRenderer(),
@@ -95,7 +95,7 @@ TrailRunnerCubit _trilha({int? pieceN}) {
     piece: piece,
     term: const LibraryTerm(singular: 'hino', plural: 'hinos', feminine: false),
     scores: scores,
-    ghosts: GhostController(),
+    ghosts: GhostCubit(),
     shiftDetector: ShiftDetector(enabled: () => false),
     onShift: (_) {},
     writtenFromReceived: (r) => r,

@@ -108,7 +108,7 @@ class PlaybackCubit extends Cubit<PlaybackState> {
   late final StreamSubscription<SettingsState> _settingsSub;
 
   /// Os destaques de nota (o player acende e apaga por ele).
-  final ScoreController controller;
+  final ScoreCubit controller;
 
   /// A vista a acompanhar (virada de página, haste).
   final ScoreViewController? view;

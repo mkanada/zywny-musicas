@@ -51,7 +51,7 @@ PlaybackCubit _transporte() {
   playback = PlaybackCubit(
     sound: sound,
     settings: settings,
-    controller: ScoreController(),
+    controller: ScoreCubit(),
     wakelock: (_) {},
   );
   return playback;

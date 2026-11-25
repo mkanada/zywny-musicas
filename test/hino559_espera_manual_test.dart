@@ -126,7 +126,7 @@ void main() {
             track: track,
             autoTick: false,
           );
-          final controller = ScoreController(document: doc);
+          final controller = ScoreCubit(document: doc);
           final player = ScorePlayer(
             document: doc,
             controller: controller,
@@ -278,7 +278,7 @@ void main() {
           if (!done) problems.add('$id: etapa não terminou');
           practice.dispose();
           player.dispose();
-          controller.dispose();
+          controller.close();
         }
       }
       for (final p in problems) {

@@ -245,8 +245,8 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   final MidiInputService _midiInput;
   final Piece _piece;
   final LibraryTerm _term;
-  final ScoreController scores;
-  final GhostController ghosts;
+  final ScoreCubit scores;
+  final GhostCubit ghosts;
   final ShiftDetector shiftDetector;
   final void Function(int d) onShift;
 

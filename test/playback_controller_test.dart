@@ -40,7 +40,7 @@ class _Harness {
   final SettingsCubit settings;
   final MidiDeviceManager devices;
   final FakeMidiInput input;
-  final ScoreController scores = ScoreController();
+  final ScoreCubit scores = ScoreCubit();
   final List<FakeSoundEngine> appEngines = [];
   late final SoundOutputCubit sound;
   late final PlaybackCubit playback;
@@ -110,7 +110,7 @@ class _Harness {
   void dispose() {
     playback.close();
     sound.close();
-    scores.dispose();
+    scores.close();
     input.dispose();
     devices.close();
     settings.close();

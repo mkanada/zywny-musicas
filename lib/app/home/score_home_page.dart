@@ -183,8 +183,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Note highlights. Repaints the page through its own listenable, so
   /// playback never rebuilds this widget.
-  final ScoreController _controller = ScoreController();
-  final GhostController _ghosts = GhostController();
+  final ScoreCubit _controller = ScoreCubit();
+  final GhostCubit _ghosts = GhostCubit();
 
   /// Page navigation and page-turn animation (sweep bar) of the [ScoreView].
   final ScoreViewController _viewController = ScoreViewController();
@@ -440,8 +440,8 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     unawaited(_mode.close());
     _midiInput.dispose();
     _viewController.dispose();
-    _controller.dispose();
-    _ghosts.dispose();
+    unawaited(_controller.close());
+    unawaited(_ghosts.close());
     _view.dispose();
     super.dispose();
   }
