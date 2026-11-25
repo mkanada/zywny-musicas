@@ -259,6 +259,12 @@ graft:
 qualidade *ARGS:
     dart run dart_code_linter:metrics analyze lib --no-fatal-warnings {{ARGS}}
     {{comum}}/tool/catraca_bloc.sh .
+    {{comum}}/tool/catraca_relogio.sh .
+
+# Catraca do relógio (CT05a) deste repositório: a hora e o tempo fora do AppClock
+# não podem crescer (tool/catraca_relogio.txt). `--gravar` baixa a base.
+catraca_relogio *ARGS:
+    {{comum}}/tool/catraca_relogio.sh . {{ARGS}}
 
 # Catraca do BLoC (BL01) deste repositório: `just catraca` confere o registro
 # (sai com 1 se um arquivo passou dele ou caiu abaixo); `just catraca --gravar`

@@ -1,0 +1,7 @@
+apps/zywny_mockup/lib/mockup/practice_cubit.dart DT=0 SW=0 TM=0 PER=1 FD=0
+lib/app/home/score_home_page.dart DT=0 SW=1 TM=1 PER=0 FD=1
+lib/app/library_screen.dart DT=2 SW=0 TM=0 PER=0 FD=2
+lib/app/playback_cubit.dart DT=0 SW=1 TM=1 PER=1 FD=0
+lib/app/score_render_cubit.dart DT=0 SW=1 TM=3 PER=0 FD=0
+lib/app/trail_runner_cubit.dart DT=0 SW=0 TM=0 PER=1 FD=0
+lib/tutorial/tour.dart DT=0 SW=0 TM=0 PER=1 FD=0

@@ -1527,6 +1527,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  zywny_clock:
+    dependency: "direct main"
+    description:
+      path: "../zywny-comum/packages/zywny_clock"
+      relative: true
+    source: path
+    version: "1.0.0"
   zywny_comum:
     dependency: "direct main"
     description:
