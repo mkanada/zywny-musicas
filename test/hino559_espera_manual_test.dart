@@ -277,7 +277,7 @@ void main() {
           }
           if (!done) problems.add('$id: etapa não terminou');
           practice.dispose();
-          player.dispose();
+          player.close();
           controller.close();
         }
       }

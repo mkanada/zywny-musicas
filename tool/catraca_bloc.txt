@@ -1,5 +1,5 @@
 lib/app/edit_piece_dialog.dart S=0 CN=0 VN=0 VLB=0 SW=1 L=0 # framework: TextEditingController
-lib/app/home/score_home_page.dart S=0 CN=0 VN=2 VLB=0 SW=1 L=1 # framework: TransformationController, ScoreViewController, ScoreCubit, GhostCubit (VN: ponte do ShiftBanner e marcador do trilho, fase G)
+lib/app/home/score_home_page.dart S=0 CN=0 VN=1 VLB=0 SW=1 L=0 # framework: TransformationController, ScoreViewController, ScoreCubit, GhostCubit (VN: ponte do ShiftBanner do comum)
 lib/app/home/score_phone_title_bar.dart S=0 CN=0 VN=0 VLB=1 SW=0 L=1
 lib/app/home/score_zoom.dart S=0 CN=0 VN=0 VLB=1 SW=0 L=0
 lib/app/library_screen.dart S=0 CN=0 VN=0 VLB=0 SW=1 L=0 # framework: TextEditingController, ScrollController, GlobalKey

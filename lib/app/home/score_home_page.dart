@@ -187,7 +187,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   final GhostCubit _ghosts = GhostCubit();
 
   /// Page navigation and page-turn animation (sweep bar) of the [ScoreView].
-  final ScoreViewController _viewController = ScoreViewController();
+  final ScoreViewCubit _viewController = ScoreViewCubit();
 
   /// Por onde sai o som (R08): os dois motores, a saída em uso, o `.sf2` e
   /// o monitor MIDI. Sobrevive a novas gravuras (só o agendador é
@@ -263,7 +263,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     _mode = ScoreModeCubit(hand: _stored.hand ?? _kDefaultHand);
     _shift = ShiftNoticeCubit();
     _shiftNotice = _ShiftNoticeLink(_shift);
-    _diagOffState = DiagLog.setState(
+    _diagOffState = DiagLog.retrato(
       'musica',
       () => {
         'musica': _scoreName,
@@ -439,7 +439,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     unawaited(_panels.close());
     unawaited(_mode.close());
     _midiInput.dispose();
-    _viewController.dispose();
+    _viewController.close();
     unawaited(_controller.close());
     unawaited(_ghosts.close());
     _view.dispose();
@@ -698,7 +698,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       context,
       (
         total: player.measures.length,
-        current: player.currentMeasureIndex.value,
+        current: player.state.measureIndex,
         initial: _playback.loop,
       ),
       sidePanel: true,
@@ -974,7 +974,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         : null;
     final total = path?.measureCount ?? _measureCount;
     if (player == null || total == null) return;
-    final current = player.currentMeasureIndex.value;
+    final current = player.state.measureIndex;
     final target = path != null ? (path.numberOf(current) ?? 1) : current + 1;
     final result = await pickMeasureJump(context, target: target, total: total);
     if (result == null || !mounted || !identical(player, _playback.player)) {
@@ -1080,22 +1080,26 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   Widget _phoneRailRegion() => BlocBuilder<PlaybackCubit, PlaybackState>(
     builder: (context, _) => BlocBuilder<MidiDeviceManager, MidiDeviceState>(
       bloc: _midiDeviceManager,
-      builder: (context, _) => ListenableBuilder(
-        listenable: _playback.player?.currentMeasureIndex ?? _noMeasure,
-        builder: (context, _) => ScorePhoneRail(
-          index: (_playback.player?.currentMeasureIndex ?? _noMeasure).value,
+      builder: (context, _) {
+        ScorePhoneRail rail(int index) => ScorePhoneRail(
+          index: index,
           tourKeys: _tourKeys,
           midi: _midiDeviceManager,
           onTogglePlay: _togglePlay,
           onRestart: () => unawaited(_restart()),
           onOpenMeasureJump: () => unawaited(_openMeasureJump()),
-        ),
-      ),
+        );
+        // Sem player (ainda não há gravura), o trilho olha o compasso zero.
+        final player = _playback.player;
+        if (player == null) return rail(0);
+        return BlocSelector<ScorePlayer, ScorePlayerState, int>(
+          bloc: player,
+          selector: (state) => state.measureIndex,
+          builder: (context, index) => rail(index),
+        );
+      },
     ),
   );
-
-  /// Sem compasso tocado, o trilho olha este zero (o player ainda não existe).
-  final ValueNotifier<int> _noMeasure = ValueNotifier(0);
 
   /// Celular, tablet ou desktop (pelo aparelho, não pela largura da janela):
   /// a orientação da partitura e o `unit` de partida dependem dele.

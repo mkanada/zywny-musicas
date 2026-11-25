@@ -111,7 +111,7 @@ class PlaybackCubit extends Cubit<PlaybackState> {
   final ScoreCubit controller;
 
   /// A vista a acompanhar (virada de página, haste).
-  final ScoreViewController? view;
+  final ScoreViewCubit? view;
 
   /// Largura da haste para [VsbDocument]; `null` usa a padrão do player.
   final double Function(VsbDocument document)? barWidthOf;
@@ -200,10 +200,10 @@ class PlaybackCubit extends Cubit<PlaybackState> {
   /// áudio, com o som ligado — fica parado no começo.
   void attach(VsbDocument document, PerformanceTrack track) {
     cancelSilentCountIn();
-    _player?.dispose();
+    _player?.close();
     _player = null;
     _setPlaying(false);
-    _scheduler?.dispose();
+    unawaited(_scheduler?.close());
     _scheduler = null;
     _audioClock = null;
     _track = track;
@@ -454,7 +454,7 @@ class PlaybackCubit extends Cubit<PlaybackState> {
     if (cancelSilentCountIn()) _player?.play();
     // O agendador anterior para de vez: trocar de saída tocando deixava o
     // timer dele vivo, agendando no motor antigo junto com o novo.
-    _scheduler?.dispose();
+    unawaited(_scheduler?.close());
     final scheduler = ScoreAudioScheduler(engine: engine, track: track);
     if (pitchOf case final pitchOf?) scheduler.pitchOf = pitchOf(engine);
     _scheduler = scheduler;
@@ -527,8 +527,8 @@ class PlaybackCubit extends Cubit<PlaybackState> {
     unawaited(_settingsSub.cancel());
     cancelSilentCountIn();
     _setPlaying(false);
-    _scheduler?.dispose();
-    _player?.dispose();
+    unawaited(_scheduler?.close());
+    _player?.close();
     return super.close();
   }
 }
