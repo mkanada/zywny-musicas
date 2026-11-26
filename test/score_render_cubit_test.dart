@@ -15,7 +15,10 @@ import 'package:zywny_comum/settings/settings_cubit.dart';
 
 import 'support/score_page_fakes.dart';
 
+import 'package:zywny_clock/zywny_clock.dart';
+
 ScoreRenderCubit _gravura({RecordingRenderer? renderer}) => ScoreRenderCubit(
+  clock: SystemClock(),
   renderer: renderer ?? RecordingRenderer(),
   scoreXml: Uint8List(1),
   piece: fakePiece(),
@@ -36,11 +39,9 @@ void main() {
     build: _gravura,
     act: (c) => c.setLayoutValue('unit', 6.5),
     expect: () => [
-      isA<ScoreRenderState>().having(
-        (s) => s.layoutOverrides,
-        'mudanças',
-        {'unit': 6.5},
-      ),
+      isA<ScoreRenderState>().having((s) => s.layoutOverrides, 'mudanças', {
+        'unit': 6.5,
+      }),
     ],
   );
 
@@ -53,12 +54,14 @@ void main() {
       c.resetLayout();
     },
     expect: () => [
+      isA<ScoreRenderState>().having((s) => s.layoutOverrides, 'mudanças', {
+        'unit': 6.5,
+      }),
       isA<ScoreRenderState>().having(
-        (s) => s.layoutOverrides,
-        'mudanças',
-        {'unit': 6.5},
+        (s) => s.pageFitsBox,
+        'cabe na caixa',
+        false,
       ),
-      isA<ScoreRenderState>().having((s) => s.pageFitsBox, 'cabe na caixa', false),
       isA<ScoreRenderState>()
           .having((s) => s.layoutOverrides, 'mudanças', <String, Object>{})
           .having((s) => s.pageFitsBox, 'cabe na caixa', true),

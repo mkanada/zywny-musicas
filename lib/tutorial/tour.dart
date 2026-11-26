@@ -17,6 +17,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'package:zywny_comum/ui/theme.dart';
 
@@ -54,7 +55,11 @@ bool _isMounted(GlobalKey key) {
 /// Quais passos têm alvo na tela é conferido a cada passo, e não só aqui: um
 /// botão que monta um instante depois do começo (o chip da trilha) entra no
 /// passeio quando chega a vez dele.
-Future<TourEnd?> showTour(BuildContext context, List<TourStep> steps) async {
+Future<TourEnd?> showTour(
+  BuildContext context,
+  List<TourStep> steps, {
+  required AppClock clock,
+}) async {
   if (!steps.any((step) => step.targets.isNotEmpty && step.available)) {
     return null;
   }
@@ -65,7 +70,7 @@ Future<TourEnd?> showTour(BuildContext context, List<TourStep> steps) async {
     barrierLabel: 'Tutorial',
     barrierColor: Colors.transparent,
     transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (context, _, _) => TourOverlay(steps: steps),
+    pageBuilder: (context, _, _) => TourOverlay(steps: steps, clock: clock),
     transitionBuilder: (context, animation, _, child) =>
         FadeTransition(opacity: animation, child: child),
   );
@@ -93,22 +98,26 @@ class TourState extends Equatable {
 class TourCubit extends Cubit<TourState> {
   TourCubit({
     required this.steps,
+    required this.clock,
     Duration remeasureEvery = const Duration(milliseconds: 250),
   }) : _remedicao = remeasureEvery,
        super(TourState(index: _nextFrom(steps, -1, 1)));
 
   final List<TourStep> steps;
 
-  /// De quanto em quanto tempo a tela de baixo é conferida (o Timer é daqui).
+  /// O relógio do app (CT05f): a remedição anda nele.
+  final AppClock clock;
+
+  /// De quanto em quanto tempo a tela de baixo é conferida (o timer é do relógio).
   final Duration _remedicao;
 
-  Timer? _relogio;
+  AppTimer? _relogio;
 
   /// Começa a remedir o recorte de [_remedicao] em [_remedicao]: a tela de
   /// baixo pode se mexer. [remedir] mede e manda o resultado por [medir].
   void comecarRemedicao(void Function() remedir) {
     _relogio?.cancel();
-    _relogio = Timer.periodic(_remedicao, (_) => remedir());
+    _relogio = clock.periodic(_remedicao, (_) => remedir());
   }
 
   @override
@@ -181,10 +190,14 @@ class TourOverlay extends StatelessWidget {
   const TourOverlay({
     super.key,
     required this.steps,
+    required this.clock,
     this.remeasureEvery = const Duration(milliseconds: 250),
   });
 
   final List<TourStep> steps;
+
+  /// O relógio do app (CT05f): a remedição do recorte anda nele.
+  final AppClock clock;
 
   /// A tela de baixo pode se mexer (a partitura termina de carregar, a lista
   /// rola): de tempos em tempos o recorte confere onde o alvo está.
@@ -192,7 +205,8 @@ class TourOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BlocProvider(
-    create: (_) => TourCubit(steps: steps, remeasureEvery: remeasureEvery),
+    create: (_) =>
+        TourCubit(steps: steps, clock: clock, remeasureEvery: remeasureEvery),
     child: const _TourView(),
   );
 }

@@ -16,6 +16,8 @@ import 'package:zywny_comum/ui/theme.dart';
 
 import 'support/library_fixtures.dart';
 
+import 'package:zywny_clock/zywny_clock.dart';
+
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
   @override
@@ -71,6 +73,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           libraryStore: store,
           scoreBuilder: (context, o) => const Scaffold(body: Text('x')),
         ),
@@ -98,6 +101,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           libraryStore: store,
           loadCatalog: () async {
             loads++;

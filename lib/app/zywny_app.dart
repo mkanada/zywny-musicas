@@ -59,11 +59,8 @@ class MyApp extends StatelessWidget {
       title: 'zywny',
       navigatorObservers: [DiagScreens.observer],
       // O botão e o gesto de "Reportar bug", em todas as telas.
-      builder: (context, child) => BugReportScope(
-        appName: 'musicas',
-        clock: clock,
-        child: child!,
-      ),
+      builder: (context, child) =>
+          BugReportScope(appName: 'musicas', clock: clock, child: child!),
       theme: buildAppTheme(),
       // A tela inicial é a biblioteca de hinos embutidos; a partitura
       // (ScoreHomePage) abre por cima dela, um hino por vez.
@@ -78,6 +75,7 @@ class MyApp extends StatelessWidget {
             loadCatalog: loadCatalog,
             tourStore: tourStore,
             authStore: authStore,
+            clock: clock,
             // A abertura (1,8 s mais o esmaecer) cobre a biblioteca: o passeio
             // espera ela sair.
             tourDelay: splash

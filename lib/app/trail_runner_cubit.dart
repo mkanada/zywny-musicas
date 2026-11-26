@@ -267,7 +267,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
   /// Escuta o estado da trilha; cancelada ao trocar ou soltar a trilha.
   StreamSubscription<TrailState>? _trailSub;
   PracticeCubit? _practice;
-  Timer? _listenTimer;
+  AppTimer? _listenTimer;
 
   /// Etapas e andamentos com que o plano da trilha foi montado: mudou nas
   /// configurações, a trilha é remontada.
@@ -789,7 +789,7 @@ class TrailRunnerCubit extends Cubit<TrailRunnerState> {
     player.play();
     scheduler.play(stage.startMs);
     _listenTimer?.cancel();
-    _listenTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+    _listenTimer = clock.periodic(const Duration(milliseconds: 50), (_) {
       if (player.position.inMicroseconds / 1000 >= stage.endMs) {
         stopListening();
       }

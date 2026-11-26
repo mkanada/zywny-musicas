@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_mockup/mockup/options_panel.dart';
 import 'package:zywny_mockup/mockup/practice_screen.dart';
 import 'package:zywny_mockup/mockup/practice_state.dart';
@@ -14,7 +15,14 @@ const _args = PracticeArgs(
 );
 
 Future<void> _abrirEstudo(WidgetTester tester) async {
-  await tester.pumpWidget(const MaterialApp(home: PracticeScreen(args: _args)));
+  await tester.pumpWidget(
+    MaterialApp(
+      home: PracticeScreen(
+        clock: ManualClock(DateTime(2026, 11, 25, 10)),
+        args: _args,
+      ),
+    ),
+  );
   await tester.pump();
 }
 

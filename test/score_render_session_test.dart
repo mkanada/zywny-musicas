@@ -19,6 +19,8 @@ import 'package:zywny_comum/ui/device_kind.dart';
 
 import 'support/score_page_fakes.dart';
 
+import 'package:zywny_clock/zywny_clock.dart';
+
 /// Segura cada render até o teste soltar ([release]); guarda o pedido.
 class _GatedRenderer implements ScoreRenderer {
   _GatedRenderer()
@@ -60,6 +62,7 @@ void main() {
     renderer = _GatedRenderer();
     shown = [];
     session = ScoreRenderCubit(
+      clock: SystemClock(),
       renderer: renderer,
       scoreXml: Uint8List(1),
       piece: fakePiece(),
@@ -167,6 +170,7 @@ void main() {
     expect(renderer.waiting, 0);
     // O `tearDown` descarta de novo: uma sessão nova no lugar.
     session = ScoreRenderCubit(
+      clock: SystemClock(),
       renderer: renderer,
       scoreXml: Uint8List(1),
       piece: fakePiece(),
@@ -179,6 +183,7 @@ void main() {
   group('layout da partitura: vale para todos os hinos', () {
     ScoreRenderCubit sessionOn(DeviceKind kind, {String name = '13 · Hino'}) {
       final s = ScoreRenderCubit(
+        clock: SystemClock(),
         renderer: renderer,
         scoreXml: Uint8List(1),
         piece: fakePiece(),
@@ -253,6 +258,7 @@ void main() {
     ScoreRenderCubit sessionFor(DeviceKind kind) {
       session.close();
       return session = ScoreRenderCubit(
+        clock: SystemClock(),
         renderer: renderer,
         scoreXml: Uint8List(1),
         piece: fakePiece(),

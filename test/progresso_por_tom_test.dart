@@ -21,6 +21,7 @@ import 'package:zywny_comum/settings/piece_settings.dart';
 import 'package:zywny_comum/trail/trail_progress.dart';
 import 'package:zywny_comum/trail/trail_progress_cubit.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -286,6 +287,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: () async => PieceCatalog([_piece(7, fifths: -3)]),
             loadScore: (piece) async => throw UnimplementedError(),
             appSettings: settings,

@@ -18,6 +18,7 @@ import 'dart:ui' show Size;
 import 'package:flutter/foundation.dart';
 import 'package:score_bridge/score_bridge.dart' show VsbDocument;
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'package:zywny_library/piece.dart';
 
@@ -159,6 +160,7 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
     required Piece piece,
     required SettingsCubit settings,
     required PieceSettings stored,
+    required this.clock,
     required this.name,
     this.kind = DeviceKind.desktop,
     this.pixelRatio = 1,
@@ -182,6 +184,9 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
 
   final ScoreRenderer _renderer;
   final Uint8List _scoreXml;
+
+  /// O relógio do app (CT05f): o respiro entre a caixa mudar e a gravura.
+  final AppClock clock;
   final Piece _piece;
   final SettingsCubit _settings;
   late final StreamSubscription<SettingsState> _settingsSub;
@@ -215,7 +220,7 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
   /// A caixa da partitura (pixels do aparelho). Fica fora do estado: a tela a
   /// informa no `build`, e isso não pode avisar a tela de novo.
   Size? _box;
-  Timer? _resizeTimer;
+  AppTimer? _resizeTimer;
 
   /// Um pedido chegou durante um render: sai quando ele acabar.
   bool _renderQueued = false;
@@ -251,7 +256,10 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
 
   /// Opções do Verovio, por nome (ver `layout_options.dart`): as que a pessoa
   /// mudou, para todos os hinos, sobre o padrão do aparelho.
-  Map<String, Object> get layout => {...layoutDefaults, ...state.layoutOverrides};
+  Map<String, Object> get layout => {
+    ...layoutDefaults,
+    ...state.layoutOverrides,
+  };
 
   /// O layout deste aparelho sem nenhuma mudança da pessoa.
   Map<String, Object> get layoutDefaults => initialLayoutValues(
@@ -282,7 +290,13 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
     final fifths = _piece.fifths;
     if (fifths == null) return null;
     final range = state.originalRange;
-    return Transposition.toNoAccidentals(fifths, range: (lowest: range?.lowest ?? kCatalogLowestMidi, highest: range?.highest ?? kCatalogHighestMidi));
+    return Transposition.toNoAccidentals(
+      fifths,
+      range: (
+        lowest: range?.lowest ?? kCatalogLowestMidi,
+        highest: range?.highest ?? kCatalogHighestMidi,
+      ),
+    );
   }
 
   /// Paper size, in tenths of a millimetre, that makes one device pixel one
@@ -305,11 +319,13 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
     );
   }
 
-  int get _pageWidth =>
-      state.pageFitsBox ? fittedPage!.width.round() : layout['pageWidth'] as int;
+  int get _pageWidth => state.pageFitsBox
+      ? fittedPage!.width.round()
+      : layout['pageWidth'] as int;
 
-  int get _pageHeight =>
-      state.pageFitsBox ? fittedPage!.height.round() : layout['pageHeight'] as int;
+  int get _pageHeight => state.pageFitsBox
+      ? fittedPage!.height.round()
+      : layout['pageHeight'] as int;
 
   /// Every option that reaches Verovio for the current state: the page size
   /// plus whatever differs from Verovio's defaults.
@@ -344,14 +360,14 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
     if (kind == DeviceKind.phone && devicePx.height > devicePx.width) {
       if (state.document == null && !state.busy) {
         _resizeTimer?.cancel();
-        _resizeTimer = Timer(rotationGrace, render);
+        _resizeTimer = clock.timer(rotationGrace, render);
       }
       return previous == null;
     }
     if (state.document == null && !state.busy) {
       // Nada gravado ainda: a primeira gravura sai assim que há caixa.
       _resizeTimer?.cancel();
-      _resizeTimer = Timer(Duration.zero, render);
+      _resizeTimer = clock.timer(Duration.zero, render);
       return previous == null;
     }
     // A fixed page size does not depend on the box, so a resize has nothing
@@ -363,7 +379,7 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
         (previous.height - devicePx.height).abs() / previous.height > 0.02;
     if (!changed) return false;
     _resizeTimer?.cancel();
-    _resizeTimer = Timer(resizeDebounce, render);
+    _resizeTimer = clock.timer(resizeDebounce, render);
     return false;
   }
 
@@ -373,7 +389,9 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
     emit(
       state.copyWith(
         pageIndex: target,
-        status: pageCount > 1 ? 'página ${target + 1} de $pageCount' : 'pronto ✓',
+        status: pageCount > 1
+            ? 'página ${target + 1} de $pageCount'
+            : 'pronto ✓',
       ),
     );
   }
@@ -382,7 +400,9 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
   /// é gravada de novo em [render], quando a mudança assenta, e o valor vai
   /// para todos os hinos em [saveLayout].
   void setLayoutValue(String key, Object value) {
-    emit(state.copyWith(layoutOverrides: {...state.layoutOverrides, key: value}));
+    emit(
+      state.copyWith(layoutOverrides: {...state.layoutOverrides, key: value}),
+    );
   }
 
   void setPageFitsBox(bool value) => emit(state.copyWith(pageFitsBox: value));
@@ -420,7 +440,8 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
   /// própria: a partitura é gravada de novo no outro tom.
   void _onSettingsChanged() {
     if (_disposed) return;
-    if (state.document != null && transposition != state.renderedTransposition) {
+    if (state.document != null &&
+        transposition != state.renderedTransposition) {
       unawaited(render());
     }
   }
@@ -453,7 +474,7 @@ class ScoreRenderCubit extends Cubit<ScoreRenderState> {
 
     var wrongDirection = false;
     try {
-      final watch = Stopwatch()..start();
+      final watch = Stopwatch()..start(); // relógio: medida de desenho
       final rendered = await _renderer.render(
         ScoreRenderRequest(
           source: _scoreXml,

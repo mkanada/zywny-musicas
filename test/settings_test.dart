@@ -615,6 +615,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: () async =>
                 PieceCatalog([_piece(1, 'Primeiro'), _piece(2, 'Segundo')]),
             loadScore: (piece) async => Uint8List(0),

@@ -91,6 +91,7 @@ class _Harness {
     );
     final piece = fakePiece(fifths: fifths);
     h.session = ScoreRenderCubit(
+      clock: SystemClock(),
       renderer: h.renderer,
       scoreXml: Uint8List(1),
       piece: piece,

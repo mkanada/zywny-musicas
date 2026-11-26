@@ -294,6 +294,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: _loadCatalog,
             loadScore: (piece) async => Uint8List(0),
             scoreBuilder: (context, o) {
@@ -356,6 +357,7 @@ void main() {
       return MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           loadCatalog: _loadCatalog,
           loadScore: (piece) async => Uint8List(0),
           trailProgress: trail,
@@ -394,6 +396,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: _loadCatalog,
             loadScore: (piece) async => Uint8List(0),
             trailProgress: trail,
@@ -433,6 +436,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: _loadCatalog,
             loadScore: (piece) async => Uint8List(0),
             progress: progress,
@@ -459,6 +463,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: () async => PieceCatalog([
               for (var n = 1; n <= 600; n++)
                 Piece(

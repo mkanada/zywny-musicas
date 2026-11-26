@@ -632,6 +632,7 @@ void main() {
         MaterialApp(
           theme: buildAppTheme(),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: () async =>
                 PieceCatalog([_piece(7, fifths: -3), _piece(8, fifths: -3)]),
             loadScore: (piece) async => throw UnimplementedError(),

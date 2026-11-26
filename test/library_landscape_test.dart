@@ -15,6 +15,7 @@ import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/piece.dart';
 import 'package:zywny_library/piece_progress.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -78,6 +79,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           loadCatalog: () async => catalog ?? PieceCatalog(_pieces),
           loadScore: (piece) async => Uint8List(0),
           progress: progress,
@@ -228,6 +230,7 @@ void main() {
             child: child!,
           ),
           home: LibraryScreen(
+            clock: SystemClock(),
             loadCatalog: () async => PieceCatalog(_pieces),
             loadScore: (piece) async => Uint8List(0),
             progress: progress,

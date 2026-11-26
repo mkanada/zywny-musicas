@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 import 'mockup/library_screen.dart';
@@ -15,11 +16,14 @@ import 'mockup/practice_state.dart';
 /// Usa o tema e os widgets do app (`package:zywny`), mas nada do mockup
 /// entra no app.
 void main() {
-  runApp(const ZywnyMockupApp());
+  runApp(ZywnyMockupApp(clock: SystemClock()));
 }
 
 class ZywnyMockupApp extends StatelessWidget {
-  const ZywnyMockupApp({super.key});
+  const ZywnyMockupApp({super.key, required this.clock});
+
+  /// O relógio do app (CT05f), que chega às telas pelo construtor.
+  final AppClock clock;
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +56,10 @@ class ZywnyMockupApp extends StatelessWidget {
     final Widget page;
     switch (settings.name) {
       case '/estudo':
-        page = const PracticeScreen(args: _littleBird);
+        page = PracticeScreen(clock: clock, args: _littleBird);
       case '/grande':
-        page = const PracticeScreen(
+        page = PracticeScreen(
+          clock: clock,
           args: PracticeArgs(
             title: 'Little bird, op. 43 nº 4',
             composer: 'Edvard Grieg',
@@ -62,15 +67,16 @@ class ZywnyMockupApp extends StatelessWidget {
           ),
         );
       case '/treino':
-        page = const PracticeScreen(args: _littleBirdPracticing);
+        page = PracticeScreen(clock: clock, args: _littleBirdPracticing);
       case '/painel':
-        page = const PracticeScreen(
+        page = PracticeScreen(
+          clock: clock,
           args: _littleBirdPracticing,
           startWithPanelOpen: true,
         );
       case '/':
       default:
-        page = const LibraryScreen();
+        page = LibraryScreen(clock: clock);
     }
     return MaterialPageRoute<void>(builder: (_) => page, settings: settings);
   }

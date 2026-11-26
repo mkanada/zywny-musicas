@@ -186,11 +186,6 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
 
   /// Entrada MIDI (M01): lista/conecta dispositivos e reconecta sozinho ao
   /// último escolhido; converte mensagens em [PlayedNote] para o monitor.
-  /// Relógio de carimbo: o motor de áudio se já estiver ligado (mesmo
-  /// instante que o áudio usa), senão este `Stopwatch`, que roda desde a
-  /// abertura do app.
-  final Stopwatch _appClock = Stopwatch()..start();
-
   /// O gerenciador de dispositivos é o da biblioteca (o teclado conectado
   /// lá continua conectado aqui).
   late final MidiDeviceManager _midiDeviceManager =
@@ -202,8 +197,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   MidiDevice? _tecladoVisto;
   late final MidiInputService _midiInput = FlutterMidiInputService(
     resubscribeOn: _midiDeviceManager.transportInstalled,
-    nowSeconds: () =>
-        _sound.engine?.nowSeconds ?? _appClock.elapsedMicroseconds / 1e6,
+    nowSeconds: () => _sound.engine?.nowSeconds ?? widget.clock.seconds,
   );
 
   /// Appearance, from the general settings — pure paint-time, none of them
@@ -252,6 +246,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
       piece: _piece,
       settings: _settings,
       stored: _stored,
+      clock: widget.clock,
       name: _scoreName,
       kind: _kind,
       pixelRatio: currentPixelRatio,
@@ -365,13 +360,13 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
   /// um slider arrastado chama isto a cada passo.
   void _savePieceSettings() {
     _saveDebounce?.cancel();
-    _saveDebounce = Timer(
+    _saveDebounce = widget.clock.timer(
       const Duration(milliseconds: 400),
       _flushPieceSettings,
     );
   }
 
-  Timer? _saveDebounce;
+  AppTimer? _saveDebounce;
 
   PieceSettings _pieceSettingsWith({int? trailMeasures}) => PieceSettings(
     speed: _playback.speed == 1.0 ? null : _playback.speed,
@@ -555,7 +550,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     // Um quadro para a gaveta fechar e a barra assentar.
     await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
-    final end = await showTour(context, scoreTourSteps(_tourKeys, term: _term));
+    final end = await showTour(
+      context,
+      scoreTourSteps(_tourKeys, term: _term),
+      clock: widget.clock,
+    );
     if (end != null) await store.markSeen(TourId.score);
   }
 
@@ -866,7 +865,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
     required int channel,
   }) async {
     engine.send([0x90 | channel, pitch, 100]);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
+    await widget.clock.wait(const Duration(milliseconds: 800));
     engine.send([0x80 | channel, pitch, 0]);
   }
 
@@ -1341,6 +1340,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
         builder: (context, _) => GeneralSettingsPanel(
           settings: _settings,
           midiDeviceManager: _midiDeviceManager,
+          clock: widget.clock,
           customSoundFont: _sound.customSoundFont,
           authStore: widget.authStore,
           onChooseSoundFont: () => unawaited(_sound.chooseSoundFont()),

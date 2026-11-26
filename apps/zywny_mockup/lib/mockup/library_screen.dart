@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
+
 import 'package:zywny_comum/ui/theme.dart';
 
 import 'library_cubit.dart';
@@ -9,20 +11,25 @@ import 'practice_screen.dart';
 
 /// Tela inicial, em retrato — `CelularBiblioteca.dc.html`.
 class LibraryScreen extends StatelessWidget {
-  const LibraryScreen({super.key});
+  const LibraryScreen({super.key, required this.clock});
+
+  /// O relógio do app (CT05f), que a tela de estudo recebe ao abrir.
+  final AppClock clock;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => LibraryCubit()..iniciar(),
-      child: const _LibraryView(),
+      child: _LibraryView(clock: clock),
     );
   }
 }
 
 /// A tela: a busca, a ordem e a lista vêm do [LibraryCubit] acima dela.
 class _LibraryView extends StatelessWidget {
-  const _LibraryView();
+  const _LibraryView({required this.clock});
+
+  final AppClock clock;
 
   // A peça "em andamento" mostrada no card "continuar" — mockup fixo, como
   // no artboard (Little bird, compasso 4 de 41, Espera, mão direita, 80%).
@@ -312,8 +319,11 @@ class _LibraryView extends StatelessWidget {
   }
 
   void _openPiece(BuildContext context, PracticeArgs args) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => PracticeScreen(args: args)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PracticeScreen(clock: clock, args: args),
+      ),
+    );
   }
 }
 

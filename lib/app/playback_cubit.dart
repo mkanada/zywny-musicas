@@ -33,11 +33,6 @@ import 'package:zywny_clock/zywny_clock.dart';
 void _setWakelock(bool on) =>
     unawaited(on ? WakelockPlus.enable() : WakelockPlus.disable());
 
-double Function() _stopwatchSeconds() {
-  final watch = Stopwatch()..start();
-  return () => watch.elapsedMicroseconds / 1e6;
-}
-
 /// O que o transporte mostra: tocando ou parado, o andamento, o loop A-B e a
 /// gravura trocada. [serial] sobe a cada [PlaybackCubit.attach]: a partitura
 /// nova tem outros ids, mesmo que o resto seja igual. O metrônomo é da
@@ -95,10 +90,8 @@ class PlaybackCubit extends Cubit<PlaybackState> {
     this.pitchOf,
     this.onEnded,
     this.onLoopChanged,
-    double Function()? wallSeconds,
     void Function(bool on) wakelock = _setWakelock,
   }) : _settings = settings,
-       _wallSeconds = wallSeconds,
        _wakelock = wakelock,
        super(PlaybackState(speed: speed)) {
     _settingsSub = _settings.stream.listen((_) => _onSettingsChanged());
@@ -132,9 +125,6 @@ class PlaybackCubit extends Cubit<PlaybackState> {
   /// segue o mesmo trecho.
   final void Function(({double startMs, double endMs})? range)? onLoopChanged;
 
-  /// Relógio de parede, em segundos, da contagem sem som com o sintetizador
-  /// fechado. `null` = um `Stopwatch` por contagem.
-  final double Function()? _wallSeconds;
   final void Function(bool on) _wakelock;
 
   bool _disposed = false;
@@ -148,13 +138,13 @@ class PlaybackCubit extends Cubit<PlaybackState> {
   /// controller segura o player e conta sozinho — o número e, com o
   /// sintetizador do app aberto, os cliques (a música segue muda). `null`
   /// fora dela.
-  Timer? _silentCountInTimer;
+  AppTimer? _silentCountInTimer;
   CountInTick? Function()? _silentCountIn;
   SoundEngine? _silentCountInEngine;
 
   /// Espera a contagem do agendador acabar para soltar o player
   /// ([playPlayerAfterCount]).
-  Timer? _countInPlayTimer;
+  AppTimer? _countInPlayTimer;
 
   /// Walks the timemap, highlights notes through [controller] and drives
   /// the page-turn sweep. Rebuilt for every new engraving; `null` sem
@@ -323,14 +313,13 @@ class PlaybackCubit extends Cubit<PlaybackState> {
       _silentCountInEngine = engine;
       elapsed = () => engine.nowSeconds - t0;
     } else {
-      final wall = _wallSeconds ?? _stopwatchSeconds();
-      final t0 = wall();
-      elapsed = () => wall() - t0;
+      final t0 = clock.seconds;
+      elapsed = () => clock.seconds - t0;
     }
     _silentCountIn = () =>
         countInTickAt(clicks, fromMs, firstMs + elapsed() * 1000 * speed);
     final leftSeconds = (fromMs - firstMs) / 1000 / speed - elapsed();
-    _silentCountInTimer = Timer(
+    _silentCountInTimer = clock.timer(
       Duration(microseconds: (leftSeconds * 1e6).round()),
       () {
         _silentCountInTimer = null;
@@ -354,7 +343,7 @@ class PlaybackCubit extends Cubit<PlaybackState> {
       return;
     }
     controller.clearHighlights();
-    _countInPlayTimer = Timer.periodic(const Duration(milliseconds: 16), (
+    _countInPlayTimer = clock.periodic(const Duration(milliseconds: 16), (
       timer,
     ) {
       if (scheduler.isCountingIn) return;

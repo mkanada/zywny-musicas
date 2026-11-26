@@ -15,6 +15,7 @@ import 'package:zywny/app/imported_scores.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny/app/piece_metadata.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -65,6 +66,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           loadCatalog: () async =>
               PieceCatalog(pieces ?? [_piece(1, 'Hino Um')]),
           loadScore: (piece) async => Uint8List(0),
@@ -72,8 +74,7 @@ void main() {
           metadata: PieceMetadataCubit(),
           imported: ImportedScoresCubit(blobs: MemoryLibraryBlobStore()),
           pickMusicXml: pickMusicXml ?? (() async => null),
-          scoreBuilder: (context, o) =>
-              const Scaffold(body: Text('partitura')),
+          scoreBuilder: (context, o) => const Scaffold(body: Text('partitura')),
         ),
       ),
     );
@@ -161,10 +162,8 @@ void main() {
   testWidgets('importa, confirma os dados e abre a partitura', (tester) async {
     await pumpLibrary(
       tester,
-      pickMusicXml: () async => (
-        name: 'nova.musicxml',
-        bytes: Uint8List.fromList(utf8.encode(_xml)),
-      ),
+      pickMusicXml: () async =>
+          (name: 'nova.musicxml', bytes: Uint8List.fromList(utf8.encode(_xml))),
     );
     await tester.tap(find.byTooltip('Importar MusicXML…'));
     await tester.pumpAndSettle();
@@ -182,10 +181,8 @@ void main() {
   ) async {
     await pumpLibrary(
       tester,
-      pickMusicXml: () async => (
-        name: 'nova.musicxml',
-        bytes: Uint8List.fromList(utf8.encode(_xml)),
-      ),
+      pickMusicXml: () async =>
+          (name: 'nova.musicxml', bytes: Uint8List.fromList(utf8.encode(_xml))),
     );
     await tester.tap(find.byTooltip('Importar MusicXML…'));
     await tester.pumpAndSettle();
@@ -202,10 +199,8 @@ void main() {
   testWidgets('apaga a importada pelo diálogo', (tester) async {
     await pumpLibrary(
       tester,
-      pickMusicXml: () async => (
-        name: 'nova.musicxml',
-        bytes: Uint8List.fromList(utf8.encode(_xml)),
-      ),
+      pickMusicXml: () async =>
+          (name: 'nova.musicxml', bytes: Uint8List.fromList(utf8.encode(_xml))),
     );
     await tester.tap(find.byTooltip('Importar MusicXML…'));
     await tester.pumpAndSettle();

@@ -1,7 +1,7 @@
 // R10: tocar a partitura (lib/app/playback_cubit.dart) sem a tela. O
-// relógio é simulado: o do áudio é o `now` de um [FakeSoundEngine], o de
-// parede (contagem sem som) é uma variável do teste, e o `Ticker` do player
-// anda com o `pump` do `testWidgets`.
+// relógio é simulado: o do áudio é o `now` de um [FakeSoundEngine], o do app
+// (contagem sem som, timers do agendador) é um `ManualClock` que o teste anda,
+// e o `Ticker` do player anda com o `pump` do `testWidgets`.
 
 import 'dart:io';
 
@@ -36,18 +36,18 @@ class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
 /// O controller montado sobre a Gymnopédie, com o som desligado e o
 /// sintetizador do app fechado.
 class _Harness {
-  _Harness._(this.settings, this.devices, this.input);
+  _Harness._(this.settings, this.devices, this.input, this.clock);
 
   final SettingsCubit settings;
   final MidiDeviceManager devices;
   final FakeMidiInput input;
+
+  /// O relógio do app: a contagem sem som e os timers do agendador andam nele.
+  final ManualClock clock;
   final ScoreCubit scores = ScoreCubit();
   final List<FakeSoundEngine> appEngines = [];
   late final SoundOutputCubit sound;
   late final PlaybackCubit playback;
-
-  /// O relógio de parede da contagem sem som, em segundos.
-  double wall = 0;
   int ended = 0;
 
   static Future<_Harness> create(WidgetTester tester) async {
@@ -56,7 +56,12 @@ class _Harness {
         InMemorySharedPreferencesAsync.empty();
     final settings = SettingsCubit();
     await settings.load();
-    final h = _Harness._(settings, MidiDeviceManager(), FakeMidiInput());
+    final h = _Harness._(
+      settings,
+      MidiDeviceManager(),
+      FakeMidiInput(),
+      ManualClock(DateTime(2026, 11, 25, 10)),
+    );
     await tester.pump();
     h.sound = SoundOutputCubit(
       settings: settings,
@@ -77,12 +82,11 @@ class _Harness {
       },
     );
     h.playback = PlaybackCubit(
-      clock: SystemClock(),
+      clock: h.clock,
       sound: h.sound,
       settings: settings,
       controller: h.scores,
       onEnded: () => h.ended++,
-      wallSeconds: () => h.wall,
       wakelock: (_) {},
     );
     final document = VsbDocument.fromBytes(
@@ -100,10 +104,10 @@ class _Harness {
   Future<void> advance(WidgetTester tester, double seconds) async {
     const step = 0.05;
     for (var t = 0.0; t < seconds - 1e-9; t += step) {
-      wall += step;
       for (final e in appEngines) {
         e.now += step;
       }
+      clock.advance(const Duration(milliseconds: 50));
       await tester.pump(const Duration(milliseconds: 50));
     }
   }

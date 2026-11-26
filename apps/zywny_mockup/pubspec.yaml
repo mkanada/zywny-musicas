@@ -18,6 +18,8 @@ dependencies:
     path: ../../../zywny-comum
   zywny_bloc:
     path: ../../../zywny-comum/packages/zywny_bloc
+  zywny_clock:
+    path: ../../../zywny-comum/packages/zywny_clock
 
 dev_dependencies:
   flutter_test:

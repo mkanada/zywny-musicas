@@ -17,6 +17,7 @@ import 'package:zywny_music/transposition.dart';
 
 import 'package:zywny_comum/settings/effective_transposition.dart';
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_comum/settings/settings_cubit.dart';
 import 'package:zywny_comum/app/general_settings_panel.dart';
 import 'package:zywny_comum/app/libraries_section.dart';
@@ -152,6 +153,7 @@ class LibraryScreen extends StatefulWidget {
     this.incoming,
     this.incomingDelay = Duration.zero,
     this.authStore,
+    required this.clock,
   });
 
   /// Constrói a tela de partitura do hino aberto (`ScoreHomePage`).
@@ -201,6 +203,10 @@ class LibraryScreen extends StatefulWidget {
   /// A sessão conectada (D02): com ela, as configurações mostram a seção
   /// "Conta" (apelido, e-mail, sair e apagar a conta).
   final AuthStore? authStore;
+
+  /// O relógio do app (CT05f): as esperas da abertura, o passeio, as configurações
+  /// e o "há quanto tempo" da lista.
+  final AppClock clock;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
@@ -455,7 +461,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       // Só na primeira vez: a fila começa depois da espera da abertura.
       if (_screen.marcarPacotePronto() &&
           widget.incomingDelay > Duration.zero) {
-        await Future<void>.delayed(widget.incomingDelay);
+        await widget.clock.wait(widget.incomingDelay);
       }
       while (!_screen.filaVazia) {
         if (!mounted) return;
@@ -563,7 +569,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
     if (await store.seen(TourId.library)) return;
     if (!_screen.esperouSplash && widget.tourDelay > Duration.zero) {
-      await Future<void>.delayed(widget.tourDelay);
+      await widget.clock.wait(widget.tourDelay);
     }
     _screen.marcarEsperouSplash();
     if (!mounted) return;
@@ -597,6 +603,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         numbered: catalog.numbered,
         hasLibrary: catalog.hasLibrary,
       )),
+      clock: widget.clock,
     );
     if (end != null) await store.markSeen(TourId.library);
   }
@@ -746,6 +753,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           child: GeneralSettingsScreen(
             settings: _settings,
             midiDeviceManager: _midi,
+            clock: widget.clock,
             authStore: widget.authStore,
             onTutorial: widget.tourStore == null
                 ? null
@@ -1201,7 +1209,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
         '${term.singularCapitalized} ${piece.number}'
       else
         piece.composer,
-      if (progress?.lastOpened case final at?) whenStudied(at, DateTime.now()),
+      if (progress?.lastOpened case final at?)
+        whenStudied(at, widget.clock.now()),
       if (progress?.bestScore case final score?) 'melhor $score%',
     ].join(' · ');
     return Container(
@@ -1472,7 +1481,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       _screen.state.busca,
     );
     if (pieces.isEmpty) return _emptyList(catalog);
-    final now = DateTime.now();
+    final now = widget.clock.now();
     return ListView.builder(
       // Girar o aparelho muda a lista de lugar na árvore (uma coluna ou o
       // corpo inteiro): com a chave, ela vai junto e mantém a rolagem.

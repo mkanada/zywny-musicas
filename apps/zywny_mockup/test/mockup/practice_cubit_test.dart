@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_mockup/mockup/practice_cubit.dart';
 import 'package:zywny_mockup/mockup/practice_state.dart';
 
@@ -24,7 +25,9 @@ MockupPracticeCubit _criar({
   bool painel = false,
   Duration intervalo = const Duration(seconds: 2),
   List<List<DeviceOrientation>>? giros,
+  ManualClock? relogio,
 }) => MockupPracticeCubit(
+  clock: relogio ?? ManualClock(DateTime(2026, 11, 25, 10)),
   args: args ?? _peca(),
   startWithPanelOpen: painel,
   tickInterval: intervalo,
@@ -105,42 +108,52 @@ void main() {
       ],
     );
 
-    test('Tocar fora do Ouvir liga o ao vivo; pausar para', () async {
-      final cubit = _criar(intervalo: const Duration(milliseconds: 5));
+    test('Tocar fora do Ouvir liga o ao vivo; pausar para', () {
+      final relogio = ManualClock(DateTime(2026, 11, 25, 10));
+      final cubit = _criar(
+        intervalo: const Duration(milliseconds: 5),
+        relogio: relogio,
+      );
       addTearDown(cubit.close);
 
       cubit.alternarTocar();
-      await Future<void>.delayed(const Duration(milliseconds: 60));
+      relogio.advance(const Duration(milliseconds: 60));
       expect(cubit.state.playing, isTrue);
       expect(cubit.state.counts.correct, greaterThan(23));
 
       cubit.alternarTocar();
       final parado = cubit.state.counts.correct;
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+      relogio.advance(const Duration(milliseconds: 30));
       expect(cubit.state.playing, isFalse);
       expect(cubit.state.counts.correct, parado);
     });
 
-    test('no Ouvir, Tocar não liga o ao vivo', () async {
+    test('no Ouvir, Tocar não liga o ao vivo', () {
+      final relogio = ManualClock(DateTime(2026, 11, 25, 10));
       final cubit = _criar(
         args: _peca(mode: PracticeMode.ouvir),
         intervalo: const Duration(milliseconds: 5),
+        relogio: relogio,
       );
       addTearDown(cubit.close);
 
       cubit.alternarTocar();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+      relogio.advance(const Duration(milliseconds: 30));
       expect(cubit.state.playing, isTrue);
       expect(cubit.state.counts, const PracticeCounts());
       expect(cubit.state.measure, 4);
     });
 
     test('fechar a tela para o ao vivo, sem emitir depois', () async {
-      final cubit = _criar(intervalo: const Duration(milliseconds: 5));
+      final relogio = ManualClock(DateTime(2026, 11, 25, 10));
+      final cubit = _criar(
+        intervalo: const Duration(milliseconds: 5),
+        relogio: relogio,
+      );
 
       cubit.alternarTocar();
       await cubit.close();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
+      relogio.advance(const Duration(milliseconds: 30));
 
       expect(cubit.isClosed, isTrue);
       expect(cubit.state.counts.correct, 23);
@@ -198,7 +211,11 @@ void main() {
       ),
       act: (cubit) => cubit.mudarModo(PracticeMode.espera),
       expect: () => [
-        isA<MockupPracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
+        isA<MockupPracticeState>().having(
+          (s) => s.setup.hand,
+          'mão',
+          Hand.esquerda,
+        ),
       ],
     );
 
@@ -287,7 +304,11 @@ void main() {
       build: _criar,
       act: (cubit) => cubit.escolherMao(Hand.esquerda),
       expect: () => [
-        isA<MockupPracticeState>().having((s) => s.setup.hand, 'mão', Hand.esquerda),
+        isA<MockupPracticeState>().having(
+          (s) => s.setup.hand,
+          'mão',
+          Hand.esquerda,
+        ),
       ],
     );
   });
@@ -302,7 +323,11 @@ void main() {
       },
       expect: () => [
         isA<MockupPracticeState>().having((s) => s.panelOpen, 'painel', isTrue),
-        isA<MockupPracticeState>().having((s) => s.panelOpen, 'painel', isFalse),
+        isA<MockupPracticeState>().having(
+          (s) => s.panelOpen,
+          'painel',
+          isFalse,
+        ),
       ],
     );
 
@@ -329,7 +354,11 @@ void main() {
           'tamanho',
           ScoreSize.grande,
         ),
-        isA<MockupPracticeState>().having((s) => s.setup.repeatAB, 'A–B', isTrue),
+        isA<MockupPracticeState>().having(
+          (s) => s.setup.repeatAB,
+          'A–B',
+          isTrue,
+        ),
         isA<MockupPracticeState>().having(
           (s) => s.setup.metronome,
           'metrônomo',

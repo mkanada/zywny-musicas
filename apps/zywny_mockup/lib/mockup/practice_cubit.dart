@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 import 'practice_state.dart';
 
@@ -147,6 +148,7 @@ MockupPracticeState _estadoInicial(PracticeArgs args, bool painelAberto) {
 /// [_setOrientations], que os testes trocam por um falso.
 class MockupPracticeCubit extends Cubit<MockupPracticeState> {
   MockupPracticeCubit({
+    required this.clock,
     required this.args,
     bool startWithPanelOpen = false,
     this.tickInterval = const Duration(seconds: 2),
@@ -155,6 +157,9 @@ class MockupPracticeCubit extends Cubit<MockupPracticeState> {
            setOrientations ?? SystemChrome.setPreferredOrientations,
        super(_estadoInicial(args, startWithPanelOpen));
 
+  /// O relógio do app (CT05f): o "ao vivo" de enfeite anda nele.
+  final AppClock clock;
+
   /// Título, compositor e total de compassos da peça (não mudam).
   final PracticeArgs args;
 
@@ -162,7 +167,7 @@ class MockupPracticeCubit extends Cubit<MockupPracticeState> {
   final Duration tickInterval;
 
   final Future<void> Function(List<DeviceOrientation>) _setOrientations;
-  Timer? _liveTicker;
+  AppTimer? _liveTicker;
 
   /// Trava a tela em paisagem, como a partitura pede.
   void iniciar() => unawaited(_setOrientations(_paisagem));
@@ -182,7 +187,7 @@ class MockupPracticeCubit extends Cubit<MockupPracticeState> {
     if (tocando && state.praticando) {
       // Só de enfeite: dá vida à tela quando demonstrada no aparelho, sem MIDI
       // real por trás (o motor de som/MIDI é a fase K/M, ainda pendente).
-      _liveTicker = Timer.periodic(tickInterval, (_) => tique());
+      _liveTicker = clock.periodic(tickInterval, (_) => tique());
     }
   }
 

@@ -12,6 +12,7 @@ import 'package:zywny_library/piece.dart';
 import 'package:zywny/app/library_screen.dart';
 import 'package:zywny_library/library_sort.dart';
 import 'package:zywny_comum/ui/theme.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
@@ -138,6 +139,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           loadCatalog: () async => PieceCatalog(pieces),
           loadScore: (piece) async => Uint8List(0),
           scoreBuilder: (context, o) => const Scaffold(body: Text('partitura')),

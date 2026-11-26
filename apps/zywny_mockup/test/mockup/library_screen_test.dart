@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_mockup/mockup/library_screen.dart';
 
 Future<void> _abrirBiblioteca(WidgetTester tester) async {
-  await tester.pumpWidget(const MaterialApp(home: LibraryScreen()));
+  await tester.pumpWidget(
+    MaterialApp(
+      home: LibraryScreen(clock: ManualClock(DateTime(2026, 11, 25, 10))),
+    ),
+  );
   await tester.pump();
 }
 

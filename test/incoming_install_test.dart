@@ -21,6 +21,8 @@ import 'package:zywny_library/library_cubit.dart';
 
 import 'support/library_fixtures.dart';
 
+import 'package:zywny_clock/zywny_clock.dart';
+
 class _NoDevicesMidiCommandPlatform extends MidiCommandPlatform
     with MockPlatformInterfaceMixin {
   @override
@@ -69,6 +71,7 @@ void main() {
       MaterialApp(
         theme: buildAppTheme(),
         home: LibraryScreen(
+          clock: SystemClock(),
           libraryStore: store,
           incoming: incoming,
           tourStore: tourStore,

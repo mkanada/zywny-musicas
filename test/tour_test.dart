@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zywny/tutorial/tour.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 /// Uma tela com alvos nos lugares pedidos e um botão que abre o passeio.
 class _Host extends StatefulWidget {
@@ -44,8 +45,9 @@ class _HostState extends State<_Host> {
           Center(
             child: Builder(
               builder: (context) => ElevatedButton(
-                onPressed: () async =>
-                    widget.onEnd(await showTour(context, widget.steps)),
+                onPressed: () async => widget.onEnd(
+                  await showTour(context, widget.steps, clock: SystemClock()),
+                ),
                 child: const Text('Iniciar'),
               ),
             ),

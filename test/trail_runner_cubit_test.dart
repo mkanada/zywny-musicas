@@ -58,6 +58,7 @@ TrailRunnerCubit _trilha({int? pieceN}) {
   final scores = ScoreCubit();
   final piece = fakePiece();
   final session = ScoreRenderCubit(
+    clock: SystemClock(),
     renderer: RecordingRenderer(),
     scoreXml: Uint8List(1),
     piece: piece,

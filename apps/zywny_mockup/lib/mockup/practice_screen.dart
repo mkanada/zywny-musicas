@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zywny_bloc/zywny_bloc.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 import 'package:zywny_comum/ui/theme.dart';
 
 import 'measure_jump_cubit.dart';
@@ -15,9 +16,13 @@ import 'practice_wide.dart';
 class PracticeScreen extends StatelessWidget {
   const PracticeScreen({
     super.key,
+    required this.clock,
     required this.args,
     this.startWithPanelOpen = false,
   });
+
+  /// O relógio do app (CT05f), repassado ao cubit da tela.
+  final AppClock clock;
 
   final PracticeArgs args;
 
@@ -29,9 +34,11 @@ class PracticeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          MockupPracticeCubit(args: args, startWithPanelOpen: startWithPanelOpen)
-            ..iniciar(),
+      create: (_) => MockupPracticeCubit(
+        clock: clock,
+        args: args,
+        startWithPanelOpen: startWithPanelOpen,
+      )..iniciar(),
       child: const _PracticeView(),
     );
   }

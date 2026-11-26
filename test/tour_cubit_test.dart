@@ -7,8 +7,12 @@ import 'package:flutter/widgets.dart' show GlobalKey;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zywny/tutorial/tour.dart';
+import 'package:zywny_clock/zywny_clock.dart';
 
 const _cartao = TourStep(title: 'Um', body: 'Cartão sem alvo.');
+
+/// O relógio do passeio nos testes: só anda quando o teste manda.
+ManualClock _novoRelogio() => ManualClock(DateTime(2026, 11, 25, 10));
 
 /// Passo com alvo que não está montado: o passeio o pula.
 TourStep _semAlvo() => TourStep(
@@ -42,7 +46,10 @@ void _testesDoEstado() {
 void _testesDoCubit() {
   group('TourCubit', () {
     test('começa no primeiro passo com alvo (ou cartão)', () {
-      final cubit = TourCubit(steps: [_semAlvo(), _cartao]);
+      final cubit = TourCubit(
+        clock: _novoRelogio(),
+        steps: [_semAlvo(), _cartao],
+      );
       addTearDown(cubit.close);
 
       expect(cubit.state.index, 1);
@@ -52,6 +59,7 @@ void _testesDoCubit() {
 
     test('pula os passos sem alvo na tela ao andar', () {
       final cubit = TourCubit(
+        clock: _novoRelogio(),
         steps: [
           _cartao,
           _semAlvo(),
@@ -69,6 +77,7 @@ void _testesDoCubit() {
 
     test('"3 de 9": os passos sem alvo não contam', () {
       final cubit = TourCubit(
+        clock: _novoRelogio(),
         steps: [
           _cartao,
           _semAlvo(),
@@ -88,7 +97,7 @@ void _testesDoRecorte() {
   group('TourCubit (passo e recorte)', () {
     blocTest<TourCubit, TourState>(
       'ir para um passo emite o passo e zera o recorte',
-      build: () => TourCubit(steps: [_cartao, _cartao]),
+      build: () => TourCubit(clock: _novoRelogio(), steps: [_cartao, _cartao]),
       seed: () => const TourState(index: 0, hole: Rect.fromLTWH(1, 1, 2, 2)),
       act: (cubit) => cubit.ir(1),
       expect: () => [const TourState(index: 1)],
@@ -96,7 +105,7 @@ void _testesDoRecorte() {
 
     blocTest<TourCubit, TourState>(
       'medir guarda o recorte',
-      build: () => TourCubit(steps: [_cartao]),
+      build: () => TourCubit(clock: _novoRelogio(), steps: [_cartao]),
       act: (cubit) => cubit.medir(const Rect.fromLTWH(4, 4, 8, 8)),
       expect: () => [
         const TourState(index: 0, hole: Rect.fromLTWH(4, 4, 8, 8)),
@@ -105,7 +114,7 @@ void _testesDoRecorte() {
 
     blocTest<TourCubit, TourState>(
       'medir o mesmo recorte (até meio pixel) não emite',
-      build: () => TourCubit(steps: [_cartao]),
+      build: () => TourCubit(clock: _novoRelogio(), steps: [_cartao]),
       seed: () => const TourState(index: 0, hole: Rect.fromLTWH(4, 4, 8, 8)),
       act: (cubit) => cubit.medir(const Rect.fromLTWH(4.2, 4, 8, 8.3)),
       expect: () => <TourState>[],
@@ -113,7 +122,7 @@ void _testesDoRecorte() {
 
     blocTest<TourCubit, TourState>(
       'medir null tira o recorte',
-      build: () => TourCubit(steps: [_cartao]),
+      build: () => TourCubit(clock: _novoRelogio(), steps: [_cartao]),
       seed: () => const TourState(index: 0, hole: Rect.fromLTWH(4, 4, 8, 8)),
       act: (cubit) => cubit.medir(null),
       expect: () => [const TourState(index: 0)],
@@ -122,23 +131,22 @@ void _testesDoRecorte() {
 }
 
 void _testesDaRemedicao() {
-  test(
-    'comecarRemedicao chama o remedir a cada intervalo, e para no close',
-    () async {
-      final cubit = TourCubit(
-        steps: [_cartao],
-        remeasureEvery: const Duration(milliseconds: 5),
-      );
-      var chamadas = 0;
+  test('comecarRemedicao chama o remedir a cada intervalo do relógio, e para no close', () async {
+    final relogio = _novoRelogio();
+    final cubit = TourCubit(
+      clock: relogio,
+      steps: [_cartao],
+      remeasureEvery: const Duration(milliseconds: 5),
+    );
+    var chamadas = 0;
 
-      cubit.comecarRemedicao(() => chamadas++);
-      await Future<void>.delayed(const Duration(milliseconds: 40));
-      expect(chamadas, greaterThan(0));
+    cubit.comecarRemedicao(() => chamadas++);
+    relogio.advance(const Duration(milliseconds: 20));
+    expect(chamadas, 4, reason: 'a cada 5 ms, até 20 ms');
 
-      await cubit.close();
-      final noClose = chamadas;
-      await Future<void>.delayed(const Duration(milliseconds: 40));
-      expect(chamadas, noClose, reason: 'o Timer para no close');
-    },
-  );
+    await cubit.close();
+    final noClose = chamadas;
+    relogio.advance(const Duration(milliseconds: 40));
+    expect(chamadas, noClose, reason: 'o timer para no close');
+  });
 }
