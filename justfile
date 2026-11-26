@@ -236,11 +236,10 @@ fake-midi *ARGS:
 test:
     flutter test
 
-# Testes do zywny-comum: o pacote e os de packages/ (`dart test` nos de Dart
-# puro, `flutter test` nos outros).
+# Testes do zywny-comum: a raiz e depois, juntos, os de packages/ e o
+# score_bridge (`dart test` nos de Dart puro, `flutter test` nos outros).
 test-comum:
-    cd {{comum}} && flutter test
-    cd {{comum}} && for p in packages/*/; do [ -d "$p/test" ] || continue; if grep -q "sdk: flutter" "$p/pubspec.yaml"; then (cd "$p" && flutter test) || exit 1; else (cd "$p" && dart test) || exit 1; fi; done
+    {{comum}}/tool/testes_comum.sh
 
 # Análise estática: o app, e depois o zywny-comum.
 analyze:
