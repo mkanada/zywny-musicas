@@ -826,6 +826,7 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           deviceName: device.name,
           input: _midiInput,
           previous: _settings.state.keyboardTransposeOf(device.name),
+          clock: widget.clock,
           naming: _settings.state.noteNaming,
           playOwnSound: _playOwnTone,
           playOnKeyboard: _sound.output == SoundOutput.midiKeyboard
@@ -1255,7 +1256,11 @@ class _ScoreHomePageState extends State<ScoreHomePage> {
           top: 0,
           left: 0,
           right: 0,
-          child: ShiftBanner(notice: _shift, notes: _midiInput.notes),
+          child: ShiftBanner(
+            notice: _shift,
+            notes: _midiInput.notes,
+            clock: widget.clock,
+          ),
         ),
         Positioned.fill(child: _panelsRegion(constraints)),
       ],
